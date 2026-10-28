@@ -32,7 +32,7 @@ export function createGame(parent: HTMLElement, store: GameStore): Phaser.Game {
     const s = snap.state;
     if (snap.ui.screen !== 'game' || !s) return { key: 'CityMap', id: 'map' };
     if (s.expedition?.combat) return { key: 'Combat', id: `combat:${s.expedition.combat.groupId}:${s.expedition.combat.arenaId}` };
-    if (s.expedition) return { key: 'Region', id: `region:${s.expedition.regionId}` };
+    if (s.expedition) return { key: 'Region', id: `region:${s.expedition.regionId}:${s.expedition.dungeon?.floor ?? 0}` };
     if (snap.ui.view === 'world') return { key: 'World', id: 'world' };
     if (snap.ui.view === 'map') return { key: 'CityMap', id: 'map' };
     return { key: 'Live', id: `live:${s.location}`, data: { locationId: s.location } };

@@ -39,7 +39,9 @@ export type QuestObjective =
   | ({ kind: 'craft' } & CraftSpec)
   | { kind: 'materials'; material: string; qty: number }
   | { kind: 'hunt'; family?: string; monster?: string; region?: string; count: number }
-  | { kind: 'boss'; region: string };
+  | { kind: 'boss'; region: string }
+  /** Llegar a cierto piso de una mazmorra o, sin piso, vencer a su jefe. */
+  | { kind: 'dungeon'; dungeon: string; floor?: number };
 
 export interface QuestReward {
   gold?: number;

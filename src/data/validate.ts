@@ -87,7 +87,7 @@ export function validateContent(c: Content): string[] {
   for (const m of Object.values(c.monsters)) {
     m.skills.forEach((id) => skill(id, `monstruo ${m.id}`));
     m.loot.forEach((l) => mat(l.material, `monstruo ${m.id}`));
-    m.halfHp?.summon.forEach((id) => { if (!c.monsters[id]) errors.push(`monstruo ${m.id}: invoca "${id}" inexistente`); });
+    m.halfHp?.summon?.forEach((id) => { if (!c.monsters[id]) errors.push(`monstruo ${m.id}: invoca "${id}" inexistente`); });
   }
   for (const a of Object.values(c.arenas)) {
     const cols = a.terrain[0]?.length ?? 0;
@@ -202,6 +202,14 @@ export function validateContent(c: Content): string[] {
       }
     }
   }
+  for (const q of Object.values(c.quests)) {
+    const o = q.objective;
+    if (o.kind === 'dungeon') {
+      const d = c.dungeons[o.dungeon];
+      if (!d) errors.push(`encargo ${q.id}: mazmorra inexistente "${o.dungeon}"`);
+      else if (o.floor && o.floor > d.floors) errors.push(`encargo ${q.id}: la mazmorra tiene ${d.floors} pisos`);
+    }
+  }
   for (const k of Object.values(c.contracts)) {
     npc(k.merchant, `contrato ${k.id}`);
     spec(k.item, `contrato ${k.id}`);
@@ -245,6 +253,50 @@ export function validateContent(c: Content): string[] {
     const spot = c.cities[c.npcs[m.id]?.city]?.locations.find((l) => l.kind === 'esclavos')?.scene?.npcSpots[m.id];
     if (!spot) errors.push(`compañero ${m.id}: falta su lugar en el mercado de esclavos`);
   }
+
+  // ── Fase 5 ──
+  for (const p of Object.values(c.roomPieces)) {
+    if (p.rows.length !== 7 || p.rows.some((r) => r.length !== 7)) errors.push(`sala ${p.id}: tiene que ser de 7×7`);
+    if (p.rows[0] !== '#######' || p.rows[6] !== '#######' || p.rows.some((r) => r[0] !== '#' || r[6] !== '#')) errors.push(`sala ${p.id}: el borde tiene que ser pared`);
+    if (p.kind === 'jefe' && !p.rows.some((r) => r.includes('B'))) errors.push(`sala ${p.id}: sala de jefe sin guarida (B)`);
+    p.dungeons?.forEach((d) => { if (!c.dungeons[d]) errors.push(`sala ${p.id}: mazmorra inexistente "${d}"`); });
+  }
+  for (const r of Object.values(c.riddles)) {
+    if (r.answer < 0 || r.answer >= r.options.length) errors.push(`acertijo ${r.id}: respuesta fuera de rango`);
+    r.reward.materials?.forEach((m) => mat(m.id, `acertijo ${r.id}`));
+    if (r.reward.synergy && !c.synergies[r.reward.synergy]) errors.push(`acertijo ${r.id}: sinergia inexistente "${r.reward.synergy}"`);
+  }
+  for (const d of Object.values(c.dungeons)) {
+    const where = `mazmorra ${d.id}`;
+    const pieces = Object.values(c.roomPieces).filter((p) => !p.dungeons || p.dungeons.includes(d.id));
+    for (const kind of ['sala', 'jefe', 'tesoro'] as const) if (!pieces.some((p) => p.kind === kind)) errors.push(`${where}: no tiene salas de tipo ${kind}`);
+    if (d.grid[0] * d.grid[1] < 3) errors.push(`${where}: la grilla necesita al menos 3 salas`);
+    if (!c.arenas[d.bossArena]) errors.push(`${where}: arena de jefe inexistente "${d.bossArena}"`);
+    if (!Object.values(c.arenas).some((a) => a.biome === d.biome)) errors.push(`${where}: no hay arenas del bioma "${d.biome}"`);
+    d.boss.monsters.forEach((m) => { if (!c.monsters[m]) errors.push(`${where}: jefe "${m}" inexistente`); });
+    if (!d.boss.monsters.some((m) => c.monsters[m]?.boss)) errors.push(`${where}: el grupo del jefe no tiene un jefe`);
+    d.riddles.forEach((r) => { if (!c.riddles[r]) errors.push(`${where}: acertijo inexistente "${r}"`); });
+    for (const z of d.depth) {
+      [...z.vetas, ...z.arboles, ...(z.hierbas ?? []), ...(z.gemas ?? [])].forEach((o) => mat(o.material, `${where}.${z.id}`));
+      for (const fam of Object.keys(z.families)) if (!Object.values(c.monsters).some((m) => m.family === fam && !m.boss)) errors.push(`${where}.${z.id}: familia "${fam}" sin monstruos`);
+    }
+    for (const l of [...d.loot, d.secretLoot]) {
+      l.materials.forEach((m) => mat(m.material, where));
+      l.grimoires.forEach((g) => { if (!c.grimoires[g.id]) errors.push(`${where}: grimorio inexistente "${g.id}"`); });
+    }
+    for (const u of d.uniques) {
+      const ok = { blueprint: c.blueprints, grimoire: c.grimoires, synergy: c.synergies, material: c.materials }[u.kind][u.ref];
+      if (!ok) errors.push(`${where}: tesoro único "${u.id}" apunta a "${u.ref}" inexistente`);
+    }
+    if (d.entrance) {
+      const r = c.regions[d.entrance];
+      if (!r) errors.push(`${where}: región de entrada inexistente "${d.entrance}"`);
+      else if (!r.terrain.some((row) => row.includes('P'))) errors.push(`${where}: la región "${d.entrance}" no tiene entrada (P)`);
+      if (!d.unlock.flag) errors.push(`${where}: una entrada escondida necesita una marca en unlock.flag`);
+    }
+  }
+  for (const m of Object.values(c.monsters)) m.shieldedBy?.forEach((id) => { if (!c.monsters[id]) errors.push(`monstruo ${m.id}: protegido por "${id}" inexistente`); });
+  for (const sk of Object.values(c.skills)) if (sk.telegraph && sk.target !== 'tile') errors.push(`acción ${sk.id}: un golpe anunciado tiene que apuntar a una casilla`);
 
   Object.keys(BALANCE.start.materials).forEach((m) => mat(m, 'balance.start.materials'));
   BALANCE.start.blueprints.forEach((b) => { if (!c.blueprints[b]) errors.push(`balance.start.blueprints: "${b}"`); });

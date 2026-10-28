@@ -21,6 +21,7 @@ import { Hud } from './components/Hud';
 import { ItemCard } from './components/ItemCard';
 import { LocationBar } from './components/LocationBar';
 import { BagPanel, RegionHud } from './components/RegionHud';
+import { DungeonHud, DungeonPanel, LandingBox, RiddleBox } from './components/DungeonUi';
 import { TitleScreen } from './components/TitleScreen';
 import { Toasts } from './components/Toasts';
 import { store, useSnapshot } from './hooks';
@@ -40,7 +41,10 @@ export function App() {
         <>
           {!exp?.combat && <Hud />}
           {!exp && !ui.panel && !ui.dialogue && <LocationBar />}
-          {exp && !exp.combat && !ui.panel && <RegionHud />}
+          {exp && !exp.combat && !ui.panel && !exp.dungeon && <RegionHud />}
+          {exp?.dungeon && !exp.combat && !ui.panel && !exp.dungeon.riddle && !exp.dungeon.landing && <DungeonHud />}
+          {exp?.dungeon?.landing && !exp.combat && !exp.report && !ui.panel && <LandingBox />}
+          {exp?.dungeon?.riddle && !exp.combat && !ui.panel && <RiddleBox />}
           {exp?.combat && <CombatHud />}
           {ui.panel === 'forge' && <ForgePanel />}
           {ui.panel === 'shop' && <ShopPanel />}
@@ -59,6 +63,7 @@ export function App() {
           {ui.panel === 'contacts' && <ContactsPanel />}
           {ui.panel === 'auction' && <AuctionPanel />}
           {ui.panel === 'servants' && <ServantsPanel />}
+          {ui.panel === 'dungeon' && <DungeonPanel />}
           {ui.panel === 'debug' && ui.debug && <DebugPanel />}
           {ui.dialogue && <DialogueBox />}
           {ui.itemCard && (

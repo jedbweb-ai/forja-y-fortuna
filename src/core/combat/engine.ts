@@ -4,6 +4,7 @@ import { consumePotion } from '../magic/alchemy';
 import { isInjured } from '../party/progression';
 import { characterProfile } from '../party/stats';
 import { loyaltyCombat } from '../town/servants';
+import { exhausted } from '../dungeon/dungeon';
 import type { Rng } from '../rng';
 import type { Affinity, GameState } from '../types';
 import type { MonsterGroup } from '../world/types';
@@ -37,6 +38,8 @@ export function partyUnits(c: Content, s: GameState, members: string[]): CombatU
       const hpBonus = p.combat.hpBonus ?? 0;
       // La lealtad de los compañeros comprados cambia cómo pelean (y si obedecen).
       const loyalty = loyaltyCombat(s, ch);
+      // En la mazmorra, sin energía el grupo pelea agotado.
+      if (exhausted(s)) loyalty.mult *= BALANCE.dungeon.exhaustedMult;
       return {
         id: `p_${ch.id}`, side: 'party', name: ch.name, charId: ch.id,
         sprite: { key: ch.id === 'herrero' ? 'char.herrero' : `char.npc.${ch.id}` }, look: ch.look,
@@ -58,8 +61,8 @@ export function monsterUnit(c: Content, id: string, uid: string): CombatUnit {
     id: uid, side: 'enemy', name: m.name, monsterId: m.id, sprite: m.sprite,
     x: 0, y: 0, facing: 2, hp: m.hp, maxHp: m.hp, atk: m.atk, def: m.def, spd: m.spd, move: m.move, jump: m.jump,
     evasion: m.evasion, crit: 0.05, damageType: m.damageType, affinities: { ...(m.affinities ?? {}) }, resist: m.resist,
-    elemental: m.elemental, immune: m.immune ?? [], combat: {}, skills: m.skills, cooldowns: {}, statuses: [], abilities: {},
-    ai: m.ai, boss: m.boss, moved: false, acted: false, alive: true,
+    elemental: m.elemental, immune: m.immune ?? [], combat: {}, skills: [...m.skills], cooldowns: {}, statuses: [], abilities: {},
+    ai: m.ai, boss: m.boss, moved: false, acted: false, alive: true, shieldedBy: m.shieldedBy,
   };
 }
 
@@ -84,6 +87,10 @@ export function buildCombat(c: Content, s: GameState, group: MonsterGroup, arena
     arenaId, groupId: group.id, boss: !!group.boss, units: [...party, ...enemies], round: 0, order: [], turnIndex: 0,
     log: [], outcome: null, flags: {}, ammoUsed: {}, nextUnitId: enemies.length, terrainFx: {}, burnt: [],
   };
+  // La lava ('l') es fuego que no se apaga en todo el combate.
+  arena.terrain.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch === 'l') cs.terrainFx[`${x},${y}`] = { kind: 'llamas', turns: 999 };
+  }));
   newRound(cs, []);
   return cs;
 }
@@ -132,9 +139,14 @@ function kill(cs: CombatState, u: CombatUnit, fx: CombatFx[], cause?: CombatUnit
   log(cs, `${u.name} cae.`);
 }
 
+/** Protegido por pilares o cristales que siguen en pie. */
+export function shielded(cs: CombatState, u: CombatUnit): boolean {
+  return !!u.shieldedBy?.length && cs.units.some((v) => v.alive && v.monsterId && u.shieldedBy!.includes(v.monsterId));
+}
+
 /** Aplica daño. "Último aliento" deja con 1 de vida una vez por combate. */
 function hurt(cs: CombatState, u: CombatUnit, amount: number, fx: CombatFx[], cause?: CombatUnit['killedBy']) {
-  if (!u.alive) return;
+  if (!u.alive || shielded(cs, u)) return;
   u.hp -= amount;
   if (u.hp > 0) return;
   if (u.combat.lastStand && !cs.flags[`ls_${u.id}`]) {
@@ -190,6 +202,14 @@ export function beginTurn(c: Content, s: GameState, rng: Rng): CombatFx[] {
       log(cs, `${u.name} está aturdido y pierde el turno.`);
       cs.turnIndex++;
       continue;
+    }
+    // Cae el golpe que anunció en su turno anterior.
+    const mine = (cs.pending ?? []).filter((p) => p.unit === u.id);
+    if (mine.length) {
+      cs.pending = (cs.pending ?? []).filter((p) => p.unit !== u.id);
+      for (const p of mine) fx.push(...resolveTelegraph(c, s, rng, u, p));
+      if (checkOutcome(cs)) break;
+      u.acted = true;
     }
     cs.autoUnit = undefined;
     if (u.side === 'party' && u.disobey && rng.chance(u.disobey)) {
@@ -331,7 +351,7 @@ function halfHpTrigger(c: Content, cs: CombatState, t: CombatUnit, fx: CombatFx[
   log(cs, def.halfHp.text);
   const a = arenaOf(c, cs);
   const free: Pt[] = [];
-  for (let r = 1; r <= 3 && free.length < def.halfHp.summon.length; r++) {
+  for (let r = 1; r <= 3 && free.length < (def.halfHp.summon?.length ?? 0); r++) {
     for (let dx = -r; dx <= r; dx++) {
       for (let dy = -r; dy <= r; dy++) {
         const p = { x: t.x + dx, y: t.y + dy };
@@ -339,7 +359,12 @@ function halfHpTrigger(c: Content, cs: CombatState, t: CombatUnit, fx: CombatFx[
       }
     }
   }
-  def.halfHp.summon.forEach((id, i) => {
+  // Cambio de fase: acciones nuevas y más fuerza.
+  if (def.halfHp.skills) t.skills = [...def.halfHp.skills];
+  if (def.halfHp.atkPct) t.atk = Math.round(t.atk * (1 + def.halfHp.atkPct / 100));
+  const summon = def.halfHp.summon ?? [];
+  if (!summon.length) return;
+  summon.forEach((id, i) => {
     const p = free[i];
     if (!p) return;
     const u = monsterUnit(c, id, `e${cs.nextUnitId++}`);
@@ -362,6 +387,10 @@ function strike(c: Content, s: GameState, rng: Rng, u: CombatUnit, t: CombatUnit
   }
   const crit = rng.chance(calc.crit);
   let dmg = Math.round(rng.range(calc.min, calc.max) * (crit ? CB.critMult : 1));
+  if (shielded(cs, t)) {
+    dmg = 0;
+    log(cs, `${t.name} es invulnerable mientras sigan en pie sus protecciones.`);
+  }
   if (hasStatus(t, 'cubierto') && t.combat.blockPct && rng.chance(t.combat.blockPct / 100)) dmg = Math.round(dmg / 2);
   fx.push({ kind: 'hit', from: u.id, to: t.id, damage: dmg, crit, skill: skill.id, element: calc.element });
   log(cs, `${u.name} usa ${skill.name}: ${dmg} de daño a ${t.name}${crit ? ' (¡crítico!)' : ''}.`);
@@ -406,6 +435,20 @@ export function effectiveSkill(s: GameState, u: CombatUnit, skill: CombatSkill):
   const el = lot ? dominantElement({ ...skill, element: undefined }, lot.affinities, {}) : undefined;
   const statuses = el === 'veneno' ? [{ id: 'veneno' as const, chance: 0.9, turns: 3 }] : skill.statuses;
   return { ...skill, element: el, terrain: terrainForElement(el), chain: el === 'rayo', statuses };
+}
+
+/** El golpe anunciado cae sobre las casillas marcadas (a quien siga ahí, de cualquier bando enemigo). */
+function resolveTelegraph(c: Content, s: GameState, rng: Rng, u: CombatUnit, p: NonNullable<CombatState['pending']>[number]): CombatFx[] {
+  const cs = s.expedition!.combat!;
+  const skill = { ...c.skills[p.skill], telegraph: false };
+  const fx: CombatFx[] = [{ kind: 'area', from: u.id, tiles: p.tiles, skill: skill.id, element: skill.element }];
+  log(cs, `¡${skill.name} cae sobre las casillas marcadas!`);
+  for (const v of unitsOn(cs, p.tiles).filter((x) => x.alive && x.side !== u.side)) strike(c, s, rng, u, v, skill, fx);
+  if (skill.terrain) {
+    const changed = applyTerrain(c, cs, p.tiles, skill.terrain);
+    if (changed.length) fx.push({ kind: 'terrain', tiles: changed, terrain: skill.terrain });
+  }
+  return fx;
 }
 
 export function useSkill(c: Content, s: GameState, rng: Rng, unitId: string, skillId: string, target: Pt): CombatFx[] {
@@ -453,6 +496,13 @@ export function useSkill(c: Content, s: GameState, rng: Rng, unitId: string, ski
   }
   if (skill.ammo) spendAmmo(s, cs, u);
   if (skill.throw) spendThrow(s, cs, u);
+  if (skill.telegraph) {
+    const tiles = areaTiles(c, cs, u, skill, target);
+    (cs.pending ??= []).push({ unit: u.id, skill: skill.id, target: { ...target }, tiles });
+    fx.push({ kind: 'telegraph', from: u.id, tiles });
+    log(cs, `${u.name} prepara ${skill.name}: ¡salgan de las casillas marcadas!`);
+    return fx;
+  }
 
   const hit = new Set<string>();
   const strikeAll = (victims: CombatUnit[], from: Pt) => {

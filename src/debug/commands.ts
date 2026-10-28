@@ -9,6 +9,7 @@ import { debugEngage } from '../core/world/expedition';
 import { potionItem } from '../core/magic/alchemy';
 import { acquireGrimoire } from '../core/magic/grimoires';
 import { startCityEvent } from '../core/town/cityEvents';
+import { dungeonDescend } from '../core/dungeon/dungeon';
 
 // Comandos del modo debug. Mismo formato que los comandos del juego.
 
@@ -168,4 +169,40 @@ export function dbgQuestProgress(s: GameState, { c }: Ctx): GameEvent[] {
     if (o.kind === 'boss') aq.progress = 1;
   }
   return [{ type: 'toast', text: '[debug] Cacerías y jefes de los encargos cumplidos' }];
+}
+
+// ── Fase 5 ──
+
+/** Abre las dos mazmorras (marca la entrada de la cripta y sube la reputación si hace falta). */
+export function dbgUnlockDungeons(s: GameState, { c }: Ctx): GameEvent[] {
+  for (const def of Object.values(c.dungeons)) {
+    if (def.unlock.flag) s.flags[def.unlock.flag] = true;
+    if (def.unlock.reputationMin !== undefined) s.reputation[currentCity()] = Math.max(s.reputation[currentCity()] ?? 0, def.unlock.reputationMin);
+  }
+  return [{ type: 'toast', text: '[debug] Mazmorras abiertas' }];
+}
+
+/** Baja un piso sin buscar la escalera. */
+export function dbgNextFloor(s: GameState, ctx: Ctx): GameEvent[] {
+  const run = s.expedition?.dungeon;
+  if (!run) return [{ type: 'toast', text: '[debug] No estás en una mazmorra', tone: 'bad' }];
+  if (s.expedition!.combat) return [{ type: 'toast', text: '[debug] Terminá el combate', tone: 'bad' }];
+  run.landing = true;
+  return dungeonDescend(s, ctx);
+}
+
+/** Revela todo el piso, da una llave y desarma las trampas. */
+export function dbgRevealFloor(s: GameState): GameEvent[] {
+  const run = s.expedition?.dungeon;
+  if (!run) return [{ type: 'toast', text: '[debug] No estás en una mazmorra', tone: 'bad' }];
+  run.map.seen = run.map.seen.map((r) => '1'.repeat(r.length));
+  run.keys += 1;
+  run.map.traps = [];
+  return [{ type: 'toast', text: '[debug] Piso revelado, +1 llave, trampas desarmadas' }];
+}
+
+/** El jefe vuelve ya (sin esperar los 7 días). */
+export function dbgBossRespawn(s: GameState): GameEvent[] {
+  for (const p of Object.values(s.dungeons.progress)) p.bossDay = 0;
+  return [{ type: 'toast', text: '[debug] Los jefes de las mazmorras volvieron' }];
 }

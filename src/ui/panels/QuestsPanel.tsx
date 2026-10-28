@@ -19,6 +19,7 @@ function objectiveText(c: Content, o: QuestObjective): string {
     case 'materials': return `Conseguir ${o.qty} × ${c.materials[o.material].name}`;
     case 'hunt': return `Cazar ${o.count} × ${o.monster ? c.monsters[o.monster].name : `de la familia ${o.family}`}${o.region ? ` en ${c.regions[o.region].name}` : ''}`;
     case 'boss': return `Vencer al jefe de ${c.regions[o.region].name}`;
+    case 'dungeon': return o.floor ? `Dejar atrás el piso ${o.floor} de ${c.dungeons[o.dungeon].name}` : `Vencer a ${c.dungeons[o.dungeon].boss.name} en ${c.dungeons[o.dungeon].name}`;
   }
 }
 

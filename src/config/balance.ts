@@ -385,6 +385,20 @@ export const BALANCE = {
     reputationPerSale: 2,
   },
 
+  dungeon: {
+    /** Casillas que se ven alrededor del grupo (además de la sala entera en la que está). */
+    sight: 2,
+    examineRadius: 2,
+    examineEnergy: 1,
+    /** Al bajar desde un descanso se recupera esta parte de la energía y de la vida máximas. */
+    restEnergy: 0.5,
+    restHp: 0.3,
+    /** Agotado: ataque y defensa multiplicados por esto hasta el próximo descanso. */
+    exhaustedMult: 0.85,
+    /** Chance de que un cofre de sala de tesoro guarde un tesoro único. */
+    secretUniqueChance: 0.4,
+  },
+
   servants: {
     offerSize: 2,
     refreshDays: 7,

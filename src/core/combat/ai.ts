@@ -107,9 +107,12 @@ export function aiTurn(c: Content, s: GameState, rng: Rng): CombatFx[] {
   const u = cs.units.find((x) => x.id === cs.order[cs.turnIndex]);
   const fx: CombatFx[] = [];
   if (!u || !u.alive || (u.side !== 'enemy' && cs.autoUnit !== u.id)) return fx;
+  // Pilares y cristales no hacen nada.
+  if (u.ai === 'inmovil') return endTurn(c, s, rng);
   const plan = planTurn(c, s, cs, u);
   if (plan.move.x !== u.x || plan.move.y !== u.y) fx.push(...moveUnit(c, s, u.id, plan.move, rng));
-  if (plan.skill && plan.target && !cs.outcome) fx.push(...useSkill(c, s, rng, u.id, plan.skill, plan.target));
+  // Si ya actuó (cayó su golpe anunciado), solo se mueve.
+  if (plan.skill && plan.target && !cs.outcome && !u.acted) fx.push(...useSkill(c, s, rng, u.id, plan.skill, plan.target));
   cs.autoUnit = undefined;
   if (!cs.outcome) fx.push(...endTurn(c, s, rng));
   return fx;

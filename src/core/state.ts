@@ -65,6 +65,7 @@ export function createInitialState(c: Content, seed = Date.now() >>> 0): GameSta
     discoveredPotions: Object.values(c.potions).filter((p) => !p.secret).map((p) => p.id),
     stats: { itemsForged: 0, itemsRuined: 0, goldEarned: 0, itemsSold: 0 },
     ...emptyTownState(),
+    dungeons: { progress: {}, uniques: [] },
     settings: { skipItemCard: false, fullscreenOnStart: true },
     nextUid: 1,
   };

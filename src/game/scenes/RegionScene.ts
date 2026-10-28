@@ -3,6 +3,8 @@ import type { GameStore } from '../../bridge/GameStore';
 import { slotName } from '../../core/time';
 import type { GameEvent, GameState } from '../../core/types';
 import { dangerFor, expMove, gather } from '../../core/world/expedition';
+import { dungeonInteract, expMap, isSeen } from '../../core/dungeon/dungeon';
+import type { DungeonDef } from '../../core/dungeon/types';
 import { adjacent, heightAt, isWalkable, regionSize, tileAt, zoneAt } from '../../core/world/region';
 import type { ExpeditionState, MonsterGroup, RegionDef } from '../../core/world/types';
 import { isoBounds, screenToIso } from '../render/iso';
@@ -21,6 +23,11 @@ export class RegionScene extends Phaser.Scene {
   private walking = false;
   private unsubs: (() => void)[] = [];
   private drag = { down: false, dragging: false, x: 0, y: 0 };
+  /** Mazmorra: definición, objetos que cambian (secretos, escalera) y niebla. */
+  private dungeon: DungeonDef | null = null;
+  private dynObjs = new Map<string, { ch: string; obj: Phaser.GameObjects.Image }>();
+  private fog: Phaser.GameObjects.Graphics | null = null;
+  private seenKey = '';
 
   constructor(private store: GameStore) {
     super('Region');
@@ -32,15 +39,20 @@ export class RegionScene extends Phaser.Scene {
 
   create() {
     const e = this.exp!;
-    this.region = this.store.content.regions[e.regionId];
+    this.region = expMap(this.store.content, e);
+    this.dungeon = e.dungeon ? this.store.content.dungeons[e.dungeon.id] : null;
     this.nodeObjs.clear();
     this.groupObjs.clear();
+    this.dynObjs.clear();
+    this.fog = null;
+    this.seenKey = '';
     this.walking = false;
     const r = this.region;
     const { cols, rows } = regionSize(r);
-    this.cameras.main.setBackgroundColor(0x1d2a1d);
+    this.cameras.main.setBackgroundColor(this.dungeon ? 0x0c0a10 : 0x1d2a1d);
 
-    drawGround(this, {
+    if (this.dungeon) this.drawDungeon();
+    else drawGround(this, {
       cols, rows,
       height: (c, y) => heightAt(r, c, y),
       tile: (c, y) => {
@@ -52,7 +64,7 @@ export class RegionScene extends Phaser.Scene {
       },
       sideTint: () => 0x9a7a52,
     });
-    this.drawDecor();
+    if (!this.dungeon) this.drawDecor();
     this.syncNodes();
     this.syncGroups();
     this.createPlayer();
@@ -69,6 +81,7 @@ export class RegionScene extends Phaser.Scene {
 
     this.unsubs.push(this.store.subscribe(() => {
       if (!this.exp || !this.sys.isActive()) return;
+      this.syncDungeon();
       this.syncNodes();
       this.syncGroups();
       this.syncLight();
@@ -94,8 +107,104 @@ export class RegionScene extends Phaser.Scene {
   private syncLight() {
     const s = this.store.getSnapshot().state;
     if (!s) return;
+    // Bajo tierra no hay día ni noche: luz de antorcha.
+    if (this.dungeon) return void this.overlay.setFillStyle(this.dungeon.look.tint, 0.25);
     const light = SLOT_LIGHT[slotName(s)];
     this.overlay.setFillStyle(light.color, light.alpha);
+  }
+
+  // ── Mazmorra ──
+
+  /** Suelo y paredes del piso. Las paredes se dibujan solo donde tocan algo caminable. */
+  private drawDungeon() {
+    const run = this.exp!.dungeon!;
+    const def = this.dungeon!;
+    const m = run.map;
+    const cave = def.biome === 'cueva';
+    const open = (x: number, y: number) => { const ch = m.terrain[y]?.[x]; return ch !== undefined && ch !== '#'; };
+    for (let y = 0; y < m.terrain.length; y++) {
+      for (let x = 0; x < m.terrain[y].length; x++) {
+        const ch = m.terrain[y][x];
+        const p = tilePos(x, y, 0);
+        if (ch === '#') {
+          let near = false;
+          for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1 && !near; dx++) near = open(x + dx, y + dy);
+          if (near) this.add.image(p.x, p.y - 16, def.look.wall).setOrigin(0.5, 16 / 58).setDepth(standDepth(x, y, 4));
+          continue;
+        }
+        this.add.image(p.x, p.y, ch === 'w' ? 'tile.water' : def.look.floor).setOrigin(0.5, 16 / 34).setDepth(-10000 + standDepth(x, y, 0));
+        const d = standDepth(x, y, 5);
+        if (ch === 'R') this.add.image(p.x, p.y + 10, cave ? 'prop.stalagmite' : 'prop.pillar').setOrigin(0.5, 1).setDepth(d);
+        if (ch === ',') this.add.image(p.x, p.y + 6, 'prop.rock').setOrigin(0.5, 1).setScale(0.5).setDepth(d).setTint(0x8a8494);
+        if (ch === 'E') this.add.image(p.x, p.y + 4, 'prop.stairsup').setOrigin(0.5, 0.6).setDepth(-10000 + standDepth(x, y, 1));
+        if (ch === 'v') this.add.image(p.x, p.y + 10, 'prop.vein').setOrigin(0.5, 1).setDepth(d);
+        if (ch === 'g') this.add.image(p.x, p.y + 10, 'prop.gemrock').setOrigin(0.5, 1).setDepth(d);
+        if (ch === 'h') this.add.image(p.x, p.y + 8, 'prop.herbs').setOrigin(0.5, 1).setDepth(d).setTint(0xb8a8e0);
+      }
+    }
+    this.fog = this.add.graphics().setDepth(8500);
+    this.syncDungeon();
+  }
+
+  /** Secretos que cambian (paredes falsas, rejas, puertas, palancas, escalera) y la niebla. */
+  private syncDungeon() {
+    const run = this.exp?.dungeon;
+    const def = this.dungeon;
+    if (!run || !def) return;
+    const m = run.map;
+    const KEYS: Record<string, string> = { F: def.look.wall, G: 'prop.gate', D: 'prop.door', I: 'prop.inscription', S: 'prop.stairs' };
+    const live = new Set<string>();
+    m.terrain.forEach((row, y) => [...row].forEach((ch, x) => {
+      const lever = ch === 'L' ? m.levers.find((l) => l.x === x && l.y === y) : undefined;
+      const tex = ch === 'L' ? (lever?.pulled ? 'prop.lever_on' : 'prop.lever') : KEYS[ch];
+      if (!tex) return;
+      const k = `${x},${y}`;
+      live.add(k);
+      const cur = this.dynObjs.get(k);
+      if (cur && cur.ch === tex) return;
+      cur?.obj.destroy();
+      const p = tilePos(x, y, 0);
+      const obj = ch === 'F'
+        ? this.add.image(p.x, p.y - 16, tex).setOrigin(0.5, 16 / 58).setDepth(standDepth(x, y, 4))
+        : ch === 'S'
+          ? this.add.image(p.x, p.y + 4, tex).setOrigin(0.5, 0.6).setDepth(-10000 + standDepth(x, y, 1))
+          : this.add.image(p.x, p.y + 8, tex).setOrigin(0.5, 1).setDepth(standDepth(x, y, 5));
+      this.dynObjs.set(k, { ch: tex, obj });
+    }));
+    for (const [k, v] of this.dynObjs) {
+      if (live.has(k)) continue;
+      v.obj.destroy();
+      this.dynObjs.delete(k);
+    }
+    const key = m.seen.join('');
+    if (key === this.seenKey || !this.fog) return;
+    this.seenKey = key;
+    const g = this.fog;
+    g.clear();
+    g.fillStyle(0x0c0a10, 1);
+    m.seen.forEach((row, y) => [...row].forEach((v, x) => {
+      if (v === '1') return;
+      const p = tilePos(x, y, 0);
+      // Un poco más alto que el suelo para tapar también las paredes.
+      g.fillPoints([
+        new Phaser.Math.Vector2(p.x - 33, p.y - 16), new Phaser.Math.Vector2(p.x, p.y - 34),
+        new Phaser.Math.Vector2(p.x + 33, p.y - 16), new Phaser.Math.Vector2(p.x + 33, p.y + 1),
+        new Phaser.Math.Vector2(p.x, p.y + 18), new Phaser.Math.Vector2(p.x - 33, p.y + 1),
+      ], true);
+    }));
+    for (const [k, objs] of this.nodeObjs) this.hideInFog(k, objs);
+  }
+
+  private visible(x: number, y: number): boolean {
+    const m = this.exp?.dungeon?.map;
+    return !m || isSeen(m, x, y);
+  }
+
+  private hideInFog(id: string, objs: Phaser.GameObjects.GameObject[]) {
+    const n = this.exp?.nodes.find((x) => x.id === id);
+    if (!n) return;
+    const v = this.visible(n.x, n.y);
+    objs.forEach((o) => (o as unknown as { setVisible(v: boolean): void }).setVisible(v));
   }
 
   // ── Decorado ──
@@ -121,6 +230,7 @@ export class RegionScene extends Phaser.Scene {
         if (ch === 't') this.add.image(p.x, p.y + 12, 'prop.tree').setOrigin(0.5, 1).setScale(0.8).setDepth(d);
         if (ch === 'B') this.add.image(p.x + 20, p.y + 4, 'prop.tent').setOrigin(0.5, 1).setDepth(d - 1);
         if (ch === 'E') this.add.image(p.x - 10, p.y + 6, 'prop.sign').setOrigin(0.5, 1).setDepth(d);
+        if (ch === 'P') this.add.image(p.x, p.y + 8, 'prop.cryptdoor').setOrigin(0.5, 1).setDepth(d);
       }
     }
   }
@@ -138,11 +248,19 @@ export class RegionScene extends Phaser.Scene {
     for (const n of e.nodes) {
       if (this.nodeObjs.has(n.id)) continue;
       const p = this.at(n.x, n.y);
+      if (n.kind === 'llave') {
+        const keyImg = this.add.image(p.x, p.y - 4, 'prop.key').setDepth(standDepth(n.x, n.y, 6));
+        this.tweens.add({ targets: keyImg, y: keyImg.y - 5, yoyo: true, repeat: -1, duration: 600 });
+        this.nodeObjs.set(n.id, [keyImg]);
+        this.hideInFog(n.id, [keyImg]);
+        continue;
+      }
       if (n.kind === 'cofre') {
         const chest = this.add.image(p.x, p.y + 8, 'prop.chest').setOrigin(0.5, 1).setDepth(standDepth(n.x, n.y, 6));
         const glow = this.add.image(p.x, p.y - 30, 'fx.ore').setTint(0xffd04d).setDepth(standDepth(n.x, n.y, 7));
         this.tweens.add({ targets: glow, alpha: 0.3, yoyo: true, repeat: -1, duration: 700 });
         this.nodeObjs.set(n.id, [chest, glow]);
+        this.hideInFog(n.id, [chest, glow]);
         continue;
       }
       const mat = this.store.content.materials[n.material];
@@ -154,6 +272,7 @@ export class RegionScene extends Phaser.Scene {
         fontFamily: 'system-ui, sans-serif', fontSize: '12px', color: '#ffffff', stroke: '#1a1220', strokeThickness: 3,
       }).setOrigin(0.5, 1).setResolution(2).setDepth(8000).setAlpha(0.9);
       this.nodeObjs.set(n.id, [sparkle, label]);
+      this.hideInFog(n.id, [sparkle, label]);
     }
   }
 
@@ -178,6 +297,7 @@ export class RegionScene extends Phaser.Scene {
       if (obj.x !== p.x || obj.y !== p.y + 6) this.tweens.add({ targets: obj, x: p.x, y: p.y + 6, duration: 250 });
       obj.setDepth(standDepth(g.x, g.y, 8));
       obj.setAlpha(g.calm ? 0.5 : 1);
+      obj.setVisible(this.visible(g.x, g.y));
     }
   }
 
@@ -297,6 +417,12 @@ export class RegionScene extends Phaser.Scene {
     const tile = screenToIso(wx, wy, (c, y) => (c >= 0 && y >= 0 && c < cols && y < rows ? heightAt(r, c, y) : null), 3);
     if (!tile) return;
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+    const special = e.dungeon?.map.terrain[tile.y]?.[tile.x];
+    if (special && 'LGDI'.includes(special)) {
+      if (adjacent(tile, e.pos)) this.store.run(dungeonInteract, tile.x, tile.y);
+      else this.moveNextTo(tile);
+      return;
+    }
     const node = e.nodes.find((n) => n.x === tile.x && n.y === tile.y);
     if (node) {
       if (adjacent(node, e.pos)) this.store.run(gather, node.id);

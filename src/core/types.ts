@@ -6,6 +6,7 @@ import type { ExpeditionState, MarketState } from './world/types';
 import type {
   AuctionState, CityEventsState, ContractsState, DemandState, QuestsState, RelationPerk, ServantMarketState,
 } from './town/types';
+import type { DungeonsState } from './dungeon/types';
 
 export const AFFINITIES = ['fuego', 'hielo', 'rayo', 'agua', 'tierra', 'viento', 'sagrado', 'oscuro', 'veneno'] as const;
 export type Affinity = (typeof AFFINITIES)[number];
@@ -523,6 +524,8 @@ export interface GameState {
   cityEvents: CityEventsState;
   auction: AuctionState;
   servantMarket: ServantMarketState;
+  // ── Fase 5 ──
+  dungeons: DungeonsState;
   settings: GameSettings;
   nextUid: number;
 }

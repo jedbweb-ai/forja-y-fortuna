@@ -19,8 +19,12 @@ interface UnitView {
   baseTint?: number;
 }
 
-const FLOOR: Record<string, string> = { pradera: 'tile.grass', bosque: 'tile.darkgrass', colinas: 'tile.dirt', campamento: 'tile.dirt' };
-const OBSTACLE: Record<string, string> = { pradera: 'prop.rock', bosque: 'prop.tree', colinas: 'prop.rock', campamento: 'prop.palisade' };
+const FLOOR: Record<string, string> = {
+  pradera: 'tile.grass', bosque: 'tile.darkgrass', colinas: 'tile.dirt', campamento: 'tile.dirt', cripta: 'tile.cryptstone', cueva: 'tile.cave', jefe: 'tile.cryptstone',
+};
+const OBSTACLE: Record<string, string> = {
+  pradera: 'prop.rock', bosque: 'prop.tree', colinas: 'prop.rock', campamento: 'prop.palisade', cripta: 'prop.pillar', cueva: 'prop.stalagmite', jefe: 'prop.pillar',
+};
 const STATUS_ICON: Record<string, string> = {
   sangrado: '🩸', veneno: '☠️', quemadura: '🔥', aturdido: '💫', ralentizado: '🐌', inmovilizado: '🕸️',
   cubierto: '🛡️', potenciado: '💪', mojado: '💧', corroido: '🧪',
@@ -74,15 +78,20 @@ export class CombatScene extends Phaser.Scene {
     drawGround(this, {
       cols, rows,
       height: (x, y) => heightAt(a, x, y),
-      tile: (x, y) => (terrainAt(a, x, y) === 'w' ? 'tile.water' : FLOOR[a.biome]),
-      sideTint: () => (a.biome === 'colinas' ? 0x9a8a72 : 0x8a6e48),
+      tile: (x, y) => (terrainAt(a, x, y) === 'w' ? 'tile.water' : terrainAt(a, x, y) === 'l' ? 'tile.lava' : FLOOR[a.look ?? a.biome]),
+      sideTint: () => (a.biome === 'colinas' ? 0x9a8a72 : a.look === 'cueva' || a.biome === 'cueva' ? 0x5e5246 : a.biome === 'cripta' || a.look === 'cripta' ? 0x5a5466 : 0x8a6e48),
     });
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
         const t = terrainAt(a, x, y);
         const p = tilePos(x, y, heightAt(a, x, y));
-        if (t === ',') this.grass.set(`${x},${y}`, this.add.image(p.x, p.y + 6, 'deco.tallgrass').setOrigin(0.5, 1).setDepth(standDepth(x, y, 3)));
-        if (t === '#') this.add.image(p.x, p.y + 12, OBSTACLE[a.biome]).setOrigin(0.5, 1).setScale(a.biome === 'bosque' ? 0.75 : 1).setDepth(standDepth(x, y, 5));
+        if (t === ',') {
+          // Bajo tierra, la cobertura son escombros en vez de pasto.
+          const img = this.add.image(p.x, p.y + 6, 'deco.tallgrass').setOrigin(0.5, 1).setDepth(standDepth(x, y, 3));
+          if (['cripta', 'cueva', 'jefe'].includes(a.look ?? a.biome)) img.setTint(0x8a8494);
+          this.grass.set(`${x},${y}`, img);
+        }
+        if (t === '#') this.add.image(p.x, p.y + 12, OBSTACLE[a.look ?? a.biome]).setOrigin(0.5, 1).setScale(a.biome === 'bosque' ? 0.75 : 1).setDepth(standDepth(x, y, 5));
       }
     }
 
@@ -227,6 +236,11 @@ export class CombatScene extends Phaser.Scene {
       this.flames.delete(k);
     }
     for (const k of cs.burnt) this.grass.get(k)?.setTint(0x3a2a20).setAlpha(0.6);
+    // Golpes anunciados: casillas marcadas en rojo hasta que caen.
+    for (const p of cs.pending ?? []) for (const t of p.tiles) {
+      this.diamond(g, t.x, t.y, 0xff2a2a, 0.35);
+      this.diamond(g, t.x, t.y, 0xff2a2a, 1, true);
+    }
   }
 
   private drawHighlights() {
@@ -365,6 +379,10 @@ export class CombatScene extends Phaser.Scene {
         this.tweens.add({ targets: g, alpha: 0, duration: 420, onComplete: () => g.destroy() });
         return void this.time.delayedCall(260, done);
       }
+      case 'telegraph':
+        this.drawTerrain();
+        this.cameras.main.shake(120, 0.004);
+        return void this.time.delayedCall(450, done);
       case 'terrain':
         this.drawTerrain();
         return void this.time.delayedCall(fx.terrain ? 220 : 60, done);

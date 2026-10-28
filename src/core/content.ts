@@ -7,6 +7,7 @@ import type {
 } from './types';
 import type { MarketEventDef, RegionDef } from './world/types';
 import type { AuctionLotDef, BidderDef, CityEventDef, ContractDef, QuestDef } from './town/types';
+import type { DungeonDef, RiddleDef, RoomPiece, TrapDef, TrapKind } from './dungeon/types';
 
 /** Todo el contenido del juego, indexado por id. El core lo recibe por parámetro. */
 export interface Content {
@@ -38,6 +39,11 @@ export interface Content {
   cityEvents: Record<string, CityEventDef>;
   auctionLots: Record<string, AuctionLotDef>;
   bidders: Record<string, BidderDef>;
+  // ── Fase 5 ──
+  dungeons: Record<string, DungeonDef>;
+  roomPieces: Record<string, RoomPiece>;
+  riddles: Record<string, RiddleDef>;
+  traps: Record<TrapKind, TrapDef>;
 }
 
 export function indexById<T extends { id: string }>(list: T[]): Record<string, T> {

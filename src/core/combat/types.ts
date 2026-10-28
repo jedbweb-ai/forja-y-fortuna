@@ -11,7 +11,8 @@ export type StatusId =
 /** Efectos que una acción deja sobre el terreno de la arena. */
 export type TerrainKind = 'hielo' | 'llamas' | 'charco';
 
-export type AiRole = 'bruto' | 'tirador' | 'sanador' | 'tanque' | 'manada' | 'embestidor' | 'gelatina' | 'jefe';
+/** 'inmovil': no se mueve ni actúa (pilares, cristales). */
+export type AiRole = 'bruto' | 'tirador' | 'sanador' | 'tanque' | 'manada' | 'embestidor' | 'gelatina' | 'jefe' | 'inmovil';
 
 export interface SkillStatus {
   id: StatusId;
@@ -63,6 +64,8 @@ export interface CombatSkill {
   charge?: number;
   /** Desgasta la durabilidad de la armadura del objetivo. */
   wear?: number;
+  /** Golpe anunciado: marca las casillas este turno y pega al empezar el turno siguiente. */
+  telegraph?: boolean;
   description: string;
 }
 
@@ -102,8 +105,10 @@ export interface MonsterDef {
   slots: TimeSlot[];
   rare?: boolean;
   boss?: boolean;
-  /** Al bajar a la mitad de vida (una sola vez): invoca monstruos. */
-  halfHp?: { summon: string[]; text: string };
+  /** Al bajar a la mitad de vida (una sola vez): invoca monstruos, cambia de acciones y se enfurece. */
+  halfHp?: { summon?: string[]; text: string; skills?: string[]; atkPct?: number };
+  /** Es invulnerable mientras siga en pie alguno de estos monstruos (pilares, cristales). */
+  shieldedBy?: string[];
   /** Persigue al grupo en el mapa de exploración. */
   aggressive?: boolean;
   loot: LootEntry[];
@@ -111,12 +116,15 @@ export interface MonsterDef {
   description: string;
 }
 
-export type Biome = 'pradera' | 'bosque' | 'colinas' | 'campamento';
+/** 'jefe': arenas de jefe de mazmorra (se eligen por id, nunca al azar). */
+export type Biome = 'pradera' | 'bosque' | 'colinas' | 'campamento' | 'cripta' | 'cueva' | 'jefe';
 
 /** Arena chica de combate. `terrain`: '.' suelo, ',' hierba alta, 'w' agua baja, '#' bloqueo. */
 export interface ArenaDef {
   id: string;
   biome: Biome;
+  /** Aspecto (suelo y obstáculos) si no es el del bioma; lo usan las arenas de jefe. */
+  look?: Biome;
   terrain: string[];
   heights: string[];
   partySpawns: { x: number; y: number }[];
@@ -186,6 +194,8 @@ export interface CombatUnit {
   acted: boolean;
   /** Compañero con poca lealtad: chance por turno de actuar por su cuenta. */
   disobey?: number;
+  /** Invulnerable mientras vivan unidades de estos monstruos. */
+  shieldedBy?: string[];
   alive: boolean;
   killedBy?: { element?: Affinity; damageType?: DamageType };
 }
@@ -210,6 +220,8 @@ export interface CombatState {
   burnt: string[];
   /** Unidad del grupo que este turno no te obedece (la juega la IA). */
   autoUnit?: string;
+  /** Golpes anunciados que caen al empezar el próximo turno de quien los lanzó. */
+  pending?: { unit: string; skill: string; target: { x: number; y: number }; tiles: { x: number; y: number }[] }[];
 }
 
 /** Resultado que se muestra al terminar un combate. */
@@ -237,4 +249,5 @@ export type CombatFx =
   | { kind: 'buff'; unit: string; skill: string }
   | { kind: 'area'; from: string; tiles: { x: number; y: number }[]; skill: string; element?: Affinity }
   | { kind: 'terrain'; tiles: { x: number; y: number }[]; terrain: TerrainKind | null }
-  | { kind: 'chain'; tiles: { x: number; y: number }[] };
+  | { kind: 'chain'; tiles: { x: number; y: number }[] }
+  | { kind: 'telegraph'; from: string; tiles: { x: number; y: number }[] };

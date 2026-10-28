@@ -455,3 +455,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
   .contact-list { position: static; max-height: none; flex-direction: row; overflow-x: auto; }
   .contact-list li { flex: none; }
 }
+
+/* ───────────── Fase 5: mazmorras ───────────── */
+.dialogue.landing { border-color: var(--accent-2); }
+.dialogue-options small { align-self: center; }

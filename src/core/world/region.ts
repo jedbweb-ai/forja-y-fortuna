@@ -5,7 +5,7 @@ export interface Pt {
   y: number;
 }
 
-const WALKABLE = new Set(['.', ',', '=', 'm', 'B', 'E']);
+const WALKABLE = new Set(['.', ',', '=', 'm', 'B', 'E', 'S', 'P']);
 export const DIRS: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
 export function regionSize(r: RegionDef) {

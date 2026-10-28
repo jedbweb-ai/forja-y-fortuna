@@ -4,7 +4,7 @@ import { block, poly, prop, px, shade, type G } from './placeholders';
 // Placeholders de la Fase 2: monstruos, terreno de exploración y arenas.
 // Los monstruos se dibujan en grises claros para que el `tint` de cada especie les dé color.
 
-function diamondTile(scene: Phaser.Scene, key: string, base: number, detail?: (g: G) => void) {
+export function diamondTile(scene: Phaser.Scene, key: string, base: number, detail?: (g: G) => void) {
   prop(scene, key, 64, 34, (g) => {
     poly(g, [0, 16, 32, 0, 64, 16, 32, 32], base);
     poly(g, [0, 16, 32, 32, 64, 16, 64, 17, 32, 33, 0, 17], shade(base, 0.7));
@@ -12,7 +12,7 @@ function diamondTile(scene: Phaser.Scene, key: string, base: number, detail?: (g
   });
 }
 
-function twoFrames(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: G, step: boolean) => void, rate = 5) {
+export function twoFrames(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: G, step: boolean) => void, rate = 5) {
   prop(scene, key, w, h, (g) => draw(g, false));
   prop(scene, `${key}_b`, w, h, (g) => draw(g, true));
   scene.anims.create({ key: `${key}.walk`, frames: [{ key }, { key: `${key}_b` }], frameRate: rate, repeat: -1 });

@@ -65,6 +65,7 @@ export function questProgress(c: Content, s: GameState, aq: ActiveQuest): { have
     case 'materials': return { have: Math.min(o.qty, s.materials[o.material] ?? 0), need: o.qty };
     case 'hunt': return { have: Math.min(o.count, aq.progress), need: o.count };
     case 'boss': return { have: Math.min(1, aq.progress), need: 1 };
+    case 'dungeon': return { have: Math.min(1, aq.progress), need: 1 };
   }
 }
 
@@ -105,6 +106,20 @@ export function dailyQuests(s: GameState, c: Content): GameEvent[] {
     s.quests.failed.push(q.id);
     applyPenalty(s, q.penalty, q.giver);
     events.push({ type: 'toast', text: `Se venció el encargo «${q.title}».`, tone: 'bad' });
+  }
+  return events;
+}
+
+/** En una mazmorra: al dejar atrás un piso o vencer al jefe, cumple los encargos que lo pedían. */
+export function recordDungeon(s: GameState, c: Content, dungeon: string, floor: number, boss: boolean): GameEvent[] {
+  const events: GameEvent[] = [];
+  for (const aq of s.quests.active) {
+    const o = c.quests[aq.id].objective;
+    if (o.kind !== 'dungeon' || o.dungeon !== dungeon || aq.progress) continue;
+    if (o.floor ? floor >= o.floor : boss) {
+      aq.progress = 1;
+      events.push({ type: 'toast', text: `Encargo listo para entregar: ${c.quests[aq.id].title}.`, tone: 'good' });
+    }
   }
   return events;
 }

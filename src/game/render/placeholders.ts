@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { Content } from '../../core/content';
 import { generateWorldPlaceholders } from './worldPlaceholders';
+import { generateDungeonPlaceholders } from './dungeonPlaceholders';
 
 // Gráficos placeholder generados por código. Cada textura se registra con una clave
 // estable ("char.herrero", "prop.anvil"...). Para pasar a sprites reales alcanza con
@@ -316,6 +317,7 @@ export function generatePlaceholders(scene: Phaser.Scene, content: Content) {
     px(g, 5, 5, 2, 2, 0x444444); px(g, 9, 5, 2, 2, 0x444444); px(g, 13, 5, 2, 2, 0x444444);
   });
   generateWorldPlaceholders(scene);
+  generateDungeonPlaceholders(scene);
 
   prop(scene, 'fx.alert', 12, 18, (g) => {
     g.fillStyle(0xffd04d, 1); g.fillRoundedRect(0, 0, 12, 14, 3); px(g, 5, 2, 2, 7, 0x1a1220); px(g, 5, 10, 2, 2, 0x1a1220);

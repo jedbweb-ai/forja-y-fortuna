@@ -13,7 +13,7 @@ import { makeSaveFile, type SaveRepository } from '../persistence/saveFile';
 export type PanelId =
   | 'forge' | 'shop' | 'market' | 'inventory' | 'book' | 'settings' | 'debug'
   | 'party' | 'mercenaries' | 'repair' | 'expedition' | 'bag' | 'alchemy' | 'library'
-  | 'quests' | 'contacts' | 'auction' | 'servants';
+  | 'quests' | 'contacts' | 'auction' | 'servants' | 'dungeon';
 
 /** Puesto de trabajo de la herrería: yunque (y flechería), mesa de joyería o mesa de runas. */
 export type ForgeStation = 'yunque' | 'joyeria' | 'runas';
@@ -50,6 +50,8 @@ export interface UiState {
   forgeStation: ForgeStation;
   /** NPC elegido en el panel de contactos (para regalar). */
   contactNpc: string | null;
+  /** Mazmorra elegida en el mapa del mundo. */
+  dungeonId: string | null;
   /** Hay animaciones o turnos enemigos en curso: la UI de combate espera. */
   busy: boolean;
 }
@@ -91,7 +93,7 @@ export class GameStore {
     this.snapshot = {
       state: null,
       ui: { screen: 'loading', view: 'location', panel: null, dialogue: null, itemCard: null, toasts: [], debug, hasSave: false, forgeDraft: null,
-        regionId: null, combat: { mode: null }, busy: false, forgeStation: 'yunque', contactNpc: null,
+        regionId: null, combat: { mode: null }, busy: false, forgeStation: 'yunque', contactNpc: null, dungeonId: null,
       },
     };
   }

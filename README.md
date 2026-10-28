@@ -2,7 +2,7 @@
 
 Juego de gestión y RPG táctico: sos un herrero en un mundo de fantasía. El diseño completo está en [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (fuente de verdad).
 
-**Estado: Fase 4 (economía, ciudad y relaciones) terminada.**
+**Estado: Fase 5 (mazmorras) terminada.**
 
 ## Cómo correrlo
 
@@ -18,7 +18,7 @@ npm run icons      # regenera los íconos placeholder de la PWA
 Para probar en el celular: `npm run dev -- --host`, abrir la IP de la compu desde el celu (misma red) y girarlo a horizontal.
 
 ### Modo debug
-`?debug=1` en la URL, o 5 toques rápidos en el ⚒️ del HUD. Aparece el botón 🐞: oro, materiales, kit de equipo de prueba, contratar mercenarios, kit mágico (grimorios, joyas con habilidades, arrojadizos, bombas, hoz y pociones en el cinturón), combates de prueba (gelines, goblins, bestias, jefe), curar al grupo, avanzar franjas/días, subir habilidades, reputación, relaciones con NPCs (también la lealtad de los compañeros), revelar sinergias, reiniciar el límite diario de charlas, disparar un evento de ciudad, poner la subasta para hoy, renovar avisos y contratos, y dar por cumplidas las cacerías de los encargos. En modo debug la consola tiene `fyf` (el store), `fyfCmd` (comandos de expedición y combate) y `fyfGame` (Phaser).
+`?debug=1` en la URL, o 5 toques rápidos en el ⚒️ del HUD. Aparece el botón 🐞: oro, materiales, kit de equipo de prueba, contratar mercenarios, kit mágico (grimorios, joyas con habilidades, arrojadizos, bombas, hoz y pociones en el cinturón), combates de prueba (gelines, goblins, bestias, jefe), curar al grupo, avanzar franjas/días, subir habilidades, reputación, relaciones con NPCs (también la lealtad de los compañeros), revelar sinergias, reiniciar el límite diario de charlas, disparar un evento de ciudad, poner la subasta para hoy, renovar avisos y contratos, dar por cumplidas las cacerías de los encargos, abrir las mazmorras, revelar el piso (con una llave de regalo), bajar un piso sin buscar la escalera y hacer volver a los jefes. En modo debug la consola tiene `fyf` (el store), `fyfCmd` (comandos de expedición y combate) y `fyfGame` (Phaser).
 
 ## Arquitectura
 
@@ -31,6 +31,7 @@ src/
     combat/     motor táctico: grilla con alturas, daño, estados, terreno (hielo, llamas, charcos), áreas, IA, botín
     magic/      habilidades activas de los objetos, grimorios, alquimia y cinturón de pociones
     town/       relaciones y regalos, encargos, contratos, demanda, eventos de ciudad, subasta y compañeros por lealtad
+    dungeon/    mazmorras: generación de pisos con salas hechas a mano, niebla, secretos, trampas, descansos y jefes
     world/      regiones, encuentros por presupuesto de amenaza, expediciones
     city.ts     movimiento por la ciudad, NPCs presentes por franja
     dialogue.ts motor de diálogos (condiciones y efectos)
@@ -100,5 +101,19 @@ src/
 - **Mercenarios**: con relación de amigo cobran 15% menos (aliado, 30%) y no se van aunque les debas.
 - Las partidas anteriores se migran solas (versión 4 del guardado) y reciben los NPC nuevos con su lealtad inicial.
 
+## Decisiones de la Fase 5
+
+- **Dos mazmorras**: la **Cripta del Vigía** (3 pisos, no-muertos) y las **Cuevas del Eco** (5 pisos, constructos de piedra y algo de no-muertos). La entrada de la cripta se descubre pisando una escalera escondida en las colinas de Brezal, o te la cuenta el capitán Tizón. Las cuevas se abren con reputación "respetada".
+- **Pisos con piezas hechas a mano**: cada piso es una grilla de salas de 7×7 dibujadas a mano (`data/dungeons.ts`) que el generador combina al azar. Siempre hay camino de la entrada a la escalera; los secretos van en salas sin salida, así nunca te traban. Cada vez que bajás, los pisos son distintos.
+- **Niebla**: ves un poco alrededor y la sala entera en la que estás. Lo descubierto queda descubierto.
+- **Secretos**: paredes falsas (se descubren con **Examinar**), rejas que abre una palanca en otra sala, puertas cerradas con la llave del piso e inscripciones con acertijos (acertar da oro, materiales o una combinación secreta; errar despierta una emboscada).
+- **Trampas, pocas y simples**: dardos (lastiman al grupo sin matar) y alarmas (despiertan a un grupo). Examinar desarma las que estén cerca.
+- **Retirada**: solo se vuelve desde los descansos de las escaleras. Al bajar se recupera la mitad de la energía y un 30% de la vida. Sin energía no te echa: el grupo sigue, pero agotado (rinde 15% menos en combate). Si el grupo cae, pierde la mitad de lo juntado.
+- **Jefes con mecánicas propias**: Ulmar, el Vigía Caído, anuncia su golpe (marca casillas en rojo y pega al turno siguiente) y a mitad de vida llama a su guardia. El Gólem del Eco no recibe daño mientras resuenen sus cristales, también anuncia golpes y a mitad de vida se enfurece. Los jefes vuelven cada 7 días y dejan sus materiales.
+- **Tesoros únicos** (una sola vez por partida): planos antiguos (cimitarra, arco largo, escudo torre), el grimorio Liturgia de Ceniza (filo consagrado y velo sombrío) y combinaciones secretas con los materiales de los jefes.
+- **Familias y materiales nuevos**: no-muertos (esqueleto, arquero, espectro, caballero caído, nigromante) y constructos (gólem menor, gárgola, centinela, vigía rúnico). Hueso denso, polvo espectral, piedra encantada, núcleo rúnico, gema antigua, acero juramentado y Corazón del Eco, todos con usos en la forja: combinaciones, temple (bruma espectral), runas (de Hueso y del Centinela) y una receta secreta.
+- **Arenas de mazmorra** con columnas, sarcófagos, canales y **lava** (arde todo el combate). Encargos nuevos del gremio y del tablón para las mazmorras.
+- Las partidas anteriores se migran solas (versión 5 del guardado).
+
 ## Pendiente para próximas fases
-Ver el plan en `docs/GAME_DESIGN.md` §15. Lo próximo es la Fase 5: mazmorras.
+Ver el plan en `docs/GAME_DESIGN.md` §15. Lo próximo es la Fase 6: expansión y pulido.

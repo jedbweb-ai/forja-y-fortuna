@@ -330,6 +330,26 @@ export const DIALOGUES_4: Dialogue[] = [
     },
   },
   {
+    id: 'braulio_cripta', npc: 'braulio', priority: 54, once: true, start: 'a',
+    conditions: [{ type: 'questDone', id: 'n_braulio_goblins' }],
+    nodes: {
+      a: {
+        id: 'a', speaker: 'braulio',
+        text: 'Los pastores juran que en las colinas de Brezal, al sur de la guarida goblin, hay una escalera vieja que baja a la roca. Mi abuelo decía que ahí abajo todavía hay guardias de un rey que ya nadie recuerda.',
+        effects: [{ type: 'flag', flag: 'cripta_hallada', value: true }],
+        next: 'b',
+      },
+      b: {
+        id: 'b', speaker: 'braulio',
+        text: 'El último de esos guardias se llamaba Ulmar. Si sigue ahí abajo, quiero que alguien termine su guardia. ¿Lo harías?',
+        options: [
+          { text: 'Voy a bajar.', effects: [{ type: 'offerQuest', id: 'n_braulio_cripta' }, rel('braulio', 3)] },
+          { text: 'Primero quiero ver esa escalera.' },
+        ],
+      },
+    },
+  },
+  {
     id: 'braulio_charla', npc: 'braulio', priority: 5, start: 'a',
     nodes: {
       a: {

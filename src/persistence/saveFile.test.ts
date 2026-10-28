@@ -49,6 +49,15 @@ describe('guardado', () => {
     expect(out.state.npcs.yago.relation).toBe(CONTENT.mercenaries.yago.startRelation);
   });
 
+  it('migra un guardado de la Fase 4 (v4) a la v5 con las mazmorras sin recorrer', () => {
+    const v4 = makeSaveFile(createInitialState(CONTENT, 1)) as unknown as { version: number; state: Record<string, unknown> };
+    v4.version = 4;
+    delete v4.state.dungeons;
+    const out = migrateSave(JSON.parse(JSON.stringify(v4)));
+    expect(out.version).toBe(SAVE_VERSION);
+    expect(out.state.dungeons).toEqual({ progress: {}, uniques: [] });
+  });
+
   it('rechaza saves inválidos o de versiones futuras', () => {
     expect(() => migrateSave(null)).toThrow();
     expect(() => migrateSave({ version: SAVE_VERSION + 1, state: {} })).toThrow();

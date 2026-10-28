@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { dungeonUnlocked } from '../../core/dungeon/dungeon';
 import type { GameStore } from '../../bridge/GameStore';
 
 const W = 1280;
@@ -60,6 +61,23 @@ export class WorldMapScene extends Phaser.Scene {
         if (region.available) this.store.setUi({ panel: 'expedition', regionId: region.id });
         else this.store.toast(`${region.name}: todavía no se puede llegar.`);
       });
+    }
+
+    const s = this.store.getSnapshot().state;
+    for (const d of Object.values(this.store.content.dungeons)) {
+      const open = !!s && dungeonUnlocked(s, d);
+      // Una entrada escondida que no se encontró todavía no aparece en el mapa.
+      if (!open && d.unlock.flag) continue;
+      const { x, y } = d.world;
+      const g2 = this.add.graphics();
+      g2.fillStyle(open ? 0x3a2a4a : 0x6a6470, 1).fillTriangle(x - 26, y + 14, x, y - 24, x + 26, y + 14);
+      g2.fillStyle(0x0c0a10, 1).fillTriangle(x - 10, y + 14, x, y - 4, x + 10, y + 14);
+      const p = s?.dungeons.progress[d.id];
+      this.add.text(x, y + 20, `${d.name}\n${'★'.repeat(Math.min(d.danger, 9))} · ${d.floors} pisos${open ? (p?.clears ? ` · ✔ ${p.clears}` : '') : '\n(cerrada)'}`, {
+        fontFamily: 'system-ui, sans-serif', fontSize: '17px', color: open ? '#3a2418' : '#7a6e5a', align: 'center', fontStyle: open ? 'bold' : 'normal',
+      }).setOrigin(0.5, 0).setResolution(2);
+      const zone = this.add.zone(x, y + 10, 170, 100).setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => this.store.setUi({ panel: 'dungeon', dungeonId: d.id }));
     }
 
     this.fit();

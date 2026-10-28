@@ -9,7 +9,8 @@ const MAX_ENEMIES = 7;
 const MIN_ENEMIES = 2;
 
 export function familyMonsters(c: Content, family: string, slot: TimeSlot): MonsterDef[] {
-  return Object.values(c.monsters).filter((m) => m.family === family && !m.boss && m.slots.includes(slot));
+  // Sin jefes ni piezas que no pelean (amenaza 0): esas solo salen con su jefe.
+  return Object.values(c.monsters).filter((m) => m.family === family && !m.boss && m.threat > 0 && m.slots.includes(slot));
 }
 
 /**

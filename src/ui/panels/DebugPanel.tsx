@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { SkillId } from '../../core/types';
 import { relationLevel, skillLevel } from '../../core/state';
 import {
-  dbgAdvance, dbgAuctionToday, dbgCityEvent, dbgCombat, dbgQuestProgress, dbgRefreshTown, dbgGold, dbgHealParty, dbgHire, dbgKit, dbgMagicKit, dbgLevelUp, dbgMaterials, dbgRelation, dbgReputation, dbgResetTalks, dbgRevealSynergies,
+  dbgAdvance, dbgAuctionToday, dbgBossRespawn, dbgCityEvent, dbgNextFloor, dbgRevealFloor, dbgUnlockDungeons, dbgCombat, dbgQuestProgress, dbgRefreshTown, dbgGold, dbgHealParty, dbgHire, dbgKit, dbgMagicKit, dbgLevelUp, dbgMaterials, dbgRelation, dbgReputation, dbgResetTalks, dbgRevealSynergies,
 } from '../../debug/commands';
 import { setDebugPersisted } from '../../bridge/store';
 import { Panel } from '../components/Panel';
@@ -93,6 +93,13 @@ export function DebugPanel() {
             <button className="btn" onClick={() => store.run(dbgAuctionToday)}>Subasta hoy</button>
             <button className="btn" onClick={() => store.run(dbgRefreshTown)}>Renovar avisos</button>
             <button className="btn" onClick={() => store.run(dbgQuestProgress)}>Cumplir cacerías</button>
+          </div>
+          <h4>Mazmorras</h4>
+          <div className="row">
+            <button className="btn" onClick={() => store.run(dbgUnlockDungeons)}>Abrir mazmorras</button>
+            <button className="btn" onClick={() => store.run(dbgRevealFloor)}>Revelar piso</button>
+            <button className="btn" onClick={() => { if (store.run(dbgNextFloor)) store.closePanel(); }}>Bajar un piso</button>
+            <button className="btn" onClick={() => store.run(dbgBossRespawn)}>Jefes de vuelta</button>
           </div>
           <button className="btn danger" onClick={() => { setDebugPersisted(false); store.closePanel(); }}>Desactivar debug</button>
         </div>

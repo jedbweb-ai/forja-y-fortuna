@@ -16,7 +16,7 @@ const LINDE_TERRAIN = [
   'T.....RR..g.TT...=..v..T',
   'T..t..Rv...m.....==..h.T',
   'T...c...t...t.....=..m.T',
-  'T...,,.....T.h..t.v....T',
+  'T...,,.....T.h..t.v.P..T',
   'TTTTTTTTTTTTTTTTTTTTTTTT',
 ];
 
@@ -137,7 +137,6 @@ export const REGIONS: RegionDef[] = [
   // Regiones que se abren en fases siguientes (se ven en el mapa del mundo con su peligro).
   ...([
     ['montanas_grises', 'Montañas Grises', 4, 980, 140],
-    ['cuevas_eco', 'Cuevas del Eco', 4, 600, 120],
     ['pantano_niebla', 'Pantano de Niebla', 5, 360, 420],
     ['ruinas_vigia', 'Ruinas del Vigía', 6, 1040, 470],
     ['tierras_dragon', 'Tierras del Dragón', 9, 1160, 90],

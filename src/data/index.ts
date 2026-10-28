@@ -2,6 +2,9 @@ import { indexById, type Content } from '../core/content';
 import type { Material } from '../core/types';
 import { ABILITY_SKILLS } from './abilities';
 import { ARENAS } from './arenas';
+import { DUNGEONS, RIDDLES, ROOM_PIECES, TRAPS } from './dungeons';
+import { BLUEPRINTS_5, ENCHANTMENTS_5, GRIMOIRES_5, MATERIALS_5, POTIONS_5, QUENCH_5, SYNERGIES_5 } from './forge5';
+import { ARENAS_5, MONSTERS_5, SKILLS_5 } from './monsters5';
 import { AUCTION_LOTS, BIDDERS } from './auction';
 import { BLUEPRINTS } from './blueprints';
 import { BLUEPRINTS_3 } from './blueprints3';
@@ -36,30 +39,34 @@ function withAlchemy(list: Material[]): Material[] {
 }
 
 export const CONTENT: Content = {
-  materials: indexById(withAlchemy([...MATERIALS, ...MATERIALS_3])),
-  blueprints: indexById([...BLUEPRINTS, ...BLUEPRINTS_3, ...BLUEPRINTS_4]),
-  synergies: indexById(SYNERGIES),
+  materials: indexById(withAlchemy([...MATERIALS, ...MATERIALS_3, ...MATERIALS_5])),
+  blueprints: indexById([...BLUEPRINTS, ...BLUEPRINTS_3, ...BLUEPRINTS_4, ...BLUEPRINTS_5]),
+  synergies: indexById([...SYNERGIES, ...SYNERGIES_5]),
   traits: indexById([...TRAITS, ...TRAITS_3]),
-  quench: indexById([...QUENCH_MEDIA, ...QUENCH_MEDIA_3]),
+  quench: indexById([...QUENCH_MEDIA, ...QUENCH_MEDIA_3, ...QUENCH_5]),
   finishes: indexById([...FINISHES, ...FINISHES_3]),
-  enchantments: indexById([...ENCHANTMENTS, ...ENCHANTMENTS_3]),
+  enchantments: indexById([...ENCHANTMENTS, ...ENCHANTMENTS_3, ...ENCHANTMENTS_5]),
   customers: indexById(CUSTOMER_TYPES),
   customerNames: CUSTOMER_NAMES,
   npcs: indexById([...NPCS, ...MERCENARY_NPCS, ...NPCS_3, ...NPCS_4, ...SERVANT_NPCS]),
   dialogues: indexById([...DIALOGUES, ...MERCENARY_DIALOGUES, ...DIALOGUES_3, ...DIALOGUES_4, ...SERVANT_DIALOGUES]),
   cities: indexById(CITIES),
   mercenaries: indexById([...MERCENARIES, ...SERVANTS]),
-  skills: indexById([...COMBAT_SKILLS, ...ABILITY_SKILLS]),
+  skills: indexById([...COMBAT_SKILLS, ...ABILITY_SKILLS, ...SKILLS_5]),
   weaponSkills: WEAPON_SKILLS,
-  monsters: indexById(MONSTERS),
-  arenas: indexById(ARENAS),
+  monsters: indexById([...MONSTERS, ...MONSTERS_5]),
+  arenas: indexById([...ARENAS, ...ARENAS_5]),
   regions: indexById(REGIONS),
   marketEvents: indexById(MARKET_EVENTS),
-  grimoires: indexById(GRIMOIRES),
-  potions: indexById(POTIONS),
+  grimoires: indexById([...GRIMOIRES, ...GRIMOIRES_5]),
+  potions: indexById([...POTIONS, ...POTIONS_5]),
   quests: indexById(QUESTS),
   contracts: indexById(CONTRACTS),
   cityEvents: indexById(CITY_EVENTS),
   auctionLots: indexById(AUCTION_LOTS),
   bidders: indexById(BIDDERS),
+  dungeons: indexById(DUNGEONS),
+  roomPieces: indexById(ROOM_PIECES),
+  riddles: indexById(RIDDLES),
+  traps: TRAPS,
 };

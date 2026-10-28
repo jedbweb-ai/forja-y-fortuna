@@ -1,4 +1,5 @@
 import type { Biome, CombatReport, CombatState } from '../combat/types';
+import type { DungeonRun } from '../dungeon/types';
 
 // ───────────────────────── Datos de regiones ─────────────────────────
 
@@ -42,7 +43,9 @@ export interface ChestLoot {
  * Región explorable. `terrain` es una grilla de texto:
  * '.' pasto, ',' pasto alto, '=' camino, 'T' árbol (bloquea), 'R' roca (bloquea), 'w' agua (bloquea),
  * 'v' lugar de veta, 't' árbol talable, 'h' hierbas, 'g' depósito de gemas, 'c' cofre,
- * 'm' lugar de monstruos, 'B' guarida del jefe, 'E' entrada.
+ * 'm' lugar de monstruos, 'B' guarida del jefe, 'E' entrada, 'P' entrada escondida a una mazmorra.
+ * En los pisos de mazmorra además: 'S' escalera, 'F' pared falsa, 'G' reja, 'L' palanca, 'D' puerta cerrada,
+ * 'k' llave, 'I' inscripción, 'R' columna.
  * `heights`: un dígito de altura por casilla. `zones`: un dígito por casilla que indica la zona (índice + 1).
  */
 export interface RegionDef {
@@ -66,12 +69,14 @@ export interface ResourceNode {
   id: string;
   x: number;
   y: number;
-  kind: 'veta' | 'arbol' | 'hierba' | 'gema' | 'cofre';
+  kind: 'veta' | 'arbol' | 'hierba' | 'gema' | 'cofre' | 'llave';
   material: string;
   tier: number;
   qty: [number, number];
   uses: number;
   night?: boolean;
+  /** Cofre de una sala de tesoro de mazmorra (botín secreto). */
+  secret?: boolean;
 }
 
 export interface MonsterGroup {
@@ -108,6 +113,8 @@ export interface ExpeditionState {
   nightSpawned: boolean;
   /** Hubo al menos una huida en esta salida (los compañeros hostiles pueden aprovecharla). */
   fled?: boolean;
+  /** Recorrida por una mazmorra (si la expedición es en una). */
+  dungeon?: DungeonRun;
   nextId: number;
 }
 

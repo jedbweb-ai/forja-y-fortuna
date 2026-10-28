@@ -81,6 +81,29 @@ export const QUESTS: QuestDef[] = [
     objective: { kind: 'craft', category: 'runa', minQuality: 50, qty: 1 },
     days: 5, reward: { gold: 140, reputation: 3 }, penalty: { reputation: 3 },
   },
+  {
+    id: 'g_cripta', title: 'Mapa de la cripta', board: 'gremio', giver: 'aldana', repeatable: true, weight: 1.5, minReputation: 10,
+    conditions: [{ type: 'flag', flag: 'cripta_hallada' }],
+    text: 'El gremio quiere saber qué hay debajo de las colinas. Bajá al menos hasta el segundo piso de la cripta y volvé para contarlo.',
+    done: 'Aldana dibuja en un pergamino todo lo que le contás.',
+    objective: { kind: 'dungeon', dungeon: 'cripta_vigia', floor: 2 },
+    days: 6, reward: { gold: 150, reputation: 4, relation: 3 }, penalty: { reputation: 2, relation: 2 },
+  },
+  {
+    id: 'g_ulmar', title: 'El vigía que no duerme', board: 'gremio', giver: 'aldana', repeatable: true, weight: 0.8, minReputation: 20,
+    conditions: [{ type: 'flag', flag: 'cripta_hallada' }],
+    text: 'Ulmar, el Vigía Caído, no deja pasar a nadie a las salas hondas. El gremio paga bien por liberar el camino.',
+    done: 'Medio gremio quiere ver la espada de Ulmar. Aldana no deja que nadie la toque.',
+    objective: { kind: 'dungeon', dungeon: 'cripta_vigia' },
+    days: 8, reward: { gold: 300, reputation: 8, relation: 5 }, penalty: { reputation: 3, relation: 3 },
+  },
+  {
+    id: 'g_eco', title: 'Galerías del Eco', board: 'gremio', giver: 'aldana', repeatable: true, weight: 1, minReputation: 35,
+    text: 'Los mineros necesitan saber si las galerías del Eco son seguras. Bajá hasta el tercer piso.',
+    done: 'Los mineros brindan por vos en la taberna. Aldana anota otra hazaña.',
+    objective: { kind: 'dungeon', dungeon: 'cuevas_eco', floor: 3 },
+    days: 8, reward: { gold: 260, reputation: 6, materials: [{ id: 'nucleo_runico', qty: 1 }] }, penalty: { reputation: 3 },
+  },
   // ───────────── Tablón de anuncios ─────────────
   {
     id: 't_cuero', title: 'Se buscan cueros de lobo', board: 'tablon', client: 'Curtiembre del río', repeatable: true, weight: 2,
@@ -152,6 +175,22 @@ export const QUESTS: QuestDef[] = [
     objective: { kind: 'materials', material: 'hierro', qty: 10 },
     days: 5, reward: { gold: 70, reputation: 3, relation: 2 }, penalty: { reputation: 1, relation: 2 },
   },
+  {
+    id: 't_huesos', title: 'Huesos para un escultor', board: 'tablon', client: 'Escultor de la plaza', repeatable: true, weight: 1,
+    conditions: [{ type: 'flag', flag: 'cripta_hallada' }],
+    text: 'Busco cinco huesos densos para una escultura. No pregunten para qué.',
+    done: 'El escultor los acomoda con cariño. Mejor no preguntar.',
+    objective: { kind: 'materials', material: 'hueso_denso', qty: 5 },
+    days: 6, reward: { gold: 80, reputation: 1 }, penalty: { reputation: 1 },
+  },
+  {
+    id: 't_polvo', title: 'Polvo de espectro', board: 'tablon', client: 'Un alquimista de paso', repeatable: true, weight: 1,
+    conditions: [{ type: 'flag', flag: 'cripta_hallada' }],
+    text: 'Pago muy bien tres medidas de polvo espectral. Bien cerradas, por favor.',
+    done: 'El alquimista guarda el polvo en un frasco de plomo y se va sin mirar atrás.',
+    objective: { kind: 'materials', material: 'polvo_espectral', qty: 3 },
+    days: 6, reward: { gold: 95, reputation: 1 }, penalty: { reputation: 1 },
+  },
   // ───────────── Pedidos personales de NPC ─────────────
   {
     id: 'n_aldana_prueba', title: 'La prueba de Aldana', board: 'npc', giver: 'aldana',
@@ -194,6 +233,13 @@ export const QUESTS: QuestDef[] = [
     done: 'Valdebrasa entera habla de vos. Braulio manda grabar tu nombre en la puerta norte.',
     objective: { kind: 'boss', region: 'linde_brezal' },
     days: 10, reward: { gold: 400, reputation: 15, relation: 15, blueprint: 'lucero_alba', flag: 'grunaz_vencido' }, penalty: { reputation: 4, relation: 8 },
+  },
+  {
+    id: 'n_braulio_cripta', title: 'La guardia de abajo', board: 'npc', giver: 'braulio',
+    text: 'Braulio teme que lo que vigila la cripta salga algún día. Quiere que Ulmar caiga antes.',
+    done: 'Braulio cierra los ojos un momento. "Mi abuelo contaba esa historia. Gracias por terminarla."',
+    objective: { kind: 'dungeon', dungeon: 'cripta_vigia' },
+    days: 12, reward: { gold: 250, reputation: 8, relation: 15, materials: [{ id: 'agua_bendita', qty: 3 }] }, penalty: { reputation: 3, relation: 8 },
   },
   {
     id: 'n_rulfa_cuchillo', title: 'El cuchillo de Rulfa', board: 'npc', giver: 'rulfa',

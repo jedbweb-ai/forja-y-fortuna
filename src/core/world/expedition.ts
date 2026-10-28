@@ -12,6 +12,9 @@ import { advanceTime, sleep, slotName } from '../time';
 import type { GameEvent, GameState } from '../types';
 import { recordKills } from '../town/quests';
 import { servantEscapes, servantsAfterCombat } from '../town/servants';
+import {
+  checkLanding, discoverEntrance, dungeonDef, exhausted, expMap, grantUnique, onBossDefeated, recordLeave, revealAround, trapAt, triggerTrap,
+} from '../dungeon/dungeon';
 import { generateGroup, groupThreat } from './encounters';
 import { adjacent, findTiles, regionPath, zoneAt, type Pt } from './region';
 import type { ExpeditionState, MonsterGroup, RegionDef } from './types';
@@ -26,7 +29,7 @@ export function expedition(s: GameState): ExpeditionState {
 }
 
 function region(c: Content, s: GameState): RegionDef {
-  return c.regions[expedition(s).regionId];
+  return expMap(c, expedition(s));
 }
 
 /** Personajes del grupo que pueden salir (los heridos se quedan). */
@@ -71,7 +74,7 @@ export function dangerFor(c: Content, s: GameState, threat: number, members: str
 }
 
 /** Gasta energía. Cada tantos puntos pasa una franja; de noche aparecen grupos nuevos. */
-function spendEnergy(c: Content, s: GameState, rng: Rng, amount: number): GameEvent[] {
+export function spendEnergy(c: Content, s: GameState, rng: Rng, amount: number): GameEvent[] {
   const e = expedition(s);
   const events: GameEvent[] = [];
   e.energy = Math.max(0, e.energy - amount);
@@ -85,7 +88,10 @@ function spendEnergy(c: Content, s: GameState, rng: Rng, amount: number): GameEv
     const added = spawnGroups(c, s, rng, EX.nightExtraGroups, 'noche');
     if (added) events.push({ type: 'toast', text: 'Cae la noche: se oyen cosas nuevas entre los árboles.', tone: 'bad' });
   }
-  if (e.energy <= 0) events.push({ type: 'toast', text: 'El grupo está agotado. Hora de volver.', tone: 'bad' });
+  if (e.energy <= 0 && !e.dungeon) events.push({ type: 'toast', text: 'El grupo está agotado. Hora de volver.', tone: 'bad' });
+  if (e.energy <= 0 && e.dungeon && amount > 0 && e.energy + amount > 0) {
+    events.push({ type: 'toast', text: 'El grupo está agotado: rinde menos en combate hasta el próximo descanso.', tone: 'bad' });
+  }
   return events;
 }
 
@@ -109,7 +115,7 @@ function spawnGroups(c: Content, s: GameState, rng: Rng, count: number, slot = s
   return added;
 }
 
-function makeGroup(c: Content, e: ExpeditionState, p: Pt, zone: number, monsters: string[], extra: Partial<MonsterGroup> = {}): MonsterGroup {
+export function makeGroup(c: Content, e: ExpeditionState, p: Pt, zone: number, monsters: string[], extra: Partial<MonsterGroup> = {}): MonsterGroup {
   return {
     id: `g${e.nextId++}`, x: p.x, y: p.y, zone, monsters, threat: groupThreat(c, monsters),
     aggressive: monsters.some((m) => c.monsters[m]?.aggressive), ...extra,
@@ -127,12 +133,28 @@ export function startExpedition(s: GameState, { c, rng }: Ctx, regionId: string)
   const members = readyMembers(s);
   for (const id of members) s.characters[id].hp = maxHp(s.characters[id]);
   const entry = findTiles(r, 'E')[0] ?? { x: 1, y: 1 };
-  const e: ExpeditionState = {
+  s.expedition = {
     regionId, pos: { ...entry }, energy: expeditionEnergy(s, members), maxEnergy: expeditionEnergy(s, members), spent: 0,
     bag: {}, capacity: expeditionCapacity(s, members), nodes: [], groups: [], members, combat: null, report: null,
     nightSpawned: false, nextId: 1,
   };
-  s.expedition = e;
+  populate(c, s, rng, r);
+
+  s.outing = false;
+  return [
+    { type: 'toast', text: `Salís hacia ${r.name}.`, tone: 'info' },
+    ...advanceTime(s, r.travelSlots),
+    { type: 'expeditionStarted' },
+  ];
+}
+
+/**
+ * Llena un mapa (región o piso de mazmorra) con recursos, cofres, llaves, grupos de monstruos y jefe.
+ * `treasureRooms`: salas de tesoro del piso (sus cofres siempre están y usan el botín secreto).
+ */
+export function populate(c: Content, s: GameState, rng: Rng, r: RegionDef, treasureRooms: string[] = []) {
+  const e = expedition(s);
+  const roomOf = (p: Pt) => e.dungeon?.map.rooms[p.y]?.[p.x] ?? '-';
 
   // Recursos: cada lugar de veta, árbol, hierba o gema tiene recurso con cierta probabilidad.
   for (const [ch, kind] of [['v', 'veta'], ['t', 'arbol'], ['h', 'hierba'], ['g', 'gema']] as const) {
@@ -148,10 +170,15 @@ export function startExpedition(s: GameState, { c, rng }: Ctx, regionId: string)
       });
     }
   }
-  // Cofres: se abren sin herramienta y pueden tener grimorios.
+  // Cofres: se abren sin herramienta y pueden tener grimorios. Los de salas de tesoro siempre están.
   for (const p of findTiles(r, 'c')) {
-    if (!rng.chance(BALANCE.chests.fill) || !r.zoneDefs[zoneAt(r, p.x, p.y)].cofres) continue;
-    e.nodes.push({ id: `n${e.nextId++}`, x: p.x, y: p.y, kind: 'cofre', material: '', tier: 0, qty: [0, 0], uses: 1 });
+    const secret = treasureRooms.includes(roomOf(p));
+    if ((!secret && !rng.chance(BALANCE.chests.fill)) || !r.zoneDefs[zoneAt(r, p.x, p.y)].cofres) continue;
+    e.nodes.push({ id: `n${e.nextId++}`, x: p.x, y: p.y, kind: 'cofre', material: '', tier: 0, qty: [0, 0], uses: 1, secret });
+  }
+  // Llaves de las puertas cerradas (mazmorras).
+  for (const p of findTiles(r, 'k')) {
+    e.nodes.push({ id: `n${e.nextId++}`, x: p.x, y: p.y, kind: 'llave', material: '', tier: 0, qty: [1, 1], uses: 1 });
   }
 
   // Grupos de monstruos por zona, con desafíos opcionales y el jefe en su guarida.
@@ -168,21 +195,19 @@ export function startExpedition(s: GameState, { c, rng }: Ctx, regionId: string)
   });
   const lair = findTiles(r, 'B')[0];
   if (r.boss && lair) e.groups.push(makeGroup(c, e, lair, r.boss.zone - 1, r.boss.monsters, { boss: true, aggressive: false }));
-
-  s.outing = false;
-  return [
-    { type: 'toast', text: `Salís hacia ${r.name}.`, tone: 'info' },
-    ...advanceTime(s, r.travelSlots),
-    { type: 'expeditionStarted' },
-  ];
 }
 
 /** Arranca el combate contra un grupo. */
+export function engageGroup(c: Content, s: GameState, rng: Rng, group: MonsterGroup): GameEvent[] {
+  return engage(c, s, rng, group);
+}
+
 function engage(c: Content, s: GameState, rng: Rng, group: MonsterGroup): GameEvent[] {
   const e = expedition(s);
   const r = region(c, s);
-  const biome = group.boss ? 'campamento' : r.zoneDefs[group.zone]?.biome ?? 'pradera';
-  const arenas = Object.values(c.arenas).filter((a) => a.biome === biome);
+  const dungeon = dungeonDef(c, s);
+  const biome = group.boss ? (dungeon ? dungeon.bossArena : 'campamento') : r.zoneDefs[group.zone]?.biome ?? 'pradera';
+  const arenas = Object.values(c.arenas).filter((a) => a.biome === biome || a.id === biome);
   const arena = rng.pick(arenas.length ? arenas : Object.values(c.arenas));
   const events = spendEnergy(c, s, rng, EX.combatEnergy);
   e.combat = buildCombat(c, s, group, arena.id, e.members);
@@ -215,23 +240,33 @@ function contact(e: ExpeditionState, p: Pt): MonsterGroup | undefined {
 export function expMove(s: GameState, { c, rng }: Ctx, x: number, y: number): GameEvent[] {
   const e = expedition(s);
   if (e.combat || e.report) throw new GameError('Primero terminá el combate.');
-  if (e.energy <= 0) throw new GameError('Sin energía: tenés que volver a la ciudad.');
+  if (e.energy <= 0 && !e.dungeon) throw new GameError('Sin energía: tenés que volver a la ciudad.');
+  if (e.dungeon?.landing) e.dungeon.landing = false;
   const r = region(c, s);
   const path = regionPath(r, e.pos, { x, y }, (p) => e.groups.some((g) => g.x === p.x && g.y === p.y));
   if (!path || !path.length) throw new GameError('No se puede llegar ahí.');
-  const maxSteps = Math.floor(e.energy * BALANCE.expedition.tilesPerEnergy);
+  // En la mazmorra, agotado se sigue caminando (pero rinde menos en combate).
+  const maxSteps = exhausted(s) ? path.length : Math.floor(e.energy * BALANCE.expedition.tilesPerEnergy);
   const walked: Pt[] = [];
   let met: MonsterGroup | undefined;
+  let trapped = false;
   for (const p of path.slice(0, Math.max(1, maxSteps))) {
     if (e.groups.some((g) => g.x === p.x && g.y === p.y)) break;
     walked.push(p);
     e.pos = { ...p };
+    revealAround(e);
     for (const g of e.groups) if (g.calm) g.calm -= 1;
+    if (trapAt(e, p)) {
+      trapped = true;
+      break;
+    }
     met = contact(e, p);
     if (met) break;
   }
   const events: GameEvent[] = [{ type: 'expMoved', path: walked }];
   events.push(...spendEnergy(c, s, rng, walked.length / EX.tilesPerEnergy));
+  if (trapped) events.push(...triggerTrap(s, c, e.pos));
+  if (!met) events.push(...checkLanding(s, c), ...discoverEntrance(s, c));
 
   // Los grupos agresivos cercanos se acercan.
   if (!met) {
@@ -259,8 +294,13 @@ export function gather(s: GameState, { c, rng }: Ctx, nodeId: string): GameEvent
   const node = e.nodes.find((n) => n.id === nodeId);
   if (!node) throw new GameError('Ahí ya no queda nada.');
   if (!adjacent(node, e.pos)) throw new GameError('Acercate primero.');
-  if (e.energy < EX.gatherEnergy) throw new GameError('No te queda energía para eso.');
+  if (e.energy < EX.gatherEnergy && !e.dungeon) throw new GameError('No te queda energía para eso.');
   if (node.kind === 'cofre') return openChest(s, { c, rng }, node.id);
+  if (node.kind === 'llave') {
+    e.nodes = e.nodes.filter((n) => n.id !== node.id);
+    if (e.dungeon) e.dungeon.keys += 1;
+    return [{ type: 'gathered', nodeId, material: '', qty: 0 }, { type: 'toast', text: 'Encontraste una llave de hierro.', tone: 'good' }];
+  }
   const job = { veta: ['mineria', 'pico de minero'], gema: ['mineria', 'pico de minero'], arbol: ['tala', 'hacha de tala'], hierba: ['siega', 'hoz'] }[node.kind] as ['mineria' | 'tala' | 'siega', string];
   const tool = bestTool(s, job[0]);
   const mat = c.materials[node.material];
@@ -291,7 +331,9 @@ export function gather(s: GameState, { c, rng }: Ctx, nodeId: string): GameEvent
 function openChest(s: GameState, { c, rng }: Ctx, nodeId: string): GameEvent[] {
   const e = expedition(s);
   const node = e.nodes.find((n) => n.id === nodeId)!;
-  const loot = c.regions[e.regionId].zoneDefs[zoneAt(c.regions[e.regionId], node.x, node.y)].cofres;
+  const r = region(c, s);
+  const dungeon = dungeonDef(c, s);
+  const loot = node.secret && dungeon ? dungeon.secretLoot : r.zoneDefs[zoneAt(r, node.x, node.y)].cofres;
   e.nodes = e.nodes.filter((n) => n.id !== nodeId);
   const events: GameEvent[] = [];
   const found: string[] = [];
@@ -311,6 +353,8 @@ function openChest(s: GameState, { c, rng }: Ctx, nodeId: string): GameEvent[] {
       }
     }
   }
+  // Los cofres de las salas de tesoro pueden guardar un tesoro único.
+  if (node.secret && dungeon && rng.chance(BALANCE.dungeon.secretUniqueChance)) events.push(...grantUnique(s, c, rng, dungeon, e.dungeon!.floor));
   events.unshift({ type: 'gathered', nodeId, material: '', qty: 0 }, { type: 'toast', text: `Cofre: ${found.join(', ') || 'vacío'}.`, tone: 'good' });
   events.push(...spendEnergy(c, s, rng, 1));
   return events;
@@ -329,9 +373,11 @@ function finishExpedition(s: GameState) {
 export function returnHome(s: GameState, { c, rng }: Ctx): GameEvent[] {
   const e = expedition(s);
   if (e.combat || e.report) throw new GameError('Primero terminá el combate.');
+  if (e.dungeon && !e.dungeon.landing) throw new GameError('En la mazmorra solo se vuelve desde los descansos entre pisos.');
   const r = region(c, s);
   const total = bagLoad(e.bag);
   const escapes = e.fled ? servantEscapes(s, rng, e.members) : [];
+  recordLeave(s);
   finishExpedition(s);
   return [
     ...escapes,
@@ -376,8 +422,10 @@ function settle(c: Content, s: GameState, rng: Rng): GameEvent[] {
   const e = expedition(s);
   const cs = e.combat;
   if (!cs?.outcome || e.report) return [];
+  const group = e.groups.find((g) => g.id === cs.groupId);
   e.report = resolveCombat(c, s, rng);
   const events: GameEvent[] = [];
+  if (cs.outcome === 'victory' && group?.boss && e.dungeon) events.push(...onBossDefeated(s, c, rng, group));
   if (cs.outcome === 'fled') {
     e.fled = true;
     const g = e.groups.find((x) => x.id === cs.groupId);
