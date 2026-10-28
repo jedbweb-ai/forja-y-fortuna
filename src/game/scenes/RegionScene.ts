@@ -7,6 +7,7 @@ import { dungeonInteract, expMap, isSeen } from '../../core/dungeon/dungeon';
 import type { DungeonDef } from '../../core/dungeon/types';
 import { adjacent, heightAt, isWalkable, regionSize, tileAt, zoneAt } from '../../core/world/region';
 import type { ExpeditionState, MonsterGroup, RegionDef } from '../../core/world/types';
+import { artScale, monsterLook } from '../render/assets';
 import { isoBounds, screenToIso } from '../render/iso';
 import { drawGround, standDepth, tilePos } from '../render/terrain';
 import { SLOT_LIGHT } from './lighting';
@@ -136,7 +137,7 @@ export class RegionScene extends Phaser.Scene {
         this.add.image(p.x, p.y, ch === 'w' ? 'tile.water' : def.look.floor).setOrigin(0.5, 16 / 34).setDepth(-10000 + standDepth(x, y, 0));
         const d = standDepth(x, y, 5);
         if (ch === 'R') this.add.image(p.x, p.y + 10, cave ? 'prop.stalagmite' : 'prop.pillar').setOrigin(0.5, 1).setDepth(d);
-        if (ch === ',') this.add.image(p.x, p.y + 6, 'prop.rock').setOrigin(0.5, 1).setScale(0.5).setDepth(d).setTint(0x8a8494);
+        if (ch === ',') this.add.image(p.x, p.y + 6, 'prop.rock').setOrigin(0.5, 1).setScale(artScale('prop.rock', 0.5)).setDepth(d).setTint(0x8a8494);
         if (ch === 'E') this.add.image(p.x, p.y + 4, 'prop.stairsup').setOrigin(0.5, 0.6).setDepth(-10000 + standDepth(x, y, 1));
         if (ch === 'v') this.add.image(p.x, p.y + 10, 'prop.vein').setOrigin(0.5, 1).setDepth(d);
         if (ch === 'g') this.add.image(p.x, p.y + 10, 'prop.gemrock').setOrigin(0.5, 1).setDepth(d);
@@ -223,12 +224,12 @@ export class RegionScene extends Phaser.Scene {
         const p = this.at(x, y);
         const d = standDepth(x, y, 5);
         if (ch === ',') this.add.image(p.x, p.y + 6, 'deco.tallgrass').setOrigin(0.5, 1).setDepth(d);
-        if (ch === 'T') this.add.image(p.x, p.y + 12, 'prop.tree').setOrigin(0.5, 1).setScale(0.75).setDepth(d);
+        if (ch === 'T') this.add.image(p.x, p.y + 12, 'prop.tree').setOrigin(0.5, 1).setScale(artScale('prop.tree', 0.75)).setDepth(d);
         if (ch === 'R') this.add.image(p.x, p.y + 10, r.wallProp ?? 'prop.rock').setOrigin(0.5, 1).setDepth(d);
         if (ch === 'v') this.add.image(p.x, p.y + 10, 'prop.vein').setOrigin(0.5, 1).setDepth(d);
         if (ch === 'h') this.add.image(p.x, p.y + 8, 'prop.herbs').setOrigin(0.5, 1).setDepth(d);
         if (ch === 'g') this.add.image(p.x, p.y + 10, 'prop.gemrock').setOrigin(0.5, 1).setDepth(d);
-        if (ch === 't') this.add.image(p.x, p.y + 12, 'prop.tree').setOrigin(0.5, 1).setScale(0.8).setDepth(d);
+        if (ch === 't') this.add.image(p.x, p.y + 12, 'prop.tree').setOrigin(0.5, 1).setScale(artScale('prop.tree', 0.8)).setDepth(d);
         if (ch === 'B') this.add.image(p.x + 20, p.y + 4, 'prop.tent').setOrigin(0.5, 1).setDepth(d - 1);
         if (ch === 'E') this.add.image(p.x - 10, p.y + 6, 'prop.sign').setOrigin(0.5, 1).setDepth(d);
         if (ch === 'P') this.add.image(p.x, p.y + 8, 'prop.cryptdoor').setOrigin(0.5, 1).setDepth(d);
@@ -309,9 +310,10 @@ export class RegionScene extends Phaser.Scene {
     const box = this.add.container(p.x, p.y + 6);
     const danger = g.boss ? 'mortal' : dangerFor(c, s, g.threat, e.members);
     const ring = this.add.ellipse(0, 0, 44, 18, DANGER_COLOR[danger], 0.45).setStrokeStyle(2, DANGER_COLOR[danger]);
-    const sprite = this.add.sprite(0, 2, lead.sprite.key).setOrigin(0.5, 1).setScale(1.8 * (lead.sprite.scale ?? 1));
-    if (lead.sprite.tint !== undefined) sprite.setTint(lead.sprite.tint);
-    sprite.play(`${lead.sprite.key}.walk`);
+    const look = monsterLook(lead.sprite, lead.id, 1.8);
+    const sprite = this.add.sprite(0, 2, look.key).setOrigin(0.5, 1).setScale(look.scale);
+    if (look.tint !== undefined) sprite.setTint(look.tint);
+    sprite.play(`${look.key}.walk`);
     const tag = `${g.boss ? '👑 ' : g.challenge ? '💀 ' : ''}×${g.monsters.length}`;
     const label = this.add.text(0, -sprite.displayHeight - 4, tag, {
       fontFamily: 'system-ui, sans-serif', fontSize: '13px', color: '#ffffff', fontStyle: 'bold',
@@ -334,7 +336,7 @@ export class RegionScene extends Phaser.Scene {
     // Compañeros un poco atrás del herrero.
     members.slice(1).forEach((id, i) => {
       const key = `char.npc.${id}`;
-      this.player.add(this.add.sprite(i ? 12 : -12, -6, key).setOrigin(0.5, 1).setScale(1.6).setName(key));
+      this.player.add(this.add.sprite(i ? 12 : -12, -6, key).setOrigin(0.5, 1).setScale(artScale(key, 1.6)).setName(key));
     });
     this.player.add(this.add.sprite(0, 0, 'char.herrero').setOrigin(0.5, 1).setScale(2).setName('char.herrero'));
     this.placePlayer();

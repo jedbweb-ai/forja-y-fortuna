@@ -2,7 +2,7 @@
 
 Juego de gestión y RPG táctico: sos un herrero en un mundo de fantasía. El diseño completo está en [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (fuente de verdad).
 
-**Estado: las seis fases del documento de diseño están hechas, más las regiones de nivel alto. Lo próximo es el arte definitivo.**
+**Estado: las seis fases del documento de diseño están hechas, más las regiones de nivel alto. La base del arte definitivo está lista; lo próximo es generar la muestra de estilo.**
 
 ## Cómo correrlo
 
@@ -190,6 +190,22 @@ src/
   - La combinación "Placas de gigante" era imposible, porque el hueso de gigante no entraba en el peto. Ahora el validador revisa que cada combinación se pueda lograr.
   - El panel de expedición decía "en las colinas" para cualquier jefe, mostraba nombres internos de familias ("no_muertos") y escribía "2 franja".
 
+## Base del arte definitivo
+
+- Guía de estilo, medidas, paleta y pedidos para ChatGPT: `docs/GUIA_DE_ARTE.md`.
+- **Herramienta de arte** (solo en desarrollo): http://localhost:5173/herramientas/arte.html
+  - Lista los 338 assets del juego, armados a partir del contenido, con el pedido para ChatGPT de cada uno.
+  - Convierte la imagen generada en pixel art del juego: saca el fondo magenta, recorta, achica y pasa a la paleta.
+  - Guarda directo en `src/assets/arte/`.
+- El juego carga solo cada PNG de `src/assets/arte/` con su nombre como clave (`src/game/render/assets.ts`). Lo que no tiene imagen sigue con el gráfico provisorio.
+- **Escala 2x en todo**:
+  - el arte se dibuja a la mitad y se muestra al doble;
+  - personajes y monstruos con arte real se muestran a 2x;
+  - el escenario se agranda al cargar.
+- **Terreno**: las texturas cuadradas se proyectan sobre los rombos y las paredes de los escalones.
+- **Íconos y retratos**: el inventario, la forja, la tienda y el resto de los paneles muestran el ícono si existe. Los diálogos, el grupo y el combate muestran el retrato.
+- Los jefes pueden tener un dibujo propio (`mon.<id>`). Si no lo tienen, usan el de su especie, teñido y agrandado.
+
 ## Pendiente para próximas fases
-- **Arte definitivo** con una herramienta de imágenes por IA, en lugar de los gráficos provisorios.
+- **Arte definitivo**: generar la muestra de estilo (herrero, Brunilda, monstruos del Linde, texturas básicas, yunque y fragua, íconos y retrato del herrero), revisarla en el juego y seguir por tandas.
 - Tutorial (más adelante, a decidir).

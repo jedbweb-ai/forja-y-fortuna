@@ -2,6 +2,7 @@ import { visibleOptions } from '../../core/dialogue';
 import { relationLevel } from '../../core/state';
 import { canGiftToday } from '../../core/town/relations';
 import { store, useSnapshot } from '../hooks';
+import { portraitUrl } from './Swatch';
 
 function hex(n: number) {
   return `#${n.toString(16).padStart(6, '0')}`;
@@ -22,7 +23,7 @@ export function DialogueBox() {
     <div className="dialogue-wrap">
       <section className="dialogue" aria-live="polite">
         <div className="portrait" style={{ background: hex(npc.look.body), borderColor: hex(npc.look.accent) }}>
-          <span style={{ background: hex(npc.look.hair) }} />
+          {portraitUrl(d.npcId) ? <img className="art-portrait" src={portraitUrl(d.npcId)} alt="" /> : <span style={{ background: hex(npc.look.hair) }} />}
         </div>
         <div className="dialogue-main">
           <header>

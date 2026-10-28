@@ -3,6 +3,7 @@ import { maxHp } from '../../core/party/progression';
 import { returnHome } from '../../core/world/expedition';
 import { Panel } from './Panel';
 import { store, useGame } from '../hooks';
+import { Swatch } from './Swatch';
 
 /** Barra inferior durante la exploración. */
 export function RegionHud() {
@@ -44,7 +45,7 @@ export function BagPanel() {
       <ul className="item-rows">
         {entries.map(([id, q]) => (
           <li key={id}>
-            <span className="swatch" style={{ background: c.materials[id].color }} />
+            <Swatch icon={`icon.${id}`} color={c.materials[id].color} />
             <span className="grow"><b>{c.materials[id].name}</b></span>
             <b>×{q}</b>
           </li>

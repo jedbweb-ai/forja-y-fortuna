@@ -7,6 +7,7 @@ import { refusesTrade } from '../../core/town/relations';
 import { Panel, Tabs } from '../components/Panel';
 import { RARITY_CLASS, money } from '../format';
 import { store, useGame } from '../hooks';
+import { Swatch, itemIcon } from '../components/Swatch';
 
 /** Casa de subastas: lotes anunciados, consignación y la subasta en vivo. */
 export function AuctionPanel() {
@@ -86,7 +87,7 @@ function Consign() {
       <ul className="item-rows">
         {au.consigned.map((x) => (
           <li key={x.item.uid} className={RARITY_CLASS[x.item.rarity]}>
-            <span className="swatch" style={{ background: x.item.color }} />
+            <Swatch icon={itemIcon(x.item)} color={x.item.color} />
             <span className="grow"><b>{x.item.name}</b> <small className="muted">reserva {x.reserve} · valor {money(x.item.value * x.item.quantity)}</small></span>
             <button className="btn" onClick={() => store.run(withdrawItem, x.item.uid)}>Retirar</button>
           </li>
@@ -101,7 +102,7 @@ function Consign() {
               const r = reserve[i.uid] ?? value;
               return (
                 <li key={i.uid} className={RARITY_CLASS[i.rarity]}>
-                  <span className="swatch" style={{ background: i.color }} />
+                  <Swatch icon={itemIcon(i)} color={i.color} />
                   <span className="grow"><b>{i.name}</b> <small className="muted">{i.rarity}{i.quantity > 1 ? ` · ×${i.quantity}` : ''} · valor {money(value)}</small></span>
                   <span className="price-row">
                     <input

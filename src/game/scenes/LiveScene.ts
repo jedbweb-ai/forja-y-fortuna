@@ -5,6 +5,7 @@ import { pickDialogue } from '../../core/dialogue';
 import { slotName } from '../../core/time';
 import type { HotspotDef, LiveSceneDef, TimeSlot } from '../../core/types';
 import { isoBounds, isoDepth, isoToScreen, TILE_H } from '../render/iso';
+import { artScale } from '../render/assets';
 import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../render/placeholders';
 import { SLOT_LIGHT } from './lighting';
 
@@ -364,7 +365,7 @@ export class LiveScene extends Phaser.Scene {
       const row = this.def.roadRow!;
       const from = isoToScreen(-2, row);
       const to = isoToScreen(this.def.cols + 1, row);
-      const cart = this.add.image(from.x, from.y + 4, 'cart').setOrigin(0.5, 1).setScale(1.6).setDepth(isoDepth(-2, row, 8));
+      const cart = this.add.image(from.x, from.y + 4, 'cart').setOrigin(0.5, 1).setScale(artScale('cart', 1.6)).setDepth(isoDepth(-2, row, 8));
       this.tweens.add({
         targets: cart, x: to.x, y: to.y + 4, duration: 9000,
         onUpdate: () => cart.setDepth(isoDepth(this.def.cols, row, 8) - 1),

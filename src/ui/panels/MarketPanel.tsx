@@ -9,6 +9,7 @@ import { DemandTag } from '../components/DemandTag';
 import { Panel, Tabs } from '../components/Panel';
 import { MATERIAL_TYPE_LABEL, money } from '../format';
 import { store, useGame } from '../hooks';
+import { Swatch, itemIcon } from '../components/Swatch';
 
 export function MarketPanel() {
   const s = useGame();
@@ -56,7 +57,7 @@ export function MarketPanel() {
               const blocked = !!refuse;
               return (
                 <li key={m.id} className={limited && left === 0 ? 'dim' : ''}>
-                  <span className="swatch" style={{ background: m.color }} />
+                  <Swatch icon={`icon.${m.id}`} color={m.color} />
                   <span className="grow">
                     <b>{m.name}</b> {exclusive.includes(m.id) && <span className="tag secret">exclusivo</span>}{' '}
                     <small className="muted">tier {m.tier} · tenés {s.materials[m.id] ?? 0}{limited ? ` · ${left ? `quedan ${left}` : 'agotado hoy'}` : ''}</small>
@@ -78,7 +79,7 @@ export function MarketPanel() {
           <ul className="item-rows">
             {s.items.filter((i) => !i.equippedBy).map((i) => (
               <li key={i.uid}>
-                <span className="swatch" style={{ background: i.color }} />
+                <Swatch icon={itemIcon(i)} color={i.color} />
                 <span className="grow">
                   <b>{i.name}</b> <DemandTag category={i.category} />
                   <small className="muted block">{i.rarity}{i.quantity > 1 ? ` · ×${i.quantity}` : ''} · valor {money(i.value * i.quantity)}</small>

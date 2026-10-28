@@ -8,6 +8,7 @@ import { RELATION_LEVELS, type GiftTaste } from '../../core/types';
 import { Panel } from '../components/Panel';
 import { RARITY_CLASS } from '../format';
 import { store, useGame, useSnapshot } from '../hooks';
+import { Swatch, itemIcon } from '../components/Swatch';
 
 const TASTE_LABEL: Record<GiftTaste, string> = { ama: '❤️ ama', gusta: '🙂 le gusta', indiferente: '😐', disgusta: '😖 no le gusta' };
 const LEVEL_ICON: Record<string, string> = { hostil: '😠', desconfiado: '🤨', neutral: '😐', conocido: '🙂', amigo: '😊', aliado: '🤝' };
@@ -127,14 +128,14 @@ function GiftPicker({ npcId }: { npcId: string }) {
       <ul className="item-rows">
         {items.map((i) => (
           <li key={i.uid} className={RARITY_CLASS[i.rarity]}>
-            <span className="swatch" style={{ background: i.color }} />
+            <Swatch icon={itemIcon(i)} color={i.color} />
             <span className="grow"><b>{i.name}</b> <small className="muted">{hint({ kind: 'item', uid: i.uid })}</small></span>
             <button className="btn" onClick={() => store.run(giveGift, npcId, { kind: 'item', uid: i.uid })}>🎁 Regalar</button>
           </li>
         ))}
         {mats.map((m) => (
           <li key={m.id}>
-            <span className="swatch" style={{ background: m.color }} />
+            <Swatch icon={`icon.${m.id}`} color={m.color} />
             <span className="grow"><b>{m.name}</b> <small className="muted">tenés {s.materials[m.id]} {hint({ kind: 'material', id: m.id })}</small></span>
             <button className="btn" onClick={() => store.run(giveGift, npcId, { kind: 'material', id: m.id })}>🎁 1</button>
           </li>

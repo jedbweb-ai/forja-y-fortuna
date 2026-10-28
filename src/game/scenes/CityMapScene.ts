@@ -3,6 +3,7 @@ import type { GameStore } from '../../bridge/GameStore';
 import { currentCity } from '../../core/state';
 import { slotName } from '../../core/time';
 import type { CityLocation } from '../../core/types';
+import { artScale, isRealArt } from '../render/assets';
 import { AMBIENT_VARIANTS } from '../render/placeholders';
 import { SLOT_LIGHT } from './lighting';
 
@@ -88,7 +89,7 @@ export class CityMapScene extends Phaser.Scene {
       const x = 40 + ((i * 263) % (MAP_W - 80));
       const y = 80 + ((i * 151) % (MAP_H - 120));
       if (Math.abs(y - 470) < 40 || Math.abs(x - 640) < 40) continue;
-      this.add.image(x, y, 'prop.tree').setScale(0.7).setDepth(y);
+      this.add.image(x, y, 'prop.tree').setScale(artScale('prop.tree', 0.7)).setDepth(y);
     }
   }
 
@@ -109,7 +110,7 @@ export class CityMapScene extends Phaser.Scene {
     g.lineBetween(1050, 470, 1050, 230);
     for (let i = 0; i < 6; i++) {
       const x = 80 + i * 220;
-      this.add.image(x, 120, 'prop.tree').setScale(0.6).setTint(0x9acb6a).setDepth(120);
+      this.add.image(x, 120, 'prop.tree').setScale(artScale('prop.tree', 0.6)).setTint(0x9acb6a).setDepth(120);
     }
   }
 
@@ -139,6 +140,14 @@ export class CityMapScene extends Phaser.Scene {
     const wall = loc.available ? 0xf0e0c0 : 0xb8b0a0;
     const c = this.add.container(x, y).setDepth(y + h);
     const g = this.add.graphics();
+    if (isRealArt(`build.${loc.id}`)) {
+      // Arte definitivo del edificio: apoyado sobre la misma base que el dibujado.
+      g.fillStyle(0x000000, 0.18).fillEllipse(0, h * 0.42, w * 1.1, h * 0.35);
+      c.add(g);
+      const img = this.add.image(0, h * 0.4, `build.${loc.id}`).setOrigin(0.5, 1);
+      if (!loc.available) img.setTint(0x9a948a);
+      c.add(img);
+    } else {
     // Sombra, paredes, techo, puerta y ventanas
     g.fillStyle(0x000000, 0.18).fillEllipse(0, h * 0.42, w * 1.1, h * 0.35);
     g.fillStyle(wall, 1).fillRect(-w / 2, -h * 0.1, w, h * 0.5);
@@ -150,6 +159,7 @@ export class CityMapScene extends Phaser.Scene {
     g.fillStyle(loc.available ? 0xffe08a : 0x6e6a62, 1);
     g.fillRect(-w / 2 + 12, h * 0.02, 16, 14).fillRect(w / 2 - 28, h * 0.02, 16, 14);
     c.add(g);
+    }
 
     const label = this.add.text(0, h * 0.5 + 6, loc.available ? loc.name : `${loc.name}\n(próximamente)`, {
       fontFamily: 'system-ui, sans-serif', fontSize: loc.available ? '22px' : '17px', fontStyle: loc.available ? 'bold' : 'normal',
@@ -182,7 +192,7 @@ export class CityMapScene extends Phaser.Scene {
     for (let i = 0; i < count; i++) {
       const key = `char.amb.${i % AMBIENT_VARIANTS}`;
       const start = Phaser.Utils.Array.GetRandom(doors);
-      const s = this.add.sprite(start.x, start.y, key).setScale(1.6).setOrigin(0.5, 1);
+      const s = this.add.sprite(start.x, start.y, key).setScale(artScale(key, 1.6)).setOrigin(0.5, 1);
       s.play(`${key}.walk`);
       const walk = () => {
         const to = Phaser.Utils.Array.GetRandom(doors);

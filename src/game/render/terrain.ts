@@ -21,9 +21,13 @@ export function drawGround(scene: Phaser.Scene, g: GroundSpec) {
     for (let c = 0; c < g.cols; c++) {
       const h = g.height(c, r);
       const base = isoToScreen(c, r);
+      // Con arte definitivo, cada suelo puede tener su cara lateral (tile.<suelo>.side); si no, la genérica teñida.
+      const side = `${g.tile(c, r)}.side`;
+      const ownSide = scene.textures.exists(side);
       for (let lvl = 0; lvl < h; lvl++) {
-        scene.add.image(base.x - 32, base.y - (lvl + 1) * LEVEL_H, 'tile.side')
-          .setOrigin(0, 0).setTint(g.sideTint(c, r)).setDepth(-10000 + isoDepth(c, r) - 1);
+        const img = scene.add.image(base.x - 32, base.y - (lvl + 1) * LEVEL_H, ownSide ? side : 'tile.side')
+          .setOrigin(0, 0).setDepth(-10000 + isoDepth(c, r) - 1);
+        if (!ownSide) img.setTint(g.sideTint(c, r));
       }
       const top = tilePos(c, r, h);
       const variant = (c * 7 + r * 3) % 5 === 0 && scene.textures.exists(`${g.tile(c, r)}.1`) ? `${g.tile(c, r)}.1` : g.tile(c, r);

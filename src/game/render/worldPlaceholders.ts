@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { block, poly, prop, px, shade, type G } from './placeholders';
+import { block, poly, prop, px, shade, walkAnim, type G } from './placeholders';
 
 // Placeholders de la Fase 2: monstruos, terreno de exploración y arenas.
 // Los monstruos se dibujan en grises claros para que el `tint` de cada especie les dé color.
@@ -15,7 +15,7 @@ export function diamondTile(scene: Phaser.Scene, key: string, base: number, deta
 export function twoFrames(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: G, step: boolean) => void, rate = 5) {
   prop(scene, key, w, h, (g) => draw(g, false));
   prop(scene, `${key}_b`, w, h, (g) => draw(g, true));
-  scene.anims.create({ key: `${key}.walk`, frames: [{ key }, { key: `${key}_b` }], frameRate: rate, repeat: -1 });
+  walkAnim(scene, key, rate);
 }
 
 export function generateWorldPlaceholders(scene: Phaser.Scene) {

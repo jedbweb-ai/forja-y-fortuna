@@ -2,6 +2,7 @@ import { runeBegin } from '../../../core/forge/commands';
 import { skillLevel } from '../../../core/state';
 import { RARITY_CLASS } from '../../format';
 import { store, useGame } from '../../hooks';
+import { Swatch, itemIcon } from '../../components/Swatch';
 
 /** Mesa de runas: se graba una runa (consume materiales) que después se gasta al encantar una pieza. */
 export function RuneStep() {
@@ -39,7 +40,7 @@ export function RuneStep() {
         <ul className="item-rows">
           {owned.map((i) => (
             <li key={i.uid} className={RARITY_CLASS[i.rarity]}>
-              <span className="swatch" style={{ background: i.color }} />
+              <Swatch icon={itemIcon(i)} color={i.color} />
               <span className="grow"><b>{i.name}</b> <small className="muted block">calidad {i.quality}</small></span>
             </li>
           ))}

@@ -7,6 +7,7 @@ import type { ArenaDef, CombatFx, CombatState, CombatUnit, TerrainKind } from '.
 import type { Affinity } from '../../core/types';
 import { slotName } from '../../core/time';
 import type { GameEvent } from '../../core/types';
+import { artScale, monsterLook } from '../render/assets';
 import { isoBounds, screenToIso } from '../render/iso';
 import { drawGround, standDepth, tilePos } from '../render/terrain';
 import { SLOT_LIGHT } from './lighting';
@@ -95,7 +96,7 @@ export class CombatScene extends Phaser.Scene {
           if (['cripta', 'cueva', 'jefe'].includes(a.look ?? a.biome)) img.setTint(0x8a8494);
           this.grass.set(`${x},${y}`, img);
         }
-        if (t === '#') this.add.image(p.x, p.y + 12, OBSTACLE[a.look ?? a.biome]).setOrigin(0.5, 1).setScale(a.biome === 'bosque' ? 0.75 : 1).setDepth(standDepth(x, y, 5));
+        if (t === '#') this.add.image(p.x, p.y + 12, OBSTACLE[a.look ?? a.biome]).setOrigin(0.5, 1).setScale(artScale(OBSTACLE[a.look ?? a.biome], a.biome === 'bosque' ? 0.75 : 1)).setDepth(standDepth(x, y, 5));
       }
     }
 
@@ -161,14 +162,16 @@ export class CombatScene extends Phaser.Scene {
     const p = this.unitPos(u);
     const box = this.add.container(p.x, p.y);
     const shadow = this.add.image(0, -2, 'fx.shadow');
-    const scale = (u.side === 'party' ? 2 : 1.8) * (u.sprite.scale ?? 1);
-    const sprite = this.add.sprite(0, 0, u.sprite.key).setOrigin(0.5, 1).setScale(scale);
-    if (u.sprite.tint !== undefined) sprite.setTint(u.sprite.tint);
-    if (this.anims.exists(`${u.sprite.key}.walk`) && u.side === 'enemy') sprite.play(`${u.sprite.key}.walk`);
+    const look = u.side === 'enemy'
+      ? monsterLook(u.sprite, u.monsterId, 1.8)
+      : { key: u.sprite.key, scale: artScale(u.sprite.key, 2 * (u.sprite.scale ?? 1)), tint: u.sprite.tint };
+    const sprite = this.add.sprite(0, 0, look.key).setOrigin(0.5, 1).setScale(look.scale);
+    if (look.tint !== undefined) sprite.setTint(look.tint);
+    if (this.anims.exists(`${look.key}.walk`) && u.side === 'enemy') sprite.play(`${look.key}.walk`);
     const hp = this.add.graphics();
     const status = this.add.text(0, -sprite.displayHeight - 22, '', { fontSize: '13px' }).setOrigin(0.5, 1).setResolution(2);
     box.add([shadow, sprite, hp, status]);
-    this.units.set(u.id, { box, sprite, hp, status, baseTint: u.sprite.tint });
+    this.units.set(u.id, { box, sprite, hp, status, baseTint: look.tint });
   }
 
   private drawHp(view: UnitView, u: CombatUnit) {

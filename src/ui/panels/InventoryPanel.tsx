@@ -4,6 +4,7 @@ import { ItemCard } from '../components/ItemCard';
 import { Panel, Tabs } from '../components/Panel';
 import { MATERIAL_TYPE_LABEL, money, RARITY_CLASS } from '../format';
 import { store, useGame } from '../hooks';
+import { Swatch, itemIcon } from '../components/Swatch';
 
 export function InventoryPanel() {
   const s = useGame();
@@ -22,7 +23,7 @@ export function InventoryPanel() {
           <ul className="item-rows">
             {s.items.map((i) => (
               <li key={i.uid} className={`clickable ${RARITY_CLASS[i.rarity]}`} onClick={() => setOpen(i)}>
-                <span className="swatch" style={{ background: i.color }} />
+                <Swatch icon={itemIcon(i)} color={i.color} />
                 <span className="grow"><b>{i.name}</b> <small className="muted">{i.rarity} · calidad {i.quality}{i.quantity > 1 ? ` · ×${i.quantity}` : ''}</small></span>
                 <span>🪙 {money(i.value)}{i.quantity > 1 ? ' c/u' : ''}</span>
               </li>
@@ -36,7 +37,7 @@ export function InventoryPanel() {
           <ul className="item-rows">
             {mats.filter(({ m }) => m.type === g).map(({ m, q }) => (
               <li key={m.id}>
-                <span className="swatch" style={{ background: m.color }} />
+                <Swatch icon={`icon.${m.id}`} color={m.color} />
                 <span className="grow"><b>{m.name}</b> <small className="muted block">{m.description}</small></span>
                 <b>×{q}</b>
               </li>

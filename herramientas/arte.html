@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arte · Forja & Fortuna</title>
+    <style>
+      :root { --bg: #1b1420; --panel: #2a2230; --panel-2: #352b3d; --line: #4a3e52; --text: #f2e8dc; --muted: #b8a8b0; --accent: #ff9a4d; --good: #7bd389; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; display: grid; grid-template-columns: 340px 1fr; height: 100vh; }
+      aside { border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+      aside header { padding: 12px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+      h1 { font-size: 16px; margin: 0; }
+      #list { overflow: auto; padding: 6px 0; }
+      .group { padding: 10px 12px 4px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+      .entry { display: flex; gap: 8px; padding: 5px 12px; cursor: pointer; align-items: center; }
+      .entry:hover { background: var(--panel); }
+      .entry.on { background: var(--panel-2); }
+      .entry .st { width: 16px; text-align: center; }
+      .entry.done .st { color: var(--good); }
+      .entry small { color: var(--muted); margin-left: auto; }
+      main { overflow: auto; padding: 16px 20px; display: grid; gap: 16px; align-content: start; }
+      section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; }
+      h2 { font-size: 15px; margin: 0; }
+      code { background: var(--panel-2); padding: 1px 6px; border-radius: 4px; }
+      textarea { width: 100%; min-height: 120px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: inherit; }
+      input[type=text], input[type=search] { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+      button { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-weight: 600; }
+      button.primary { background: linear-gradient(180deg, #ff9a4d, #e2672a); color: #2a140a; border-color: #ffb37a; }
+      button:disabled { opacity: 0.4; cursor: not-allowed; }
+      .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+      .muted { color: var(--muted); }
+      #drop { border: 2px dashed var(--line); border-radius: 10px; padding: 18px; text-align: center; color: var(--muted); }
+      #drop.over { border-color: var(--accent); color: var(--text); }
+      .previews { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+      .previews figure { margin: 0; display: grid; gap: 4px; justify-items: center; }
+      .previews figcaption { color: var(--muted); font-size: 12px; }
+      canvas { image-rendering: pixelated; background: repeating-conic-gradient(#3a3040 0 25%, #2e2634 0 50%) 0 0 / 16px 16px; border-radius: 4px; }
+      canvas.scene { background: #1b1420; }
+    </style>
+  </head>
+  <body>
+    <aside>
+      <header>
+        <h1>⚒️ Arte · Forja &amp; Fortuna</h1>
+        <input id="filter" type="search" placeholder="Buscar (nombre o clave)…" />
+        <label class="row"><input id="pending" type="checkbox" /> Solo lo que falta</label>
+        <div id="count" class="muted"></div>
+      </header>
+      <div id="list"></div>
+    </aside>
+    <main>
+      <section>
+        <h2 id="title">Elegí un asset de la lista</h2>
+        <div id="meta" class="muted"></div>
+        <textarea id="prompt" readonly></textarea>
+        <div class="row">
+          <button id="copy">📋 Copiar pedido para ChatGPT</button>
+          <span class="muted">Generá la imagen y después pegala acá abajo.</span>
+        </div>
+      </section>
+      <section>
+        <h2>Imagen de ChatGPT</h2>
+        <div id="drop">Pegá la imagen (Ctrl+V), arrastrala acá o <label><u>elegí un archivo</u><input id="file" type="file" accept="image/*" hidden /></label></div>
+        <div class="row">
+          <label>Tolerancia del fondo magenta <input id="tol" type="range" min="10" max="160" value="70" /> <span id="tolv">70</span></label>
+          <label class="row"><input id="pal" type="checkbox" checked /> Reducir a la paleta maestra</label>
+        </div>
+        <div class="previews">
+          <figure><canvas id="orig" width="0" height="0"></canvas><figcaption>Original</figcaption></figure>
+          <figure><canvas id="res1" width="0" height="0"></canvas><figcaption>Resultado (tamaño real)</figcaption></figure>
+          <figure><canvas id="res4" width="0" height="0"></canvas><figcaption>Resultado ×4</figcaption></figure>
+          <figure><canvas id="scene" class="scene" width="0" height="0"></canvas><figcaption>Así se ve en el juego (×2)</figcaption></figure>
+        </div>
+      </section>
+      <section>
+        <h2>Guardar</h2>
+        <div class="row">
+          <button id="dir">📁 Elegir la carpeta src/assets/arte</button>
+          <span id="dirname" class="muted">Sin carpeta: se descarga el archivo y lo copiás a mano.</span>
+        </div>
+        <div class="row">
+          <button id="save" class="primary" disabled>💾 Guardar</button>
+          <span id="saved" class="muted"></span>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/src/tools/artPrep.ts"></script>
+  </body>
+</html>

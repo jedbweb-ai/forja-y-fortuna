@@ -3,6 +3,7 @@ import type { ItemInstance } from '../../core/types';
 import { CATEGORY_LABEL, money, RARITY_CLASS } from '../format';
 import { store } from '../hooks';
 import { AbilityList, AffinityList, StatList } from './ItemView';
+import { Swatch, itemIcon } from './Swatch';
 
 /** Tarjeta liviana del objeto terminado. Se cierra con un toque. */
 export function ItemCard({ item, newSynergies = [], onClose }: { item: ItemInstance; newSynergies?: string[]; onClose: () => void }) {
@@ -13,7 +14,7 @@ export function ItemCard({ item, newSynergies = [], onClose }: { item: ItemInsta
       <article className={`item-card ${RARITY_CLASS[item.rarity]}`} aria-label={item.name}>
         {newSynergies.length > 0 && <div className="new-badge">¡Nueva sinergia descubierta!</div>}
         <div className="item-card-head">
-          <span className="item-swatch" style={{ background: item.color }} />
+          <Swatch icon={itemIcon(item)} color={item.color} big />
           <div>
             <h3>{item.name}</h3>
             <div className="muted">

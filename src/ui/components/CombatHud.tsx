@@ -4,6 +4,7 @@ import { canUseSkill, currentUnit, fleeChance } from '../../core/combat/engine';
 import type { CombatUnit } from '../../core/combat/types';
 import { closeReport, combatEndTurn, combatFlee, combatSkill } from '../../core/world/expedition';
 import { store, useSnapshot } from '../hooks';
+import { portraitUrl } from './Swatch';
 
 const SIDE_TEXT = { front: 'de frente', side: 'de costado', back: '¡por la espalda!' };
 
@@ -39,6 +40,7 @@ export function CombatHud() {
         {me ? (
           <>
             <div className="combat-unit">
+              {me.charId && portraitUrl(me.charId) && <img className="art-portrait combat-portrait" src={portraitUrl(me.charId)} alt="" />}
               <b>{me.name}</b>
               <div className="meter thin hp"><span style={{ width: `${(me.hp / me.maxHp) * 100}%` }} /></div>
               <small className="muted">❤️ {me.hp}/{me.maxHp}{me.statuses.length ? ` · ${me.statuses.map((x) => x.id).join(', ')}` : ''}</small>

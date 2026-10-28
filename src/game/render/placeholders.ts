@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import type { Content } from '../../core/content';
 import { generateWorldPlaceholders } from './worldPlaceholders';
 import { generateDungeonPlaceholders } from './dungeonPlaceholders';
+import { isRealArt } from './assets';
+import { AMBIENT_VARIANTS, GUARD_VARIANTS } from './variants';
 
 // Gráficos placeholder generados por código. Cada textura se registra con una clave
 // estable ("char.herrero", "prop.anvil"...). Para pasar a sprites reales alcanza con
@@ -18,8 +20,7 @@ export interface CharLook {
   apron?: boolean;
 }
 
-export const AMBIENT_VARIANTS = 10;
-export const GUARD_VARIANTS = 3;
+export { AMBIENT_VARIANTS, GUARD_VARIANTS };
 
 const SKINS = [0xf6d2b0, 0xe8b48a, 0xc98f5e, 0x9a6440, 0xf3c6a5];
 const HAIRS = [0x2b1d14, 0x6b3a1e, 0xd8a03a, 0xb03a2e, 0x3d4a8a, 0xe8e2d0, 0x1e1e1e, 0x8a4fb0];
@@ -84,18 +85,27 @@ function drawChar(g: G, look: CharLook, step: boolean) {
   px(g, 11, 10, 1, 1, 0xf28b8b);
 }
 
+/** Animación de caminar de 2 cuadros. Si el arte definitivo trae un solo cuadro, lo repite. */
+export function walkAnim(scene: Phaser.Scene, key: string, rate: number) {
+  const second = isRealArt(key) && !isRealArt(`${key}_b`) ? key : `${key}_b`;
+  scene.anims.create({ key: `${key}.walk`, frames: [{ key }, { key: second }], frameRate: rate, repeat: -1 });
+}
+
 function charTextures(scene: Phaser.Scene, key: string, look: CharLook) {
   for (const step of [false, true]) {
+    if (scene.textures.exists(step ? `${key}_b` : key)) continue;
     const g = scene.make.graphics({}, false);
     drawChar(g, look, step);
     g.generateTexture(step ? `${key}_b` : key, 16, 24);
     g.destroy();
   }
-  scene.anims.create({ key: `${key}.walk`, frames: [{ key }, { key: `${key}_b` }], frameRate: 6, repeat: -1 });
+  walkAnim(scene, key, 6);
 }
 
 
 function tile(scene: Phaser.Scene, key: string, base: number, detail: (g: G, v: number) => void) {
+  // Con arte definitivo no se generan las variantes del placeholder (no mezclar estilos).
+  if (scene.textures.exists(key)) return;
   for (let v = 0; v < 2; v++) {
     const g = scene.make.graphics({}, false);
     poly(g, [0, 16, 32, 0, 64, 16, 32, 32], base);
@@ -115,6 +125,8 @@ export function block(g: G, cx: number, by: number, w: number, hgt: number, colo
 }
 
 export function prop(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: G) => void) {
+  // Si hay arte definitivo con esta clave, el placeholder no se dibuja.
+  if (scene.textures.exists(key)) return;
   const g = scene.make.graphics({}, false);
   draw(g);
   g.generateTexture(key, w, h);
@@ -140,7 +152,7 @@ export function generatePlaceholders(scene: Phaser.Scene, content: Content) {
   // ── Animales (2 cuadros) ──
   const animal = (key: string, w: number, h: number, draw: (g: G, step: boolean) => void) => {
     for (const step of [false, true]) prop(scene, step ? `${key}_b` : key, w, h, (g) => draw(g, step));
-    scene.anims.create({ key: `${key}.walk`, frames: [{ key }, { key: `${key}_b` }], frameRate: 8, repeat: -1 });
+    walkAnim(scene, key, 8);
   };
   animal('animal.gallina', 12, 12, (g, s) => {
     px(g, 2, 3, 8, 6, 0xf4f1ea); px(g, 7, 1, 4, 4, 0xf4f1ea); px(g, 8, 0, 2, 1, 0xd33a2c);

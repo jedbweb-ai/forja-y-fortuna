@@ -7,6 +7,7 @@ import { bonus } from '../../core/progress/progress';
 import { Panel, Tabs } from '../components/Panel';
 import { pct } from '../format';
 import { store, useGame } from '../hooks';
+import { Swatch } from '../components/Swatch';
 
 const PROP_LABEL: Record<AlchemyProp, string> = {
   curacion: 'Curación', antidoto: 'Antídoto', vigor: 'Vigor', proteccion: 'Protección', celeridad: 'Celeridad', humo: 'Humo',
@@ -43,7 +44,7 @@ export function AlchemyPanel() {
                 const left = (s.materials[m.id] ?? 0) - count(m.id);
                 return (
                   <li key={m.id} className={left > 0 && mix.length < 3 ? 'clickable' : 'dim'} onClick={() => { if (left > 0 && mix.length < 3) setMix([...mix, m.id]); }}>
-                    <span className="swatch" style={{ background: m.color }} />
+                    <Swatch icon={`icon.${m.id}`} color={m.color} />
                     <span className="grow">
                       <b>{m.name}</b> <small className="muted">tenés {s.materials[m.id]}</small>
                       <small className="muted block">
@@ -83,7 +84,7 @@ export function AlchemyPanel() {
             <div className="chips">
               {mix.map((id, i) => (
                 <button key={`${id}${i}`} className="mat on" onClick={() => setMix(mix.filter((_, j) => j !== i))} title="Sacar">
-                  <span className="swatch" style={{ background: c.materials[id].color }} />{c.materials[id].name} ✕
+                  <Swatch icon={`icon.${id}`} color={c.materials[id].color} />{c.materials[id].name} ✕
                 </button>
               ))}
               {!mix.length && <span className="muted small">Vacío</span>}
@@ -112,7 +113,7 @@ export function AlchemyPanel() {
         <ul className="item-rows">
           {s.discoveredPotions.map((id) => c.potions[id]).filter(Boolean).map((p) => (
             <li key={p.id}>
-              <span className="swatch" style={{ background: p.color }} />
+              <Swatch icon={`icon.${p.id}`} color={p.color} />
               <span className="grow">
                 <b>{p.name}</b> {p.secret && <span className="tag secret">secreta</span>}
                 <small className="muted block">{p.description}</small>

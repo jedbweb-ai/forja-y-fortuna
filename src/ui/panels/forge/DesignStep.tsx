@@ -5,6 +5,7 @@ import type { Blueprint, GameState } from '../../../core/types';
 import { AffinityList, StatList } from '../../components/ItemView';
 import { CATEGORY_LABEL } from '../../format';
 import { store, useGame, useSnapshot } from '../../hooks';
+import { Swatch } from '../../components/Swatch';
 
 /** Para cada parte, el material permitido que más tenés (o el más barato si no alcanza ninguno). */
 function defaultMaterials(bp: Blueprint, s: GameState): Record<string, string> {
@@ -90,7 +91,7 @@ export function DesignStep({ station }: { station: 'yunque' | 'joyeria' }) {
                     title={m.description}
                     onClick={() => setMaterials({ ...materials, [part.slot]: m.id })}
                   >
-                    <span className="swatch" style={{ background: m.color }} />
+                    <Swatch icon={`icon.${m.id}`} color={m.color} />
                     {m.name} <small>{owned}</small>
                   </button>
                 );

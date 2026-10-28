@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { currentCity } from '../../core/state';
 import { dungeonUnlocked } from '../../core/dungeon/dungeon';
 import { regionOpen } from '../../core/world/region';
+import { isRealArt } from '../render/assets';
 import type { GameStore } from '../../bridge/GameStore';
 
 const W = 1280;
@@ -16,6 +17,16 @@ export class WorldMapScene extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor(0x2a2230);
     const g = this.add.graphics();
+    // Con arte definitivo, la ilustración del mapa (world.mapa) reemplaza al pergamino dibujado.
+    const art = this.textures.exists('world.mapa') && isRealArt('world.mapa');
+    if (art) this.add.image(20, 20, 'world.mapa').setOrigin(0, 0).setDisplaySize(W - 40, H - 40);
+    else this.drawParchment(g);
+    this.add.text(W / 2, 40, 'El Valle y más allá', { fontFamily: 'Georgia, serif', fontSize: '34px', color: '#5a3a24' }).setOrigin(0.5, 0).setResolution(2);
+    this.drawPlaces(g);
+  }
+
+  /** Pergamino dibujado (placeholder del mapa del mundo). */
+  private drawParchment(g: Phaser.GameObjects.Graphics) {
     // Pergamino y tierras
     g.fillStyle(0xe8d6a8, 1).fillRoundedRect(20, 20, W - 40, H - 40, 24);
     g.fillStyle(0xd9c18a, 1);
@@ -29,9 +40,10 @@ export class WorldMapScene extends Phaser.Scene {
       g.fillStyle(0xf4f1ea, 1).fillTriangle(x - 8, y - 6, x, y - 20, x + 8, y - 6);
     }
     for (let i = 0; i < 18; i++) g.fillStyle(0x5a8a4a, 1).fillCircle(680 + (i % 6) * 34, 250 + Math.floor(i / 6) * 30, 16);
+  }
 
-    this.add.text(W / 2, 40, 'El Valle y más allá', { fontFamily: 'Georgia, serif', fontSize: '34px', color: '#5a3a24' }).setOrigin(0.5, 0).setResolution(2);
-
+  /** Ciudades, regiones y mazmorras sobre el mapa. */
+  private drawPlaces(g: Phaser.GameObjects.Graphics) {
     // Ciudades: la actual vuelve a su mapa; las otras abren el viaje.
     const state = this.store.getSnapshot().state;
     const here = state ? currentCity(state) : 'valdebrasa';

@@ -12,6 +12,7 @@ import { freeServant, loyaltyWarning, ownedServants, rejoinServant, wageFor } fr
 import { Panel } from '../components/Panel';
 import { RARITY_CLASS } from '../format';
 import { store, useGame } from '../hooks';
+import { Swatch, itemIcon, portraitUrl } from '../components/Swatch';
 
 const SLOT_LABEL: Record<EquipSlot, string> = {
   arma: 'Arma', escudo: 'Escudo', cuerpo: 'Armadura', anillo1: 'Anillo', anillo2: 'Anillo', amuleto: 'Amuleto', cinturon: 'Cinturón',
@@ -45,7 +46,7 @@ export function PartyPanel() {
 
       <div className="party-grid">
         <section>
-          <h3>{ch.name} <small className="muted">· {SPECIALTY[ch.specialty]} · nivel {ch.level}</small></h3>
+          <h3>{portraitUrl(ch.id) && <img className="art-portrait portrait-inline" src={portraitUrl(ch.id)} alt="" />}{ch.name} <small className="muted">· {SPECIALTY[ch.specialty]} · nivel {ch.level}</small></h3>
           <div className="meter-label small"><span>Experiencia</span><span>{ch.xp}/{xpToNext(ch.level)}</span></div>
           <div className="meter thin"><span style={{ width: `${(ch.xp / xpToNext(ch.level)) * 100}%` }} /></div>
           <p className="small">❤️ Vida {ch.hp}/{p.maxHp}{injured ? <b className="bad-text"> · Herido hasta el día {ch.injuredUntilDay}</b> : null}</p>
@@ -127,7 +128,7 @@ export function PartyPanel() {
                   const other = i.equippedBy ? s.characters[i.equippedBy]?.name : null;
                   return (
                     <li key={i.uid} className={`clickable ${RARITY_CLASS[i.rarity]}`} onClick={() => { if (store.run(equipItem, ch.id, i.uid, picking)) setPicking(null); }}>
-                      <span className="swatch" style={{ background: i.color }} />
+                      <Swatch icon={itemIcon(i)} color={i.color} />
                       <span className="grow">
                         <b>{i.name}</b>
                         <small className="muted block">
@@ -196,7 +197,7 @@ function BeltSection({ charId }: { charId: string }) {
           const inBelt = s.belt[i.uid] ?? 0;
           return (
             <li key={i.uid}>
-              <span className="swatch" style={{ background: i.color }} />
+              <Swatch icon={itemIcon(i)} color={i.color} />
               <span className="grow">
                 <b>{i.name}</b>
                 <small className="muted block">{def?.description} · tenés {i.quantity}</small>

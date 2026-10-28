@@ -7,6 +7,7 @@ import { slotName } from '../../core/time';
 import { Panel } from '../components/Panel';
 import { money, RARITY_CLASS } from '../format';
 import { store, useGame } from '../hooks';
+import { Swatch, itemIcon } from '../components/Swatch';
 
 export function ShopPanel() {
   const s = useGame();
@@ -34,7 +35,7 @@ function ShopSetup() {
           <li key={i.uid} className={RARITY_CLASS[i.rarity]}>
             <label className="check">
               <input type="checkbox" checked={i.exhibited} onChange={() => store.run(toggleExhibit, i.uid)} />
-              <span className="swatch" style={{ background: i.color }} />
+              <Swatch icon={itemIcon(i)} color={i.color} />
               <span className="grow">
                 <b>{i.name}</b>
                 <small className="muted">{i.rarity} · calidad {i.quality}{i.quantity > 1 ? ` · ×${i.quantity}` : ''}</small>
