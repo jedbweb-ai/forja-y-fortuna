@@ -36,6 +36,19 @@ describe('guardado', () => {
     expect(out.state.knownBlueprints).toContain('hacha_tala');
   });
 
+  it('migra un guardado de la Fase 3 (v3) a la v4 con la vida de la ciudad vacía', () => {
+    const v3 = makeSaveFile(createInitialState(CONTENT, 1)) as unknown as { version: number; state: Record<string, unknown> };
+    v3.version = 3;
+    for (const k of ['quests', 'contracts', 'demand', 'cityEvents', 'auction', 'servantMarket']) delete v3.state[k];
+    delete (v3.state.npcs as Record<string, unknown>).yago;
+    const out = migrateSave(JSON.parse(JSON.stringify(v3)));
+    expect(out.version).toBe(SAVE_VERSION);
+    expect(out.state.quests.active).toEqual([]);
+    expect(out.state.auction.day).toBeGreaterThan(0);
+    syncWithContent(out.state, CONTENT);
+    expect(out.state.npcs.yago.relation).toBe(CONTENT.mercenaries.yago.startRelation);
+  });
+
   it('rechaza saves inválidos o de versiones futuras', () => {
     expect(() => migrateSave(null)).toThrow();
     expect(() => migrateSave({ version: SAVE_VERSION + 1, state: {} })).toThrow();

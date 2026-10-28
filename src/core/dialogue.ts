@@ -3,6 +3,7 @@ import { npcsAt } from './city';
 import { GameError, type Content, type Ctx } from './content';
 import { acquireGrimoire } from './magic/grimoires';
 import { addMaterial, changeRelation, changeReputation, currentCity, hasMaterial } from './state';
+import { startQuest } from './town/quests';
 import { slotName } from './time';
 import type { Condition, Dialogue, DialogueEffect, DialogueNode, DialogueOption, GameEvent, GameState } from './types';
 
@@ -24,6 +25,23 @@ export function checkCondition(s: GameState, cond: Condition): boolean {
     }
     case 'dayMin': return s.day >= cond.value;
     case 'itemsForgedMin': return s.stats.itemsForged >= cond.value;
+    case 'reputationMin': return (s.reputation[currentCity()] ?? 0) >= cond.value;
+    case 'questDone': {
+      const done = s.quests.done.includes(cond.id);
+      return cond.not ? !done : done;
+    }
+    case 'questActive': {
+      const active = s.quests.active.some((a) => a.id === cond.id);
+      return cond.not ? !active : active;
+    }
+    case 'inParty': {
+      const inParty = s.party.includes(cond.npc);
+      return cond.not ? !inParty : inParty;
+    }
+    case 'servant': {
+      const ch = s.characters[cond.npc];
+      return !!ch && !ch.escaped && ch.bond === (cond.freed ? 'liberado' : 'esclavo');
+    }
   }
 }
 
@@ -54,6 +72,16 @@ export function applyEffect(s: GameState, c: Content, e: DialogueEffect): GameEv
       if (s.discoveredPotions.includes(e.id)) return [];
       s.discoveredPotions.push(e.id);
       return [{ type: 'toast', text: `Receta nueva: ${c.potions[e.id].name}.`, tone: 'good' }];
+    case 'offerQuest':
+      return startQuest(s, c, e.id);
+    case 'giveBlueprint':
+      if (s.knownBlueprints.includes(e.id)) return [];
+      s.knownBlueprints.push(e.id);
+      return [{ type: 'toast', text: `Plano nuevo: ${c.blueprints[e.id].name}.`, tone: 'good' }];
+    case 'giveEnchantment':
+      if (s.knownEnchantments.includes(e.id)) return [];
+      s.knownEnchantments.push(e.id);
+      return [{ type: 'toast', text: `Encantamiento nuevo: ${c.enchantments[e.id].name}.`, tone: 'good' }];
   }
 }
 
@@ -86,7 +114,9 @@ export interface TalkResult {
 export function startTalk(s: GameState, { c, rng }: Ctx, npcId: string, out: { result?: TalkResult }): GameEvent[] {
   const npc = c.npcs[npcId];
   if (!npc) throw new GameError('Esa persona no existe.');
-  if (!npcsAt(c, s, s.location).includes(npcId)) throw new GameError(`${npc.name} no está acá ahora.`);
+  // Los compañeros del grupo charlan en cualquier lado de la ciudad.
+  const present = npcsAt(c, s, s.location).includes(npcId) || (s.party.includes(npcId) && !s.expedition);
+  if (!present) throw new GameError(`${npc.name} no está acá ahora.`);
   const dialogue = pickDialogue(c, s, npcId);
   if (!dialogue) {
     out.result = { dialogueId: null, nodeId: null, busyLine: rng.pick(npc.busyLines) };

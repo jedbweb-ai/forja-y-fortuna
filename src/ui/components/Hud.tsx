@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { setDebugPersisted } from '../../bridge/store';
 import { cityLocation } from '../../core/city';
-import { currentCity, skillLevel } from '../../core/state';
+import { currentCity, reputationLevel, skillLevel } from '../../core/state';
 import { slotName } from '../../core/time';
 import { SLOT_ICON } from '../format';
 import { store, useSnapshot } from '../hooks';
@@ -30,7 +30,7 @@ export function Hud() {
       <div className="hud-stats">
         <span className="chip" title="Día y franja">Día {state.day} · {SLOT_ICON[slot]} {slot}</span>
         <span className="chip gold" title="Oro">🪙 {Math.floor(state.gold)}</span>
-        <span className="chip" title="Reputación en la ciudad">⭐ {state.reputation[currentCity()] ?? 0}</span>
+        <span className="chip" title={`Reputación en la ciudad: ${reputationLevel(state.reputation[currentCity()] ?? 0)}`}>⭐ {state.reputation[currentCity()] ?? 0}</span>
         <span className="chip hide-sm" title="Nivel de Herrería">🔨 Nv {skillLevel(state.skills.herreria)}</span>
         {state.expedition && <span className="chip warn" title="De expedición">🧭 Expedición</span>}
         {state.outing && <span className="chip warn" title={`Recorriendo la ciudad (${loc?.name}). La franja se gasta al volver al taller.`}>🚶 En la ciudad</span>}
@@ -39,6 +39,8 @@ export function Hud() {
         <button className="btn-icon" onClick={() => store.openPanel('party')} aria-label="Grupo" title="Grupo y equipo">🛡️</button>
         <button className="btn-icon" onClick={() => store.openPanel('inventory')} aria-label="Inventario" title="Inventario">🎒</button>
         <button className="btn-icon" onClick={() => store.openPanel('book')} aria-label="Libro del herrero" title="Libro del herrero">📖</button>
+        <button className="btn-icon" onClick={() => store.openPanel('quests')} aria-label="Encargos" title="Encargos y contratos">📜{state.quests.active.length + state.contracts.active.length > 0 && <span className="badge">{state.quests.active.length + state.contracts.active.length}</span>}</button>
+        <button className="btn-icon" onClick={() => store.openContacts()} aria-label="Contactos" title="Contactos y regalos">🤝</button>
         <button className="btn-icon" onClick={() => store.openPanel('settings')} aria-label="Ajustes" title="Ajustes">⚙️</button>
         {ui.debug && <button className="btn-icon debug" onClick={() => store.openPanel('debug')} aria-label="Debug" title="Debug">🐞</button>}
       </nav>

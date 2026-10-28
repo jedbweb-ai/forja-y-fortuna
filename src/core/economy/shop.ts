@@ -3,6 +3,8 @@ import { GameError, type Content, type Ctx } from '../content';
 import type { Rng } from '../rng';
 import { addXp, changeReputation, clamp, currentCity, skillLevel } from '../state';
 import { advanceTime, slotName } from '../time';
+import { customerMult } from '../town/cityEvents';
+import { demandOf, registerSale } from '../town/demand';
 import { STAT_KEYS, type CustomerType, type GameEvent, type GameState, type ItemInstance, type ShopCustomer, type ShopSession } from '../types';
 
 const S = BALANCE.shop;
@@ -22,13 +24,15 @@ export function preferenceMatch(type: CustomerType, item: ItemInstance): number 
     : 0;
   const tagHits = (type.likesTags ?? []).filter((t) => item.tags.includes(t)).length;
   const affHits = (type.likesAffinities ?? []).filter((a) => (item.affinities[a] ?? 0) > 0).length;
-  return clamp(statScore, -0.3, 0.6) * 0.3 + tagHits * 0.25 + affHits * 0.15 + type.beautyLove * item.beauty * 0.04;
+  return clamp(statScore, -0.3, 0.6) * 0.3 + tagHits * 0.25 + affHits * 0.15 + type.beautyLove * item.beauty * 0.04
+    + (type.enchantLove ?? 0) * item.enchantments.length * 0.3;
 }
 
 export function customerCount(s: GameState): number {
   const base = S.customersPerSlot[slotName(s)] ?? 3;
   const rep = s.reputation[currentCity()] ?? 0;
-  return Math.max(1, base + Math.floor(Math.max(0, rep) / S.reputationPerExtraCustomer));
+  const sabotage = (s.npcs[BALANCE.contracts.rivalNpc]?.relation ?? 0) <= BALANCE.contracts.rivalMaxRelation ? S.rivalCustomerLoss : 0;
+  return Math.max(1, base + Math.floor(Math.max(0, rep) / S.reputationPerExtraCustomer) - sabotage);
 }
 
 export function generateCustomers(c: Content, s: GameState, rng: Rng): ShopCustomer[] {
@@ -37,7 +41,8 @@ export function generateCustomers(c: Content, s: GameState, rng: Rng): ShopCusto
   const types = Object.values(c.customers).filter((t) => t.minReputation <= rep && t.appearance[slot] > 0);
   const out: ShopCustomer[] = [];
   for (let i = 0, n = customerCount(s); i < n && types.length; i++) {
-    const type = rng.weighted(types.map((t) => [t, t.appearance[slot]] as const));
+    // Los eventos de la ciudad traen más de cierto tipo de cliente (torneo: aventureros; festival: nobles...).
+    const type = rng.weighted(types.map((t) => [t, t.appearance[slot] * customerMult(c, s, t.id)] as const));
     out.push({
       id: `c${i}`, typeId: type.id, name: rng.pick(c.customerNames),
       budget: rng.int(type.budget[0], type.budget[1]),
@@ -86,8 +91,9 @@ export function nextCustomer(s: GameState, { c, rng }: Ctx): GameEvent[] {
     return [];
   }
   const type = c.customers[customer.typeId];
+  // Lo que está en alta demanda se busca más.
   const candidates = exhibitedItems(s)
-    .map((item) => ({ item, score: interestScore(type, item) }))
+    .map((item) => ({ item, score: interestScore(type, item) * (1 + (demandOf(s, item.category) - 1) * BALANCE.demand.customerWeight) }))
     .filter(({ item, score }) => score > 0 && item.value * minQty(type, item) <= customer.budget * 1.1);
   if (!candidates.length) {
     sh.status = 'resolved';
@@ -95,11 +101,12 @@ export function nextCustomer(s: GameState, { c, rng }: Ctx): GameEvent[] {
     return [];
   }
   const { item } = rng.weighted(candidates.map((x) => [x, x.score] as const));
-  const qty = item.category === 'municion' && type.bulk ? Math.min(item.quantity, rng.int(type.bulk[0], type.bulk[1])) : 1;
+  const range = bulkRange(type, item);
+  const qty = range ? Math.min(item.quantity, rng.int(range[0], range[1])) : 1;
   const commerce = 1 + S.commerceBonusPerLevel * (skillLevel(s.skills.comercio) - 1);
   const rep = s.reputation[currentCity()] ?? 0;
   const valuation = item.value * qty * type.generosity * (1 + preferenceMatch(type, item)) * (0.9 + rep / 200) * commerce
-    * rng.range(S.maxPriceJitter[0], S.maxPriceJitter[1]);
+    * demandOf(s, item.category) * rng.range(S.maxPriceJitter[0], S.maxPriceJitter[1]);
   const maxPrice = Math.max(1, Math.round(Math.min(valuation, customer.budget)));
   const opening = Math.max(1, Math.round(maxPrice * rng.range(S.openingRatio[0], S.openingRatio[1])));
   sh.negotiation = { itemUid: item.uid, qty, maxPrice, opening, patience: type.patience, rounds: 0, lastOffer: opening };
@@ -109,8 +116,16 @@ export function nextCustomer(s: GameState, { c, rng }: Ctx): GameEvent[] {
   return [];
 }
 
+/** Consumibles: la munición se compra por decenas; arrojadizos y pociones, de a pocos. */
+function bulkRange(type: CustomerType, item: ItemInstance): [number, number] | null {
+  if (item.category === 'municion' && type.bulk) return type.bulk;
+  if (item.category === 'arrojadizo' || item.category === 'pocion') return [1, 3];
+  return null;
+}
+
 function minQty(type: CustomerType, item: ItemInstance) {
-  return item.category === 'municion' && type.bulk ? Math.min(item.quantity, type.bulk[0]) : 1;
+  const range = bulkRange(type, item);
+  return range ? Math.min(item.quantity, range[0]) : 1;
 }
 
 /** Precio sugerido para la negociación en curso (valor base). */
@@ -128,7 +143,11 @@ function sell(s: GameState, c: Content, price: number, happy: boolean, rng: Rng)
   const item = s.items.find((i) => i.uid === n.itemUid);
   if (!item || item.quantity < n.qty) throw new GameError('Ese objeto ya no está.');
   item.quantity -= n.qty;
-  if (item.quantity <= 0) s.items = s.items.filter((i) => i.uid !== item.uid);
+  if (item.quantity <= 0) {
+    s.items = s.items.filter((i) => i.uid !== item.uid);
+    delete s.belt[item.uid];
+  }
+  registerSale(s, item.category, n.qty);
   s.gold += price;
   s.stats.goldEarned += price;
   s.stats.itemsSold += n.qty;

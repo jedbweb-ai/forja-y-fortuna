@@ -3,6 +3,7 @@ import { GameError, type Content } from '../content';
 import { consumePotion } from '../magic/alchemy';
 import { isInjured } from '../party/progression';
 import { characterProfile } from '../party/stats';
+import { loyaltyCombat } from '../town/servants';
 import type { Rng } from '../rng';
 import type { Affinity, GameState } from '../types';
 import type { MonsterGroup } from '../world/types';
@@ -34,17 +35,19 @@ export function partyUnits(c: Content, s: GameState, members: string[]): CombatU
     .map((ch) => {
       const p = characterProfile(c, s, ch);
       const hpBonus = p.combat.hpBonus ?? 0;
+      // La lealtad de los compañeros comprados cambia cómo pelean (y si obedecen).
+      const loyalty = loyaltyCombat(s, ch);
       return {
         id: `p_${ch.id}`, side: 'party', name: ch.name, charId: ch.id,
         sprite: { key: ch.id === 'herrero' ? 'char.herrero' : `char.npc.${ch.id}` }, look: ch.look,
         x: 0, y: 0, facing: 0, hp: Math.min(ch.hp, p.maxHp) + hpBonus, maxHp: p.maxHp + hpBonus,
-        atk: p.atk, def: p.def, spd: p.spd, move: p.move, jump: p.jump, evasion: p.evasion, crit: p.crit,
+        atk: Math.round(p.atk * loyalty.mult), def: Math.round(p.def * loyalty.mult), spd: p.spd, move: p.move, jump: p.jump, evasion: p.evasion, crit: p.crit,
         damageType: p.damageType, weaponKind: p.weaponKind, affinities: p.affinities, resist: {}, elemental: p.elemental,
         immune: [], combat: p.combat, skills: p.skills, cooldowns: {}, statuses: [],
         ammoUid: p.weaponKind === 'arco' || Object.keys(p.abilities).some((k) => c.skills[k]?.ammo) ? bestArrows(s) : undefined,
         abilities: Object.fromEntries(Object.entries(p.abilities).map(([k, v]) => [k, { ...v }])),
         throwUid: p.throwUid, throwAtk: p.throwAtk,
-        moved: false, acted: false, alive: true,
+        moved: false, acted: false, alive: true, disobey: loyalty.disobey || undefined,
       } satisfies CombatUnit;
     });
 }
@@ -187,6 +190,11 @@ export function beginTurn(c: Content, s: GameState, rng: Rng): CombatFx[] {
       log(cs, `${u.name} está aturdido y pierde el turno.`);
       cs.turnIndex++;
       continue;
+    }
+    cs.autoUnit = undefined;
+    if (u.side === 'party' && u.disobey && rng.chance(u.disobey)) {
+      cs.autoUnit = u.id;
+      log(cs, `${u.name} no te hace caso y actúa por su cuenta.`);
     }
     break;
   }

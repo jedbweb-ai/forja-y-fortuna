@@ -106,6 +106,8 @@ export interface ExpeditionState {
   combat: CombatState | null;
   report: CombatReport | null;
   nightSpawned: boolean;
+  /** Hubo al menos una huida en esta salida (los compañeros hostiles pueden aprovecharla). */
+  fled?: boolean;
   nextId: number;
 }
 

@@ -1,5 +1,6 @@
 import { visibleOptions } from '../../core/dialogue';
 import { relationLevel } from '../../core/state';
+import { canGiftToday } from '../../core/town/relations';
 import { store, useSnapshot } from '../hooks';
 
 function hex(n: number) {
@@ -37,6 +38,9 @@ export function DialogueBox() {
               <button className="btn primary" onClick={() => (node?.next ? store.continueDialogue() : store.closeDialogue())}>
                 {node?.next ? 'Continuar' : 'Despedirse'}
               </button>
+            )}
+            {!options.length && !node?.next && canGiftToday(state, d.npcId) && (
+              <button className="btn" onClick={() => store.openContacts(d.npcId)}>🎁 Regalar</button>
             )}
           </div>
         </div>

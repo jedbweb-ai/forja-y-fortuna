@@ -3,7 +3,7 @@ import type { CustomerType } from '../core/types';
 export const CUSTOMER_TYPES: CustomerType[] = [
   {
     id: 'aventurero', name: 'Aventurero', appearance: { 'mañana': 3, tarde: 3, noche: 2 }, minReputation: -50,
-    budget: [30, 160], wants: { arma: 3, distancia: 1.5, municion: 2, escudo: 1.5, armadura: 1.5 },
+    budget: [30, 160], wants: { arma: 3, distancia: 1.5, municion: 2, escudo: 1.5, armadura: 1.5, pocion: 1.5, arrojadizo: 1 },
     prefStats: { atk: 1, spd: 0.6 }, likesAffinities: ['fuego', 'rayo'], minQuality: 15,
     beautyLove: 0.1, patience: 3, generosity: 1.1, bulk: [10, 20],
     lines: {
@@ -15,7 +15,7 @@ export const CUSTOMER_TYPES: CustomerType[] = [
   },
   {
     id: 'guardia', name: 'Guardia', appearance: { 'mañana': 2, tarde: 2, noche: 3 }, minReputation: -50,
-    budget: [40, 170], wants: { escudo: 3, armadura: 3, arma: 1.5, municion: 1.5 },
+    budget: [40, 170], wants: { escudo: 3, armadura: 3, arma: 1.5, municion: 1.5, pocion: 1, arrojadizo: 0.8 },
     prefStats: { def: 1, dur: 0.6 }, minQuality: 20,
     beautyLove: 0.05, patience: 2, generosity: 1.0, bulk: [10, 20],
     lines: {
@@ -27,7 +27,7 @@ export const CUSTOMER_TYPES: CustomerType[] = [
   },
   {
     id: 'cazador', name: 'Cazador', appearance: { 'mañana': 3, tarde: 2, noche: 1 }, minReputation: -50,
-    budget: [15, 100], wants: { distancia: 3, municion: 3.5, herramienta: 1.5, arma: 1 },
+    budget: [15, 100], wants: { distancia: 3, municion: 3.5, herramienta: 1.5, arma: 1, arrojadizo: 1.5, pocion: 0.8 },
     prefStats: { spd: 1, atk: 0.6 }, likesTags: ['cazador', 'trofeo', 'bestia'], minQuality: 10,
     beautyLove: 0, patience: 3, generosity: 0.95, bulk: [10, 30],
     lines: {
@@ -71,6 +71,18 @@ export const CUSTOMER_TYPES: CustomerType[] = [
       noItem: ['Correcto, pero común. No es para mi colección.', 'Avisame cuando forjes algo memorable.'],
       happy: ['Una joya. Le haré un lugar especial.', 'Esto va a valer el doble en diez años.'],
       angry: ['Hasta la paciencia de un coleccionista tiene límite.', 'No. Simplemente no.'],
+    },
+  },
+  {
+    id: 'mago', name: 'Mago', appearance: { 'mañana': 1, tarde: 1, noche: 2 }, minReputation: 10,
+    budget: [80, 420], wants: { joyeria: 3, pocion: 1.5, runa: 1.5, arma: 0.8 },
+    prefStats: {}, likesAffinities: ['rayo', 'hielo', 'fuego', 'sagrado'], minQuality: 35,
+    beautyLove: 0.4, patience: 3, generosity: 1.25, enchantLove: 1,
+    lines: {
+      greet: ['Siento magia en este taller. O es el carbón. Mostrame lo que tengas encantado.', 'Busco un foco: anillo, amuleto, lo que canalice bien.'],
+      noItem: ['Todo esto es metal sin alma.', 'Ni una runa. Qué desperdicio de fragua.'],
+      happy: ['Resuena. Me lo llevo.', 'Excelente canalización. La Academia va a oír de vos.'],
+      angry: ['Ni un archimago pagaría eso.', 'La avaricia apaga cualquier encantamiento.'],
     },
   },
 ];

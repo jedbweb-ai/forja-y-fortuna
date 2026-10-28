@@ -1,6 +1,7 @@
 import type { Content } from '../core/content';
 import type { Condition, DialogueEffect, Effect, SynergyCondition } from '../core/types';
 import { BALANCE } from '../config/balance';
+import type { CraftSpec, QuestReward } from '../core/town/types';
 
 /** Revisa referencias cruzadas del contenido. Devuelve la lista de errores (vacía = OK). */
 export function validateContent(c: Content): string[] {
@@ -147,6 +148,102 @@ export function validateContent(c: Content): string[] {
         if (e.type === 'discoverPotion' && !c.potions[e.id]) errors.push(`diálogo ${d.id}: receta inexistente "${e.id}"`);
       }
     }
+  }
+
+  // ── Fase 4 ──
+  const npc = (id: string | undefined, where: string) => { if (id && !c.npcs[id]) errors.push(`${where}: NPC inexistente "${id}"`); };
+  const bpOrRecipe = (id: string, where: string) => { if (!c.blueprints[id] && !c.potions[id]) errors.push(`${where}: plano o receta inexistente "${id}"`); };
+  const spec = (sp: CraftSpec, where: string) => {
+    sp.blueprints?.forEach((b) => bpOrRecipe(b, where));
+    if (sp.trait) trait(sp.trait, where);
+    if (sp.qty <= 0) errors.push(`${where}: cantidad inválida`);
+  };
+  const reward = (r: QuestReward, where: string) => {
+    r.materials?.forEach((m) => mat(m.id, where));
+    if (r.blueprint && !c.blueprints[r.blueprint]) errors.push(`${where}: plano inexistente "${r.blueprint}"`);
+    if (r.enchantment && !c.enchantments[r.enchantment]) errors.push(`${where}: encantamiento inexistente "${r.enchantment}"`);
+    if (r.potion && !c.potions[r.potion]) errors.push(`${where}: receta inexistente "${r.potion}"`);
+    if (r.grimoire && !c.grimoires[r.grimoire]) errors.push(`${where}: grimorio inexistente "${r.grimoire}"`);
+    if (r.synergy && !c.synergies[r.synergy]) errors.push(`${where}: sinergia inexistente "${r.synergy}"`);
+  };
+  const families = new Set(Object.values(c.monsters).map((m) => m.family));
+  for (const q of Object.values(c.quests)) {
+    const where = `encargo ${q.id}`;
+    npc(q.giver, where);
+    reward(q.reward, where);
+    q.conditions?.forEach((k) => checkDlgCond(k, where));
+    const o = q.objective;
+    if (o.kind === 'craft') spec(o, where);
+    if (o.kind === 'materials') mat(o.material, where);
+    if (o.kind === 'hunt') {
+      if (o.monster && !c.monsters[o.monster]) errors.push(`${where}: monstruo inexistente "${o.monster}"`);
+      if (o.family && !families.has(o.family)) errors.push(`${where}: familia inexistente "${o.family}"`);
+    }
+    if ((o.kind === 'hunt' && o.region) || o.kind === 'boss') {
+      const r = c.regions[o.region!];
+      if (!r) errors.push(`${where}: región inexistente "${o.region}"`);
+      else if (o.kind === 'boss' && !r.boss) errors.push(`${where}: la región "${o.region}" no tiene jefe`);
+    }
+    if (q.board === 'npc' && !Object.values(c.dialogues).some((d) => Object.values(d.nodes).some((n) =>
+      [...(n.effects ?? []), ...(n.options ?? []).flatMap((op) => op.effects ?? [])].some((e) => e.type === 'offerQuest' && e.id === q.id)))) {
+      errors.push(`${where}: encargo de NPC que ningún diálogo ofrece`);
+    }
+  }
+  for (const d of Object.values(c.dialogues)) {
+    for (const node of Object.values(d.nodes)) {
+      for (const e of [...(node.effects ?? []), ...(node.options ?? []).flatMap((o) => o.effects ?? [])]) {
+        if (e.type === 'offerQuest' && !c.quests[e.id]) errors.push(`diálogo ${d.id}: encargo inexistente "${e.id}"`);
+        if (e.type === 'giveBlueprint' && !c.blueprints[e.id]) errors.push(`diálogo ${d.id}: plano inexistente "${e.id}"`);
+        if (e.type === 'giveEnchantment' && !c.enchantments[e.id]) errors.push(`diálogo ${d.id}: encantamiento inexistente "${e.id}"`);
+      }
+      for (const k of [...(d.conditions ?? []), ...(node.options ?? []).flatMap((o) => o.conditions ?? [])]) {
+        if ((k.type === 'questDone' || k.type === 'questActive') && !c.quests[k.id]) errors.push(`diálogo ${d.id}: encargo inexistente "${k.id}"`);
+        if ((k.type === 'inParty' || k.type === 'servant') && !c.npcs[k.npc]) errors.push(`diálogo ${d.id}: NPC inexistente "${k.npc}"`);
+      }
+    }
+  }
+  for (const k of Object.values(c.contracts)) {
+    npc(k.merchant, `contrato ${k.id}`);
+    spec(k.item, `contrato ${k.id}`);
+  }
+  for (const ev of Object.values(c.cityEvents)) {
+    ev.prices?.materials?.forEach((m) => mat(m, `evento ${ev.id}`));
+    Object.keys(ev.customers ?? {}).forEach((t) => { if (!c.customers[t]) errors.push(`evento ${ev.id}: cliente inexistente "${t}"`); });
+    for (const o of ev.choice?.options ?? []) {
+      o.effects.forEach((e) => checkDlgEffect(e, `evento ${ev.id}`));
+      o.conditions?.forEach((k) => checkDlgCond(k, `evento ${ev.id}`));
+    }
+  }
+  for (const l of Object.values(c.auctionLots)) {
+    const src = l.source;
+    const where = `lote ${l.id}`;
+    if (src.kind === 'material') mat(src.id, where);
+    if (src.kind === 'grimoire' && !c.grimoires[src.id]) errors.push(`${where}: grimorio inexistente "${src.id}"`);
+    if (src.kind === 'blueprint' && !c.blueprints[src.id]) errors.push(`${where}: plano inexistente "${src.id}"`);
+    if (src.kind === 'item') {
+      const bp = c.blueprints[src.blueprint];
+      if (!bp) errors.push(`${where}: plano inexistente "${src.blueprint}"`);
+      else for (const part of bp.parts) if (!src.materials[part.slot]) errors.push(`${where}: falta la parte "${part.slot}"`);
+      Object.values(src.materials).forEach((m) => mat(m, where));
+      src.traits?.forEach((t) => trait(t, where));
+      src.enchantments?.forEach((e) => { if (!c.enchantments[e]) errors.push(`${where}: encantamiento inexistente "${e}"`); });
+      src.finish?.forEach((f) => { if (!c.finishes[f]) errors.push(`${where}: acabado inexistente "${f}"`); });
+    }
+  }
+  for (const b of Object.values(c.bidders)) npc(b.npc, `postor ${b.id}`);
+  for (const n of Object.values(c.npcs)) {
+    for (const u of n.unlocks ?? []) {
+      for (const p of u.perks ?? []) {
+        const where = `NPC ${n.id} (${u.level})`;
+        if (p.kind === 'stock') p.materials.forEach((m) => mat(m, where));
+        if (p.kind === 'teach') reward({ blueprint: p.blueprint, enchantment: p.enchantment, potion: p.potion, synergy: p.synergy, grimoire: p.grimoire }, where);
+      }
+    }
+  }
+  for (const loc of Object.values(c.cities).flatMap((x) => x.locations)) npc(loc.owner, `lugar ${loc.id}`);
+  for (const m of Object.values(c.mercenaries).filter((x) => x.kind === 'esclavo')) {
+    const spot = c.cities[c.npcs[m.id]?.city]?.locations.find((l) => l.kind === 'esclavos')?.scene?.npcSpots[m.id];
+    if (!spot) errors.push(`compañero ${m.id}: falta su lugar en el mercado de esclavos`);
   }
 
   Object.keys(BALANCE.start.materials).forEach((m) => mat(m, 'balance.start.materials'));

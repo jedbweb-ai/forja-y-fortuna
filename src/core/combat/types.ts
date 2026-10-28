@@ -184,6 +184,8 @@ export interface CombatUnit {
   throwAtk?: number;
   moved: boolean;
   acted: boolean;
+  /** Compañero con poca lealtad: chance por turno de actuar por su cuenta. */
+  disobey?: number;
   alive: boolean;
   killedBy?: { element?: Affinity; damageType?: DamageType };
 }
@@ -206,6 +208,8 @@ export interface CombatState {
   terrainFx: Record<string, { kind: TerrainKind; turns: number }>;
   /** Casillas de hierba que ya se quemaron. */
   burnt: string[];
+  /** Unidad del grupo que este turno no te obedece (la juega la IA). */
+  autoUnit?: string;
 }
 
 /** Resultado que se muestra al terminar un combate. */

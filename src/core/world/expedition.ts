@@ -10,6 +10,8 @@ import type { Rng } from '../rng';
 import { addMaterial, addXp, skillLevel } from '../state';
 import { advanceTime, sleep, slotName } from '../time';
 import type { GameEvent, GameState } from '../types';
+import { recordKills } from '../town/quests';
+import { servantEscapes, servantsAfterCombat } from '../town/servants';
 import { generateGroup, groupThreat } from './encounters';
 import { adjacent, findTiles, regionPath, zoneAt, type Pt } from './region';
 import type { ExpeditionState, MonsterGroup, RegionDef } from './types';
@@ -324,13 +326,15 @@ function finishExpedition(s: GameState) {
   s.outing = false;
 }
 
-export function returnHome(s: GameState, { c }: Ctx): GameEvent[] {
+export function returnHome(s: GameState, { c, rng }: Ctx): GameEvent[] {
   const e = expedition(s);
   if (e.combat || e.report) throw new GameError('Primero terminá el combate.');
   const r = region(c, s);
   const total = bagLoad(e.bag);
+  const escapes = e.fled ? servantEscapes(s, rng, e.members) : [];
   finishExpedition(s);
   return [
+    ...escapes,
     ...advanceTime(s, r.travelSlots),
     { type: 'toast', text: `Volvés a Valdebrasa con ${total} materiales.`, tone: 'good' },
     { type: 'expeditionEnded', outcome: 'return' },
@@ -339,10 +343,11 @@ export function returnHome(s: GameState, { c }: Ctx): GameEvent[] {
 }
 
 /** Derrota: se pierde la mitad de lo juntado, se despierta en la ciudad y los compañeros quedan heridos. */
-function defeatHome(s: GameState): GameEvent[] {
+function defeatHome(s: GameState, rng: Rng): GameEvent[] {
   const e = expedition(s);
   const lost = loseFromBag(s, EX.defeatLoss);
   const members = e.members;
+  const escapes = servantEscapes(s, rng, members);
   finishExpedition(s);
   const events = sleep(s);
   for (const id of members) {
@@ -350,6 +355,7 @@ function defeatHome(s: GameState): GameEvent[] {
   }
   const lostCount = Object.values(lost).reduce((a, q) => a + q, 0);
   return [
+    ...escapes,
     ...events,
     { type: 'toast', text: `Despertás en Valdebrasa. Perdiste ${lostCount} materiales en la huida.`, tone: 'bad' },
     { type: 'expeditionEnded', outcome: 'defeat' },
@@ -371,17 +377,25 @@ function settle(c: Content, s: GameState, rng: Rng): GameEvent[] {
   const cs = e.combat;
   if (!cs?.outcome || e.report) return [];
   e.report = resolveCombat(c, s, rng);
+  const events: GameEvent[] = [];
   if (cs.outcome === 'fled') {
+    e.fled = true;
     const g = e.groups.find((x) => x.id === cs.groupId);
     if (g) g.calm = 3;
   }
-  return [{ type: 'combatEnded', outcome: cs.outcome }];
+  if (cs.outcome === 'victory') {
+    const killed = cs.units.filter((u) => u.side === 'enemy' && u.monsterId).map((u) => u.monsterId!);
+    events.push(...recordKills(s, c, e.regionId, killed));
+  }
+  if (cs.outcome !== 'fled') servantsAfterCombat(s, e.members, cs.outcome === 'victory');
+  return [{ type: 'combatEnded', outcome: cs.outcome }, ...events];
 }
 
 function partyTurn(s: GameState, unitId: string) {
   const cs = combatOf(s);
   const u = currentUnit(cs);
   if (!u || u.id !== unitId || u.side !== 'party') throw new GameError('No es el turno de esa unidad.');
+  if (cs.autoUnit === u.id) throw new GameError(`${u.name} no te hace caso este turno.`);
   return u;
 }
 
@@ -427,26 +441,26 @@ export function combatFlee(s: GameState, { c, rng }: Ctx, unitId: string): GameE
 export function combatAiStep(s: GameState, { c, rng }: Ctx): GameEvent[] {
   const cs = combatOf(s);
   const u = currentUnit(cs);
-  if (!u || u.side !== 'enemy') return [];
+  if (!u || (u.side !== 'enemy' && cs.autoUnit !== u.id)) return [];
   const fx = aiTurn(c, s, rng);
   return [{ type: 'combatFx', fx }, ...settle(c, s, rng)];
 }
 
 /** Cerrar el reporte del combate y seguir (o volver a la ciudad si fue derrota). */
-export function closeReport(s: GameState, _ctx: Ctx): GameEvent[] {
+export function closeReport(s: GameState, { rng }: Ctx): GameEvent[] {
   const e = expedition(s);
   if (!e.report) return [];
   const outcome = e.report.outcome;
   e.report = null;
   e.combat = null;
-  if (outcome === 'defeat') return defeatHome(s);
+  if (outcome === 'defeat') return defeatHome(s, rng);
   // Nadie en pie para seguir: vuelta forzada.
-  if (!e.members.some((id) => s.characters[id] && !isInjured(s, s.characters[id]))) return defeatHome(s);
+  if (!e.members.some((id) => s.characters[id] && !isInjured(s, s.characters[id]))) return defeatHome(s, rng);
   return [];
 }
 
 export function canAct(s: GameState): boolean {
   const cs = s.expedition?.combat;
   const u = cs && !cs.outcome ? currentUnit(cs) : undefined;
-  return !!u && u.side === 'party';
+  return !!u && u.side === 'party' && cs?.autoUnit !== u.id;
 }

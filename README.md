@@ -2,7 +2,7 @@
 
 Juego de gestión y RPG táctico: sos un herrero en un mundo de fantasía. El diseño completo está en [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (fuente de verdad).
 
-**Estado: Fase 3 (profundidad de la forja y magia) terminada.**
+**Estado: Fase 4 (economía, ciudad y relaciones) terminada.**
 
 ## Cómo correrlo
 
@@ -18,7 +18,7 @@ npm run icons      # regenera los íconos placeholder de la PWA
 Para probar en el celular: `npm run dev -- --host`, abrir la IP de la compu desde el celu (misma red) y girarlo a horizontal.
 
 ### Modo debug
-`?debug=1` en la URL, o 5 toques rápidos en el ⚒️ del HUD. Aparece el botón 🐞: oro, materiales, kit de equipo de prueba, contratar mercenarios, kit mágico (grimorios, joyas con habilidades, arrojadizos, bombas, hoz y pociones en el cinturón), combates de prueba (gelines, goblins, bestias, jefe), curar al grupo, avanzar franjas/días, subir habilidades, reputación, relaciones con NPCs, revelar sinergias y reiniciar el límite diario de charlas. En modo debug la consola tiene `fyf` (el store), `fyfCmd` (comandos de expedición y combate) y `fyfGame` (Phaser).
+`?debug=1` en la URL, o 5 toques rápidos en el ⚒️ del HUD. Aparece el botón 🐞: oro, materiales, kit de equipo de prueba, contratar mercenarios, kit mágico (grimorios, joyas con habilidades, arrojadizos, bombas, hoz y pociones en el cinturón), combates de prueba (gelines, goblins, bestias, jefe), curar al grupo, avanzar franjas/días, subir habilidades, reputación, relaciones con NPCs (también la lealtad de los compañeros), revelar sinergias, reiniciar el límite diario de charlas, disparar un evento de ciudad, poner la subasta para hoy, renovar avisos y contratos, y dar por cumplidas las cacerías de los encargos. En modo debug la consola tiene `fyf` (el store), `fyfCmd` (comandos de expedición y combate) y `fyfGame` (Phaser).
 
 ## Arquitectura
 
@@ -30,6 +30,7 @@ src/
     party/      personajes, atributos, equipo, perfil de combate, mercenarios
     combat/     motor táctico: grilla con alturas, daño, estados, terreno (hielo, llamas, charcos), áreas, IA, botín
     magic/      habilidades activas de los objetos, grimorios, alquimia y cinturón de pociones
+    town/       relaciones y regalos, encargos, contratos, demanda, eventos de ciudad, subasta y compañeros por lealtad
     world/      regiones, encuentros por presupuesto de amenaza, expediciones
     city.ts     movimiento por la ciudad, NPCs presentes por franja
     dialogue.ts motor de diálogos (condiciones y efectos)
@@ -85,5 +86,19 @@ src/
 - **Ciudad**: abren la alquimia de Bastián (hierbas y reactivos) y la librería de Teodora (grimorios y planos). En las regiones aparecen hierbas (con hoz; alguna solo de noche), depósitos de gemas y cofres.
 - Las partidas anteriores se migran solas (versión 3 del guardado) y reciben los NPC y recetas nuevos del contenido.
 
+## Decisiones de la Fase 4
+
+- **Reputación por niveles** (mal vista, desconocida, conocida, respetada, renombrada, famosa, legendaria): trae mejores clientes y habilita encargos y contratos mejores. Baja si fallás encargos o rompés contratos, y con los rumores de quien te odia.
+- **Relaciones con efectos reales**, definidos por NPC en sus datos (`unlocks` con `perks`): descuentos, mercadería exclusiva, enseñanzas (planos, recetas, combinaciones, grimorios) y rumores en el tablón. Con relación mala, el dueño de un lugar te cobra más y, si es hostil, no te atiende; un NPC hostil habla mal de vos. Ruperto enojado te saca clientes, puja en tu contra en la subasta y a veces se queda con un contrato.
+- **Regalos**: uno por persona por día (además de la charla). Cada NPC ama, le gusta, le da igual o le disgusta según ids, tipos, categorías, tags, afinidades y acabados. Una pieza forjada por vos vale más que un material suelto, y suma por calidad. Los gustos se van descubriendo en el panel de Contactos.
+- **Encargos** del gremio y del tablón (rotan cada 2 días) y **pedidos personales** que los NPC ofrecen charlando (con cadenas, por ejemplo la del capitán Tizón que termina en Gruñaz). Tipos: pieza con requisitos, materiales, cacería y jefe. Fallar o abandonar baja la reputación y la relación.
+- **Contratos de mercaderes**: volumen fijo con entregas periódicas y precio por unidad que no depende de la demanda. Se cobra al entregar (sin seña); si vence una entrega sin cumplir, se rompe y perdés reputación y relación.
+- **Demanda por categoría**: vender mucho de lo mismo baja el precio (en la tienda y en la venta rápida) y se recupera día a día hacia lo que piden los eventos. Aventureros, cazadores y guardias compran pociones y arrojadizos; se sumó el **mago**, que busca joyas, runas y piezas encantadas.
+- **Eventos de ciudad** (torneo, festival, plagas, huelga, caravana, boda noble, inspección...): duran días, mueven demanda, precios y clientes, y algunos piden tomar partido en el tablón.
+- **Gran subasta** cada 7 días, anunciada 3 días antes. Comprás pujando por rondas contra postores con estilo propio (caprichoso, paciente, impulsivo, cauto, rival); lo que consignás se vende solo y ves las pujas. La casa cobra el 10%. Si no vas, vende igual lo consignado. Tiene lotes únicos (planos, grimorios, piezas con historia).
+- **Mercado de esclavos y lealtad**: candidatos que rotan cada semana, se compran una vez y no cobran. La lealtad es la relación: sube con equipo, victorias, charlas, regalos y su pedido personal; baja si salen sin equipo o caen heridos. Con lealtad baja rinden menos; hostiles, desobedecen el 20% de los turnos (la IA juega por ellos) y pueden escaparse con lo puesto tras una derrota o huida. Liberarlos les da lealtad máxima y empiezan a cobrar. Se pueden dejar esperando en la herrería.
+- **Mercenarios**: con relación de amigo cobran 15% menos (aliado, 30%) y no se van aunque les debas.
+- Las partidas anteriores se migran solas (versión 4 del guardado) y reciben los NPC nuevos con su lealtad inicial.
+
 ## Pendiente para próximas fases
-Ver el plan en `docs/GAME_DESIGN.md` §15. Lo próximo es la Fase 4: economía, ciudad y relaciones.
+Ver el plan en `docs/GAME_DESIGN.md` §15. Lo próximo es la Fase 5: mazmorras.

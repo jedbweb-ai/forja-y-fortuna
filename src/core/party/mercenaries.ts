@@ -1,6 +1,8 @@
 import { BALANCE } from '../../config/balance';
 import { GameError, type Content, type Ctx } from '../content';
-import { changeRelation } from '../state';
+import { changeRelation, relationLevel } from '../state';
+import { RELATION_LEVELS, type RelationLevel } from '../types';
+import { wageFor } from '../town/servants';
 import type { GameEvent, GameState } from '../types';
 import { unequipAll } from './equipment';
 import { createMercenary, partyMembers } from './progression';
@@ -10,12 +12,12 @@ const M = BALANCE.mercenaries;
 
 /** Mercenarios disponibles en la taberna (los que no están en tu grupo). */
 export function availableMercenaries(c: Content, s: GameState): MercenaryDef[] {
-  return Object.values(c.mercenaries).filter((m) => !s.party.includes(m.id));
+  return Object.values(c.mercenaries).filter((m) => m.kind !== 'esclavo' && !s.party.includes(m.id));
 }
 
 export function hireMercenary(s: GameState, { c }: Ctx, id: string): GameEvent[] {
   const def = c.mercenaries[id];
-  if (!def) throw new GameError('Ese mercenario no existe.');
+  if (!def || def.kind === 'esclavo') throw new GameError('Ese mercenario no existe.');
   if (s.location !== 'taberna') throw new GameError('Los mercenarios se contratan en la taberna.');
   if (s.expedition) throw new GameError('Estás de expedición.');
   if (s.party.includes(id)) throw new GameError(`${def.name} ya está en tu grupo.`);
@@ -42,6 +44,11 @@ export function dismissMercenary(s: GameState, _ctx: Ctx, id: string): GameEvent
   if (id === 'herrero') throw new GameError('No podés despedirte a vos mismo.');
   if (s.expedition) throw new GameError('No podés despedir a nadie en plena expedición.');
   if (!s.party.includes(id)) throw new GameError('No está en tu grupo.');
+  // Los compañeros comprados (o liberados) no se van: se quedan esperando en la herrería.
+  if (s.characters[id]?.bond) {
+    s.party = s.party.filter((p) => p !== id);
+    return [{ type: 'toast', text: `${s.characters[id].name} se queda esperando en la herrería con su equipo.` }];
+  }
   leave(s, id);
   changeRelation(s, id, -3);
   return [{ type: 'toast', text: `${s.characters[id].name} deja el grupo y te devuelve el equipo.` }];
@@ -52,8 +59,9 @@ export function payWages(s: GameState): GameEvent[] {
   const events: GameEvent[] = [];
   for (const ch of partyMembers(s)) {
     if (ch.id === 'herrero' || !ch.wage) continue;
-    if (s.gold >= ch.wage) {
-      s.gold -= ch.wage;
+    const wage = wageFor(s, ch);
+    if (s.gold >= wage) {
+      s.gold -= wage;
       ch.unpaidDays = 0;
       changeRelation(s, ch.id, M.paidRelation);
       continue;
@@ -61,7 +69,9 @@ export function payWages(s: GameState): GameEvent[] {
     ch.unpaidDays = (ch.unpaidDays ?? 0) + 1;
     changeRelation(s, ch.id, M.unpaidRelation);
     const relation = s.npcs[ch.id]?.relation ?? 0;
-    if ((ch.unpaidDays >= M.unpaidDaysToLeave || relation <= M.leaveRelation) && !s.expedition) {
+    // Con buena relación aguantan una mala racha sin irse.
+    const loyal = RELATION_LEVELS.indexOf(relationLevel(relation)) >= RELATION_LEVELS.indexOf(M.loyalFrom as RelationLevel);
+    if (!loyal && (ch.unpaidDays >= M.unpaidDaysToLeave || relation <= M.leaveRelation) && !s.expedition) {
       leave(s, ch.id);
       events.push({ type: 'toast', text: `${ch.name} se cansó de no cobrar y dejó el grupo.`, tone: 'bad' });
     } else {
@@ -72,5 +82,5 @@ export function payWages(s: GameState): GameEvent[] {
 }
 
 export function dailyWages(s: GameState): number {
-  return partyMembers(s).reduce((a, ch) => a + (ch.wage ?? 0), 0);
+  return partyMembers(s).reduce((a, ch) => a + wageFor(s, ch), 0);
 }

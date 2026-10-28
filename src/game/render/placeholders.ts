@@ -268,6 +268,35 @@ export function generatePlaceholders(scene: Phaser.Scene, content: Content) {
     px(g, 20, 46, 16, 4, 0xff7a2d);
   });
 
+  // ── Edificios de la Fase 4 ──
+  prop(scene, 'prop.board', 64, 80, (g) => {
+    px(g, 10, 30, 4, 46, 0x6b4220); px(g, 50, 30, 4, 46, 0x6b4220);
+    px(g, 6, 8, 52, 38, 0x8b5a2b); px(g, 9, 11, 46, 32, 0xb08a52);
+    const notes = [0xf4f1ea, 0xe8dfc8, 0xf2d16b, 0xf4f1ea, 0xd9e8f0];
+    notes.forEach((col, i) => px(g, 12 + (i % 3) * 14, 14 + Math.floor(i / 3) * 15, 11, 12, col));
+    px(g, 17, 15, 2, 2, 0xc0392b); px(g, 31, 15, 2, 2, 0xc0392b); px(g, 45, 15, 2, 2, 0x2e6da4);
+  });
+  prop(scene, 'prop.podium', 64, 64, (g) => {
+    block(g, 32, 54, 56, 22, 0x6b2a2a);
+    px(g, 20, 14, 24, 18, 0x7a4e26); px(g, 18, 12, 28, 4, 0x8b5a2b);
+    px(g, 40, 6, 3, 10, 0x8b5a2b); px(g, 37, 4, 9, 4, 0xa8784a);
+  });
+  prop(scene, 'prop.banner', 40, 80, (g) => {
+    px(g, 18, 4, 4, 72, 0x5a3a24);
+    poly(g, [22, 8, 38, 8, 38, 44, 30, 38, 22, 44], 0x2a4a7a);
+    px(g, 27, 18, 6, 6, 0xd9a441);
+  });
+  prop(scene, 'prop.tent', 64, 72, (g) => {
+    poly(g, [4, 64, 32, 10, 60, 64], 0x7a6a52);
+    poly(g, [32, 10, 60, 64, 40, 64], 0x5a4e3e);
+    poly(g, [24, 64, 32, 40, 40, 64], 0x2a1a14);
+    px(g, 31, 4, 2, 8, 0x5a3a24);
+  });
+  prop(scene, 'prop.fence', 64, 40, (g) => {
+    for (let i = 0; i < 5; i++) px(g, 6 + i * 12, 10, 4, 26, 0x6b4220);
+    px(g, 4, 16, 56, 3, 0x7a4e26); px(g, 4, 26, 56, 3, 0x7a4e26);
+  });
+
   stall('prop.stall_red', 0xc0392b);
   stall('prop.stall_blue', 0x2e6da4);
   stall('prop.stall_green', 0x3e8a3a);

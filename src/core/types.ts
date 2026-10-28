@@ -3,6 +3,9 @@ import type { CombatFx } from './combat/types';
 import type { AlchemyProps, ItemAbility, PotionData } from './magic/types';
 import type { Character, WeaponKind } from './party/types';
 import type { ExpeditionState, MarketState } from './world/types';
+import type {
+  AuctionState, CityEventsState, ContractsState, DemandState, QuestsState, RelationPerk, ServantMarketState,
+} from './town/types';
 
 export const AFFINITIES = ['fuego', 'hielo', 'rayo', 'agua', 'tierra', 'viento', 'sagrado', 'oscuro', 'veneno'] as const;
 export type Affinity = (typeof AFFINITIES)[number];
@@ -211,6 +214,8 @@ export interface CustomerType {
   generosity: number;
   /** Si compran consumibles, rango de unidades. */
   bulk?: [number, number];
+  /** Cuánto valoran los encantamientos (0..1). */
+  enchantLove?: number;
   lines: { greet: string[]; noItem: string[]; happy: string[]; angry: string[] };
 }
 
@@ -225,7 +230,14 @@ export type Condition =
   | { type: 'hasMaterial'; id: string; qty: number }
   | { type: 'discovered'; synergy: string; not?: boolean }
   | { type: 'dayMin'; value: number }
-  | { type: 'itemsForgedMin'; value: number };
+  | { type: 'itemsForgedMin'; value: number }
+  | { type: 'reputationMin'; value: number }
+  | { type: 'questDone'; id: string; not?: boolean }
+  | { type: 'questActive'; id: string; not?: boolean }
+  /** El NPC (compañero) está en tu grupo. */
+  | { type: 'inParty'; npc: string; not?: boolean }
+  /** Compañero comprado en el mercado de esclavos y todavía no liberado. */
+  | { type: 'servant'; npc: string; freed?: boolean };
 
 export type DialogueEffect =
   | { type: 'relation'; npc: string; delta: number }
@@ -236,7 +248,11 @@ export type DialogueEffect =
   | { type: 'discoverSynergy'; id: string }
   | { type: 'reputation'; delta: number }
   | { type: 'giveGrimoire'; id: string }
-  | { type: 'discoverPotion'; id: string };
+  | { type: 'discoverPotion'; id: string }
+  /** Ofrece un encargo personal: queda aceptado al elegir la opción. */
+  | { type: 'offerQuest'; id: string }
+  | { type: 'giveBlueprint'; id: string }
+  | { type: 'giveEnchantment'; id: string };
 
 export interface DialogueOption {
   text: string;
@@ -279,8 +295,10 @@ export interface Npc {
   /** Gustos por id de material, categoría de objeto o tag. */
   gifts: Partial<Record<GiftTaste, string[]>>;
   routine: Partial<Record<TimeSlot, string>>;
-  /** Desbloqueos por nivel de relación (sistema completo en Fase 4). */
-  unlocks?: { level: RelationLevel; description: string }[];
+  /** Qué da (o quita) la relación al llegar a cada nivel. Los niveles bajos aplican mientras dure. */
+  unlocks?: { level: RelationLevel; description: string; perks?: RelationPerk[] }[];
+  /** Rumores que cuenta cuando la relación lo permite (aparecen en el tablón). */
+  rumors?: string[];
   look: { body: number; hair: number; accent: number };
   /** Frases cuando ya se habló con el NPC hoy (límite diario de interacciones). */
   busyLines: string[];
@@ -308,7 +326,8 @@ export interface HotspotDef {
   label: string;
   x: number;
   y: number;
-  action: 'forge' | 'shop' | 'market' | 'npc' | 'inventory' | 'book' | 'runas' | 'joyeria' | 'alquimia' | 'libreria';
+  action: 'forge' | 'shop' | 'market' | 'npc' | 'inventory' | 'book' | 'runas' | 'joyeria' | 'alquimia' | 'libreria'
+    | 'gremio' | 'tablon' | 'subastas' | 'esclavos';
   npc?: string;
 }
 
@@ -341,6 +360,8 @@ export interface CityLocation {
   /** Grimorios y planos a la venta (librería). */
   grimoires?: string[];
   blueprintsForSale?: { id: string; price: number }[];
+  /** NPC dueño del lugar: su relación con vos cambia precios y si te atiende. */
+  owner?: string;
   description: string;
 }
 
@@ -446,6 +467,11 @@ export interface NpcState {
   relation: number;
   lastTalkDay: number;
   seenDialogues: string[];
+  lastGiftDay?: number;
+  /** Gustos que ya descubriste regalando ("ama:acero"). */
+  knownTastes?: string[];
+  /** Niveles cuyos desbloqueos de enseñanza ya se cobraron. */
+  perksClaimed?: RelationLevel[];
 }
 
 export type SkillId =
@@ -490,6 +516,13 @@ export interface GameState {
   /** Recetas de alquimia descubiertas. */
   discoveredPotions: string[];
   stats: { itemsForged: number; itemsRuined: number; goldEarned: number; itemsSold: number };
+  // ── Fase 4 ──
+  quests: QuestsState;
+  contracts: ContractsState;
+  demand: DemandState;
+  cityEvents: CityEventsState;
+  auction: AuctionState;
+  servantMarket: ServantMarketState;
   settings: GameSettings;
   nextUid: number;
 }

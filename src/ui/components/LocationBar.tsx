@@ -1,6 +1,7 @@
 import { cityLocation, npcsAt, restSlot, sleepUntilMorning } from '../../core/city';
 import { damagedItems } from '../../core/forge/repair';
 import { slotName } from '../../core/time';
+import { isAuctionDay } from '../../core/town/auction';
 import { store, useSnapshot } from '../hooks';
 
 /** Barra inferior con las acciones del lugar. Todo lo tocable en la escena también está acá. */
@@ -65,6 +66,10 @@ export function LocationBar() {
         {loc.kind === 'alquimista' && <button className="btn primary" onClick={() => store.openPanel('market')}>🌿 Hierbas y reactivos</button>}
         {loc.kind === 'libreria' && <button className="btn primary" onClick={() => store.openPanel('library')}>📚 Grimorios y planos</button>}
         {loc.id === 'taberna' && <button className="btn primary" onClick={() => store.openPanel('mercenaries')}>🍺 Mercenarios</button>}
+        {loc.kind === 'gremio' && <button className="btn primary" onClick={() => store.openPanel('quests')}>📜 Encargos y contratos</button>}
+        {loc.kind === 'tablon' && <button className="btn primary" onClick={() => store.openPanel('quests')}>📢 Avisos y encargos</button>}
+        {loc.kind === 'subastas' && <button className="btn primary" onClick={() => store.openPanel('auction')}>🔨 Subasta{isAuctionDay(state) ? ' (¡hoy!)' : ''}</button>}
+        {loc.kind === 'esclavos' && <button className="btn primary" onClick={() => store.openPanel('servants')}>⛓️ Tratos</button>}
         {npcs.map((id) => (
           <button key={id} className="btn" onClick={() => store.talkTo(id)}>💬 {c.npcs[id].name.split(' ')[0]}</button>
         ))}

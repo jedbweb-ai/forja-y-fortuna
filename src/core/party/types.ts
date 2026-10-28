@@ -36,6 +36,10 @@ export interface Character {
   /** Sueldo diario (solo mercenarios). */
   wage?: number;
   unpaidDays?: number;
+  /** Comprado en el mercado de esclavos ('esclavo') o ya liberado ('liberado'). */
+  bond?: 'esclavo' | 'liberado';
+  /** Se escapó (ya no está con vos). */
+  escaped?: boolean;
 }
 
 /** Mercenario contratable en la taberna (datos). Su id coincide con el de su NPC. */
@@ -52,4 +56,12 @@ export interface MercenaryDef {
   look: Look;
   quote: string;
   description: string;
+  /** 'esclavo': se compra en el mercado de esclavos y no cobra hasta que lo liberás. */
+  kind?: 'mercenario' | 'esclavo';
+  /** Solo esclavos: precio de compra, lealtad inicial y sueldo cuando es libre. */
+  price?: number;
+  startRelation?: number;
+  freeWage?: number;
+  /** Su historia (se va contando con la lealtad). */
+  story?: string;
 }

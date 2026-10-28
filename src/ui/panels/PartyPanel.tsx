@@ -7,6 +7,7 @@ import { isInjured, xpToNext } from '../../core/party/progression';
 import { characterProfile, itemRequirements } from '../../core/party/stats';
 import { ATTRIBUTES, EQUIP_SLOTS, type EquipSlot } from '../../core/party/types';
 import { relationLevel } from '../../core/state';
+import { freeServant, loyaltyWarning, ownedServants, rejoinServant, wageFor } from '../../core/town/servants';
 import { Panel } from '../components/Panel';
 import { RARITY_CLASS } from '../format';
 import { store, useGame } from '../hooks';
@@ -76,12 +77,21 @@ export function PartyPanel() {
           {p.warnings.map((w) => <p key={w} className="bad-text small">⚠ {w}</p>)}
           {ch.wage !== undefined && (
             <p className="small muted">
-              Sueldo: 🪙 {ch.wage}/día · Relación: {relationLevel(s.npcs[ch.id]?.relation ?? 0)}
+              {ch.bond === 'esclavo' ? 'No cobra sueldo' : `Sueldo: 🪙 ${wageFor(s, ch)}/día${wageFor(s, ch) < (ch.wage ?? 0) ? ` (rebaja por buena relación, antes ${ch.wage})` : ''}`}
+              {' · '}{ch.bond ? 'Lealtad' : 'Relación'}: {relationLevel(s.npcs[ch.id]?.relation ?? 0)} ({s.npcs[ch.id]?.relation ?? 0})
               {(ch.unpaidDays ?? 0) > 0 && <b className="bad-text"> · Le debés {ch.unpaidDays} día(s)</b>}
             </p>
           )}
+          {loyaltyWarning(s, ch) && <p className="bad-text small">⚠ {loyaltyWarning(s, ch)}</p>}
           {ch.id !== 'herrero' && !s.expedition && (
-            <button className="btn danger" onClick={() => { if (store.run(dismissMercenary, ch.id)) setSel('herrero'); }}>Despedir</button>
+            <div className="row">
+              <button className="btn" onClick={() => store.talkTo(ch.id)}>💬 Charlar</button>
+              <button className="btn" onClick={() => store.openContacts(ch.id)}>🎁 Regalar</button>
+              {ch.bond === 'esclavo' && <button className="btn good" onClick={() => store.run(freeServant, ch.id)}>Liberar</button>}
+              <button className="btn danger" onClick={() => { if (store.run(dismissMercenary, ch.id)) setSel('herrero'); }}>
+                {ch.bond ? 'Dejar en la herrería' : 'Despedir'}
+              </button>
+            </div>
           )}
         </section>
 
@@ -136,6 +146,7 @@ export function PartyPanel() {
           <BeltSection charId={ch.id} />
         </section>
       </div>
+      <WaitingCompanions />
     </Panel>
   );
 }
@@ -143,6 +154,28 @@ export function PartyPanel() {
 function jewelLine(item: { affinities: Record<string, number | undefined>; stats: { def: number }; abilities?: unknown[] }) {
   const aff = Object.entries(item.affinities).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(', ');
   return [aff || 'sin gema', item.stats.def ? `Def ${item.stats.def}` : '', item.abilities?.length ? `${item.abilities.length} habilidad(es)` : ''].filter(Boolean).join(' · ');
+}
+
+/** Compañeros comprados que esperan en la herrería. */
+function WaitingCompanions() {
+  const s = useGame();
+  const waiting = ownedServants(s).filter((ch) => !s.party.includes(ch.id));
+  if (!waiting.length) return null;
+  return (
+    <section>
+      <h4>Esperando en la herrería</h4>
+      <ul className="item-rows">
+        {waiting.map((ch) => (
+          <li key={ch.id}>
+            <span className="grow"><b>{ch.name}</b> <small className="muted">nivel {ch.level} · lealtad {relationLevel(s.npcs[ch.id]?.relation ?? 0)}</small></span>
+            <button className="btn" disabled={s.party.length >= BALANCE.MAX_PARTY_SIZE || s.location !== 'herreria' || !!s.expedition} onClick={() => store.run(rejoinServant, ch.id)}>
+              Sumar al grupo
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 /** Cinturón de pociones que comparte todo el grupo. */

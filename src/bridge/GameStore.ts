@@ -12,7 +12,8 @@ import { makeSaveFile, type SaveRepository } from '../persistence/saveFile';
 
 export type PanelId =
   | 'forge' | 'shop' | 'market' | 'inventory' | 'book' | 'settings' | 'debug'
-  | 'party' | 'mercenaries' | 'repair' | 'expedition' | 'bag' | 'alchemy' | 'library';
+  | 'party' | 'mercenaries' | 'repair' | 'expedition' | 'bag' | 'alchemy' | 'library'
+  | 'quests' | 'contacts' | 'auction' | 'servants';
 
 /** Puesto de trabajo de la herrería: yunque (y flechería), mesa de joyería o mesa de runas. */
 export type ForgeStation = 'yunque' | 'joyeria' | 'runas';
@@ -47,6 +48,8 @@ export interface UiState {
   combat: { mode: 'move' | 'skill' | 'potion' | null; skillId?: string; potionUid?: string; target?: { x: number; y: number } };
   /** Puesto de la herrería que abrió el panel de forja. */
   forgeStation: ForgeStation;
+  /** NPC elegido en el panel de contactos (para regalar). */
+  contactNpc: string | null;
   /** Hay animaciones o turnos enemigos en curso: la UI de combate espera. */
   busy: boolean;
 }
@@ -88,7 +91,7 @@ export class GameStore {
     this.snapshot = {
       state: null,
       ui: { screen: 'loading', view: 'location', panel: null, dialogue: null, itemCard: null, toasts: [], debug, hasSave: false, forgeDraft: null,
-        regionId: null, combat: { mode: null }, busy: false, forgeStation: 'yunque',
+        regionId: null, combat: { mode: null }, busy: false, forgeStation: 'yunque', contactNpc: null,
       },
     };
   }
@@ -175,7 +178,7 @@ export class GameStore {
       this.combatTimer = null;
       const cs = this.snapshot.state?.expedition?.combat;
       const u = cs && !cs.outcome ? currentUnit(cs) : undefined;
-      if (u && u.side === 'enemy') {
+      if (u && (u.side === 'enemy' || cs?.autoUnit === u.id)) {
         if (!this.run(combatAiStep)) this.setUi({ busy: false });
       } else {
         this.setUi({ busy: false });
@@ -208,6 +211,11 @@ export class GameStore {
 
   closePanel() {
     this.setUi({ panel: null });
+  }
+
+  /** Contactos y regalos; si se pasa un NPC, abre su ficha. */
+  openContacts(npcId: string | null = null) {
+    this.setUi({ panel: 'contacts', contactNpc: npcId, dialogue: null });
   }
 
   openForge(station: ForgeStation) {

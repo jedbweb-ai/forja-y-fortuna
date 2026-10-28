@@ -1,9 +1,9 @@
 import { createHerrero } from '../core/party/progression';
-import { EMPTY_SKILLS } from '../core/state';
+import { EMPTY_SKILLS, emptyTownState } from '../core/state';
 import type { GameState } from '../core/types';
 
 /** Versión actual del formato de guardado. Subirla junto con una migración. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 /**
  * Formato del guardado. Es JSON plano para que el mismo archivo pueda subirse
@@ -71,6 +71,9 @@ export const MIGRATIONS: Record<number, Migration> = {
       },
     };
   },
+  // Fase 4: encargos, contratos, demanda, eventos de ciudad, subasta y mercado de esclavos.
+  // Los NPC nuevos (con su lealtad inicial) los agrega syncWithContent al cargar.
+  3: (save) => ({ ...save, version: 4, state: { ...save.state, ...emptyTownState() } }),
 };
 
 export function migrateSave(raw: unknown, migrations: Record<number, Migration> = MIGRATIONS, target = SAVE_VERSION): SaveFile {

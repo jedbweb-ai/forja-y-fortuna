@@ -159,6 +159,10 @@ export class LiveScene extends Phaser.Scene {
         case 'joyeria': return this.store.openForge('joyeria');
         case 'alquimia': return this.store.openPanel('alchemy');
         case 'libreria': return this.store.openPanel('library');
+        case 'gremio':
+        case 'tablon': return this.store.openPanel('quests');
+        case 'subastas': return this.store.openPanel('auction');
+        case 'esclavos': return this.store.openPanel('servants');
         case 'shop': return this.store.openPanel('shop');
         case 'market': return this.store.openPanel('market');
         case 'inventory': return this.store.openPanel('inventory');

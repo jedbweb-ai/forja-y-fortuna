@@ -6,6 +6,7 @@ import type {
   Blueprint, City, CustomerType, Dialogue, Enchantment, FinishOption, Material, Npc, QuenchMedium, Synergy, Trait,
 } from './types';
 import type { MarketEventDef, RegionDef } from './world/types';
+import type { AuctionLotDef, BidderDef, CityEventDef, ContractDef, QuestDef } from './town/types';
 
 /** Todo el contenido del juego, indexado por id. El core lo recibe por parámetro. */
 export interface Content {
@@ -31,6 +32,12 @@ export interface Content {
   marketEvents: Record<string, MarketEventDef>;
   grimoires: Record<string, GrimoireDef>;
   potions: Record<string, PotionDef>;
+  // ── Fase 4 ──
+  quests: Record<string, QuestDef>;
+  contracts: Record<string, ContractDef>;
+  cityEvents: Record<string, CityEventDef>;
+  auctionLots: Record<string, AuctionLotDef>;
+  bidders: Record<string, BidderDef>;
 }
 
 export function indexById<T extends { id: string }>(list: T[]): Record<string, T> {

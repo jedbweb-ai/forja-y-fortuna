@@ -8,6 +8,7 @@ import { maxHp } from '../core/party/progression';
 import { debugEngage } from '../core/world/expedition';
 import { potionItem } from '../core/magic/alchemy';
 import { acquireGrimoire } from '../core/magic/grimoires';
+import { startCityEvent } from '../core/town/cityEvents';
 
 // Comandos del modo debug. Mismo formato que los comandos del juego.
 
@@ -131,4 +132,40 @@ export function dbgMagicKit(s: GameState, { c }: Ctx): GameEvent[] {
   s.items.push(pot);
   s.belt[pot.uid] = 3;
   return [{ type: 'toast', text: `[debug] Kit mágico: ${kit.length} objetos, grimorios y pociones` }];
+}
+
+// ── Fase 4 ──
+
+/** Arranca un evento de ciudad ahora mismo. */
+export function dbgCityEvent(s: GameState, { c, rng }: Ctx, id: string): GameEvent[] {
+  s.cityEvents.active = s.cityEvents.active.filter((a) => a.id !== id);
+  return startCityEvent(s, c, rng, id);
+}
+
+/** La subasta pasa a ser hoy (con sus lotes anunciados). */
+export function dbgAuctionToday(s: GameState): GameEvent[] {
+  s.auction.day = s.day;
+  s.auction.attended = 0;
+  s.auction.lots = [];
+  return [{ type: 'toast', text: '[debug] La subasta es hoy' }];
+}
+
+/** Renueva avisos, contratos y candidatos del mercado de esclavos. */
+export function dbgRefreshTown(s: GameState): GameEvent[] {
+  s.quests.lastRefresh = 0;
+  s.quests.offers = [];
+  s.contracts.lastRefresh = 0;
+  s.contracts.offers = [];
+  s.servantMarket.lastRefresh = 0;
+  return [{ type: 'toast', text: '[debug] Avisos, contratos y candidatos renovados' }];
+}
+
+/** Completa las cacerías y jefes de los encargos activos. */
+export function dbgQuestProgress(s: GameState, { c }: Ctx): GameEvent[] {
+  for (const aq of s.quests.active) {
+    const o = c.quests[aq.id].objective;
+    if (o.kind === 'hunt') aq.progress = o.count;
+    if (o.kind === 'boss') aq.progress = 1;
+  }
+  return [{ type: 'toast', text: '[debug] Cacerías y jefes de los encargos cumplidos' }];
 }

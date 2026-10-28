@@ -2,6 +2,8 @@ import { BALANCE } from '../../config/balance';
 import type { Content } from '../content';
 import type { Rng } from '../rng';
 import { currentCity } from '../state';
+import { materialEventMult } from '../town/cityEvents';
+import { tradeMult } from '../town/relations';
 import type { GameState } from '../types';
 import type { MarketEventDef } from '../world/types';
 
@@ -55,11 +57,14 @@ export function refreshMarket(s: GameState, c: Content, rng: Rng) {
   s.market = { day: s.day, stock, priceMult, news: events.map((e) => e.text) };
 }
 
-/** Precio de compra de un material hoy. */
+/**
+ * Precio de compra de un material hoy, en el lugar donde estás: noticias del mercado,
+ * eventos de la ciudad y tu relación con el dueño del puesto.
+ */
 export function materialPrice(c: Content, s: GameState, id: string): number {
   const base = c.materials[id].price;
-  const mult = s.market?.priceMult[id];
-  return mult ? Math.max(1, Math.round(base * mult)) : base;
+  const mult = (s.market?.priceMult[id] ?? 1) * materialEventMult(c, s, id) * tradeMult(c, s, s.location);
+  return Math.max(1, Math.round(base * mult));
 }
 
 /** Stock disponible hoy (Infinity si no es parte de monstruo). */

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { SkillId } from '../../core/types';
 import { relationLevel, skillLevel } from '../../core/state';
 import {
-  dbgAdvance, dbgCombat, dbgGold, dbgHealParty, dbgHire, dbgKit, dbgMagicKit, dbgLevelUp, dbgMaterials, dbgRelation, dbgReputation, dbgResetTalks, dbgRevealSynergies,
+  dbgAdvance, dbgAuctionToday, dbgCityEvent, dbgCombat, dbgQuestProgress, dbgRefreshTown, dbgGold, dbgHealParty, dbgHire, dbgKit, dbgMagicKit, dbgLevelUp, dbgMaterials, dbgRelation, dbgReputation, dbgResetTalks, dbgRevealSynergies,
 } from '../../debug/commands';
 import { setDebugPersisted } from '../../bridge/store';
 import { Panel } from '../components/Panel';
@@ -14,6 +14,7 @@ export function DebugPanel() {
   const s = useGame();
   const c = store.content;
   const [mat, setMat] = useState(Object.keys(c.materials)[0]);
+  const [ev, setEv] = useState(Object.keys(c.cityEvents)[0]);
   return (
     <Panel title="🐞 Modo debug" wide>
       <section className="debug-grid">
@@ -81,7 +82,18 @@ export function DebugPanel() {
             <button className="btn" onClick={() => store.run(dbgHealParty)}>Curar grupo / energía</button>
             {Object.keys(c.mercenaries).map((id) => <button key={id} className="btn" onClick={() => store.run(dbgHire, id)}>+ {c.mercenaries[id].name.split(' ')[0]}</button>)}
           </div>
-          <p className="muted small">Los eventos de ciudad llegan en la Fase 4.</p>
+          <h4>Ciudad</h4>
+          <div className="row">
+            <select value={ev} onChange={(e) => setEv(e.target.value)} aria-label="Evento">
+              {Object.values(c.cityEvents).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+            </select>
+            <button className="btn" onClick={() => store.run(dbgCityEvent, ev)}>Disparar evento</button>
+          </div>
+          <div className="row">
+            <button className="btn" onClick={() => store.run(dbgAuctionToday)}>Subasta hoy</button>
+            <button className="btn" onClick={() => store.run(dbgRefreshTown)}>Renovar avisos</button>
+            <button className="btn" onClick={() => store.run(dbgQuestProgress)}>Cumplir cacerías</button>
+          </div>
           <button className="btn danger" onClick={() => { setDebugPersisted(false); store.closePanel(); }}>Desactivar debug</button>
         </div>
       </section>

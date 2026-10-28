@@ -414,3 +414,43 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
   padding: 3px 12px; border-radius: 999px; font-size: 0.8rem; white-space: nowrap; color: var(--text);
   background: rgba(20, 12, 20, 0.85); border: 1px solid var(--line); pointer-events: none;
 }
+
+/* ───────────── Fase 4: ciudad, relaciones, encargos, subasta ───────────── */
+.btn-icon { position: relative; }
+.badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: var(--accent); color: #2a140a; font-size: 0.7rem; font-weight: 800; display: grid; place-items: center; }
+.tag.demand-high, .tag.demand-low { font-size: 0.7rem; padding: 1px 6px; border-radius: 999px; margin-left: 4px; white-space: nowrap; }
+.tag.demand-high { background: rgba(111, 207, 106, 0.18); color: var(--good); }
+.tag.demand-low { background: rgba(255, 107, 90, 0.18); color: var(--bad); }
+
+.contacts { display: grid; grid-template-columns: 240px 1fr; gap: 14px; align-items: start; }
+.contact-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; max-height: 70vh; overflow-y: auto; }
+.contact { display: flex; gap: 8px; align-items: center; width: 100%; text-align: left; padding: 6px 8px; border-radius: 10px; border: 1px solid transparent; background: var(--panel-2); cursor: pointer; min-height: var(--tap); }
+.contact.on { border-color: var(--accent); background: #4a2f2a; }
+.contact-detail h3 { margin-top: 0; }
+.rel-bar { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #6a2a2a, #4d3a48 45%, #2f5a34); margin: 8px 0 4px; overflow: hidden; border: 1px solid var(--line); }
+.rel-bar span { position: absolute; left: 0; top: 0; bottom: 0; border-right: 3px solid var(--accent-2); background: rgba(255, 255, 255, 0.08); }
+.rel-bar i { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(0, 0, 0, 0.5); }
+.taste-ama { color: #ff9fb0; }
+.taste-gusta { color: var(--good); }
+.taste-disgusta { color: var(--bad); }
+@media (min-height: 600px) { .gift-picker .item-rows { max-height: 40vh; overflow-y: auto; } }
+
+.quest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.quest-card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.quest-card p { margin: 4px 0; }
+.quest-card .row { margin-top: 6px; }
+.news-board section { margin-bottom: 12px; }
+.news-board h4 { margin: 4px 0; }
+
+.auction-stage { display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; align-items: start; }
+.auction-stage h3 { margin-top: 0; }
+.auction-price { font-size: 2rem; font-weight: 800; color: var(--accent-2); margin: 4px 0; }
+.auction-log { list-style: none; margin: 0; padding: 8px 10px; background: rgba(0, 0, 0, 0.3); border-radius: 10px; max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.auction-log li { animation: rise 0.2s ease-out; }
+.auction-log li:last-child { color: var(--accent-2); font-weight: 600; }
+
+@media (max-width: 760px) {
+  .contacts, .auction-stage { grid-template-columns: 1fr; }
+  .contact-list { position: static; max-height: none; flex-direction: row; overflow-x: auto; }
+  .contact-list li { flex: none; }
+}

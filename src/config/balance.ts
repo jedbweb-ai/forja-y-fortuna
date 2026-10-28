@@ -97,6 +97,8 @@ export const BALANCE = {
     commerceBonusPerLevel: 0.015,
     xpPerSale: 6,
     maxPriceJitter: [0.9, 1.15] as [number, number],
+    /** Ruperto con mala relación te saca clientes por franja hablando mal de vos. */
+    rivalCustomerLoss: 1,
     openingRatio: [0.6, 0.8] as [number, number],
   },
 
@@ -111,11 +113,39 @@ export const BALANCE = {
     /** Umbral inferior de cada nivel: hostil, desconfiado, neutral, conocido, amigo, aliado. */
     levelThresholds: [-100, -50, -15, 15, 45, 75],
     dailyTalkLimit: 1,
+    // ── Fase 4 ──
+    dailyGiftLimit: 1,
+    /** Relación que da un regalo según el gusto del NPC. */
+    giftPoints: { ama: 8, gusta: 4, indiferente: 1, disgusta: -5 } as Record<string, number>,
+    /** Los materiales sueltos cuentan menos que un objeto. */
+    materialGiftMult: 0.5,
+    /** Una pieza forjada por vos (que no le disgusta) vale más, y suma por calidad. */
+    forgedGiftMult: 1.5,
+    forgedGiftPerQuality: 1 / 30,
+    /** Precio en el lugar de un NPC según tu relación con él (los descuentos de "amigo" van por NPC). */
+    ownerPriceMult: { hostil: 1.3, desconfiado: 1.15, neutral: 1, conocido: 1, amigo: 1, aliado: 1 } as Record<string, number>,
+    /** Desde este nivel hacia abajo el dueño no te atiende. */
+    refuseTradeAt: 'hostil',
+    /** Un NPC hostil corre rumores que bajan la reputación. */
+    hostileRumorChance: 0.3,
+    hostileRumorReputation: -2,
+    /** Chance diaria de que un NPC con el desbloqueo de rumores cuente uno. */
+    rumorChance: 0.6,
   },
 
   reputation: {
     min: -50,
     max: 200,
+    /** Niveles de reputación en la ciudad: umbral inferior y nombre. */
+    levels: [
+      { min: -50, name: 'mal vista' },
+      { min: -10, name: 'desconocida' },
+      { min: 10, name: 'conocida' },
+      { min: 35, name: 'respetada' },
+      { min: 70, name: 'renombrada' },
+      { min: 120, name: 'famosa' },
+      { min: 170, name: 'legendaria' },
+    ],
   },
 
   // ───────────── Fase 2 ─────────────
@@ -167,6 +197,9 @@ export const BALANCE = {
     /** Días sin cobrar hasta que se va. */
     unpaidDaysToLeave: 2,
     leaveRelation: -50,
+    /** Con buena relación cobran menos (porcentaje) y no se van por una mala racha. */
+    wageCutByLevel: { amigo: 15, aliado: 30 } as Record<string, number>,
+    loyalFrom: 'amigo',
     porteadorCapacity: 15,
     exploradorEnergy: 10,
   },
@@ -292,6 +325,81 @@ export const BALANCE = {
     monsterStock: [0, 6] as [number, number],
     priceJitter: [0.85, 1.2] as [number, number],
     eventsPerDay: [1, 2] as [number, number],
+  },
+
+  // ───────────── Fase 4 ─────────────
+
+  quests: {
+    offersPerBoard: 3,
+    /** Cada tantos días se renuevan los avisos del gremio y del tablón. */
+    refreshDays: 2,
+    /** Días que un aviso queda disponible para aceptarlo. */
+    offerDays: 4,
+    maxActive: 5,
+  },
+
+  contracts: {
+    offers: 2,
+    refreshDays: 5,
+    offerDays: 5,
+    maxActive: 2,
+    /** Si Ruperto te tiene bronca, a veces se queda con un contrato antes que vos. */
+    rivalStealChance: 0.35,
+    rivalMaxRelation: -15,
+    rivalNpc: 'ruperto',
+  },
+
+  demand: {
+    min: 0.5,
+    max: 1.6,
+    /** Cuánto baja la demanda de una categoría por pieza vendida (y por unidad de lote). */
+    dropPerSale: 0.04,
+    dropPerBatchUnit: 0.003,
+    /** Parte de la distancia al valor normal que se recupera cada día. */
+    recovery: 0.25,
+    /** Peso extra de clientes que buscan lo que está en alta demanda. */
+    customerWeight: 1,
+  },
+
+  cityEvents: {
+    dailyChance: 0.4,
+    maxActive: 2,
+    /** Eventos recientes que no se repiten enseguida. */
+    recentMemory: 4,
+  },
+
+  auction: {
+    firstDay: 7,
+    everyDays: 7,
+    announceDays: 3,
+    lots: [4, 5] as [number, number],
+    maxConsign: 3,
+    commission: 0.1,
+    stepPct: 0.1,
+    minStep: 5,
+    bidders: [2, 4] as [number, number],
+    /** Ruperto con mala relación puja más fuerte contra vos. */
+    rivalAggression: 1.35,
+    rivalMaxRelation: -15,
+    attendSlots: 1,
+    reputationPerSale: 2,
+  },
+
+  servants: {
+    offerSize: 2,
+    refreshDays: 7,
+    /** Bonus o penalización de ataque y defensa en combate según la lealtad. */
+    combatMult: { hostil: -0.15, desconfiado: -0.07, neutral: 0, conocido: 0, amigo: 0.05, aliado: 0.1 } as Record<string, number>,
+    /** Chance por turno de que actúe por su cuenta (la IA juega su turno). */
+    disobey: { hostil: 0.2 } as Record<string, number>,
+    /** Puede escaparse al final de una expedición con derrota o huida. */
+    escapeChance: 0.35,
+    escapeAt: 'hostil',
+    dailyEquipped: 1,
+    dailyUnarmed: -1,
+    victory: 1,
+    injured: -4,
+    freedRelation: 100,
   },
 } as const;
 

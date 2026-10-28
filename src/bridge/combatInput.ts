@@ -12,7 +12,7 @@ export function activePartyUnit(store: GameStore): CombatUnit | undefined {
   const cs = snap.state?.expedition?.combat;
   if (!cs || cs.outcome || snap.ui.busy) return undefined;
   const u = currentUnit(cs);
-  return u && u.side === 'party' ? u : undefined;
+  return u && u.side === 'party' && cs.autoUnit !== u.id ? u : undefined;
 }
 
 /** Modo efectivo: si no eligió nada y todavía no se movió, se muestran las casillas de movimiento. */

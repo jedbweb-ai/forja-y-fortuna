@@ -7,8 +7,12 @@ export const NPCS_3: Npc[] = [
     gifts: { ama: ['joyeria', 'opalo_lunar'], gusta: ['agua_bendita'], disgusta: ['bombas'] },
     routine: { 'mañana': 'libreria', tarde: 'libreria', noche: 'taberna' },
     unlocks: [
-      { level: 'conocido', description: 'Te avisa cuando llega un grimorio raro.' },
-      { level: 'amigo', description: 'Te da el cuaderno de tu maestro Odón.' },
+      { level: 'conocido', description: 'Te avisa cuando llega un grimorio raro.', perks: [{ kind: 'rumors' }] },
+      { level: 'amigo', description: 'Te da el cuaderno de tu maestro Odón y te hace precio (10%).', perks: [{ kind: 'discount', pct: 10 }] },
+    ],
+    rumors: [
+      'Teodora: "En la próxima subasta podría salir un grimorio de tormentas. Lo sé porque yo lo quería."',
+      'Teodora: "El Salterio del Alba enseña a consagrar la plata. Los nobles pagan por eso."',
     ],
     look: { body: 0x5a4a8a, hair: 0xe8e2d0, accent: 0xd9a441 },
     busyLines: ['Shh. Estoy catalogando. Mañana, si querés.', 'Volvé con más tiempo: los libros no se leen apurados.'],
@@ -20,8 +24,12 @@ export const NPCS_3: Npc[] = [
     gifts: { ama: ['lirio_nocturno', 'ambar'], gusta: ['hierba'], disgusta: ['chatarra_goblin'] },
     routine: { 'mañana': 'alquimista', tarde: 'alquimista' },
     unlocks: [
-      { level: 'conocido', description: 'Te explica cómo combinar hierbas.' },
-      { level: 'amigo', description: 'Te enseña una receta secreta.' },
+      { level: 'conocido', description: 'Te explica cómo combinar hierbas.', perks: [{ kind: 'rumors' }] },
+      { level: 'amigo', description: 'Te enseña una receta secreta, te hace precio (10%) y te vende lirios nocturnos.', perks: [{ kind: 'teach', potion: 'resguardo_igneo' }, { kind: 'discount', pct: 10 }, { kind: 'stock', materials: ['lirio_nocturno'] }] },
+    ],
+    rumors: [
+      'Bastián: "Flor de brasa más cardo de hierro da algo que protege del fuego. ¡No lo probé, pero suena bien!"',
+      'Bastián: "Las hierbas cortadas de noche tienen el doble de potencia. O la mitad. Una de dos."',
     ],
     look: { body: 0x2e7a72, hair: 0x6b3a1e, accent: 0x9aff9a },
     busyLines: ['¡No ahora, que se me corta la emulsión!', 'Mañana. Hoy estoy esperando que algo explote... digo, hierva.'],

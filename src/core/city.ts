@@ -1,6 +1,7 @@
 import { BALANCE } from '../config/balance';
 import { GameError, type Content, type Ctx } from './content';
 import { currentCity } from './state';
+import { isServantNpc, servantLocation } from './town/servants';
 import { advanceTime, sleep, slotName } from './time';
 import type { CityLocation, GameEvent, GameState } from './types';
 
@@ -12,7 +13,9 @@ export function cityLocation(c: Content, id: string): CityLocation | undefined {
 export function npcsAt(c: Content, s: GameState, locationId: string): string[] {
   const slot = slotName(s);
   // Los mercenarios contratados andan con vos, no en su lugar habitual.
-  return Object.values(c.npcs).filter((n) => n.routine[slot] === locationId && !s.party.includes(n.id)).map((n) => n.id);
+  return Object.values(c.npcs)
+    .filter((n) => (isServantNpc(c, n.id) ? servantLocation(s, n.id) === locationId : n.routine[slot] === locationId) && !s.party.includes(n.id))
+    .map((n) => n.id);
 }
 
 /**
@@ -27,6 +30,7 @@ export function goTo(s: GameState, { c }: Ctx, locationId: string): GameEvent[] 
   if (s.location === locationId) return [];
   if (s.forge) throw new GameError('Tenés una pieza a medio hacer en el yunque.');
   if (s.shop) throw new GameError('Primero cerrá la tienda.');
+  if (s.auction.session) throw new GameError('Estás en plena subasta.');
   const events: GameEvent[] = [];
   if (locationId === 'herreria') {
     s.location = locationId;

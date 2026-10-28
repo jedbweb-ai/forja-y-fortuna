@@ -1,4 +1,8 @@
 import { AlchemyPanel } from './panels/AlchemyPanel';
+import { AuctionPanel } from './panels/AuctionPanel';
+import { ContactsPanel } from './panels/ContactsPanel';
+import { QuestsPanel } from './panels/QuestsPanel';
+import { ServantsPanel } from './panels/ServantsPanel';
 import { BookPanel } from './panels/BookPanel';
 import { DebugPanel } from './panels/DebugPanel';
 import { ExpeditionPanel } from './panels/ExpeditionPanel';
@@ -51,6 +55,10 @@ export function App() {
           {ui.panel === 'bag' && <BagPanel />}
           {ui.panel === 'alchemy' && <AlchemyPanel />}
           {ui.panel === 'library' && <LibraryPanel />}
+          {ui.panel === 'quests' && <QuestsPanel />}
+          {ui.panel === 'contacts' && <ContactsPanel />}
+          {ui.panel === 'auction' && <AuctionPanel />}
+          {ui.panel === 'servants' && <ServantsPanel />}
           {ui.panel === 'debug' && ui.debug && <DebugPanel />}
           {ui.dialogue && <DialogueBox />}
           {ui.itemCard && (
