@@ -471,3 +471,16 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
   .talent-skills { position: static; flex-direction: row; overflow-x: auto; }
   .talent-skills li { flex: none; }
 }
+
+/* Atajos de teclado: la tecla se insinúa solo en computadoras con mouse. */
+@media (hover: hover) and (pointer: fine) {
+  .btn[data-key]::after {
+    content: attr(data-key); margin-left: 6px; padding: 0 4px; border: 1px solid var(--line); border-radius: 4px;
+    font-size: 0.7rem; font-weight: 500; opacity: 0.55; text-transform: uppercase; vertical-align: middle;
+  }
+}
+.shortcuts { margin: 10px 0; }
+.shortcuts summary { cursor: pointer; font-weight: 600; }
+.shortcuts ul { margin: 6px 0 0; padding-left: 18px; }
+.shortcuts li { margin: 3px 0; font-size: 0.9rem; }
+kbd { font-family: inherit; font-size: 0.8rem; padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel-2); }

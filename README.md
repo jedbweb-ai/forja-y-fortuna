@@ -2,7 +2,7 @@
 
 Juego de gestión y RPG táctico: sos un herrero en un mundo de fantasía. El diseño completo está en [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (fuente de verdad).
 
-**Estado: Fase 6 (expansión y pulido) en curso: 6A, 6B y 6C terminadas.**
+**Estado: Fase 6 (expansión y pulido) terminada. Las seis fases del documento de diseño están hechas.**
 
 ## Cómo correrlo
 
@@ -142,5 +142,21 @@ src/
 - **Tiendas especializadas** en Valdebrasa: curtiembre, aserradero y joyería, cada una con su dueño, descuentos y mercadería exclusiva.
 - Encargos nuevos de cacería y de jefes.
 
+## Decisiones de la Fase 6D (balance y pulido)
+
+- **Simulación de balance** en `src/core/balance.test.ts`: el grupo y los monstruos pelean solos con la IA en todas las zonas y pisos, en etapas de inicio y de mitad de juego. Es pesimista, porque la IA no usa pociones ni esquiva los golpes anunciados. Sirve para ver tendencias, no números exactos. También revisa que forjar con materiales comunes siempre deje ganancia y que 120 días seguidos no rompan nada.
+- **Etiqueta de peligro recalibrada**: grupos que se perdían 1 de cada 4 veces figuraban como "fácil". Ahora "fácil" es casi siempre una victoria cómoda y "difícil" o "mortal" avisan de verdad. El factor y los umbrales están en `BALANCE.expedition` (`dangerPowerFactor`, `dangerThresholds`).
+- **Jefes de la Fase 6C más justos**: Rocamuda va con un solo ogro y pega un poco menos. Madre Ciénaga se cura 8 por turno (antes 10), llama a un solo elemental y ya no la acompaña un troll. Quedan a la par de Ulmar en la Cripta.
+- **Bug corregido en la IA**: una unidad que se movía y después se curaba a sí misma apuntaba a la casilla donde estaba antes, y el combate tiraba error (le pasaba al chamán del tótem).
+- **Atajos de teclado** opcionales en computadora. La tecla se ve en cada botón solo si hay mouse, y la lista completa está en Ajustes:
+  - G/I/L/E/C: grupo, inventario, libro, encargos y contactos.
+  - F/T/D en el taller: forjar, tienda y descansar.
+  - X/M: mapa del mundo y de la ciudad.
+  - B/V de expedición: bolsa y volver.
+  - En combate: M para mover, 1-9 para las acciones y T para terminar el turno.
+  - 1-9 en los diálogos, Enter para confirmar o continuar y Esc para cerrar o cancelar.
+
 ## Pendiente para próximas fases
-Lo que sigue de la Fase 6: 6D (balance y pulido).
+Las seis fases del documento están completas. Ideas abiertas para más adelante, sin decidir:
+- Abrir las regiones que figuran en el mapa pero todavía no se pueden visitar (Ruinas del Vigía y Tierras del Dragón), con contenido de nivel alto. Hoy un grupo avanzado no encuentra desafíos.
+- El arte definitivo en lugar de los gráficos placeholder, cuando esté definido.

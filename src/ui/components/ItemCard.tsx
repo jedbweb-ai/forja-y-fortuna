@@ -9,7 +9,7 @@ export function ItemCard({ item, newSynergies = [], onClose }: { item: ItemInsta
   const c = store.content;
   const lot = item.quantity > 1;
   return (
-    <div className="card-backdrop" onClick={onClose}>
+    <div className="card-backdrop" data-key="esc" onClick={onClose}>
       <article className={`item-card ${RARITY_CLASS[item.rarity]}`} aria-label={item.name}>
         {newSynergies.length > 0 && <div className="new-badge">¡Nueva sinergia descubierta!</div>}
         <div className="item-card-head">

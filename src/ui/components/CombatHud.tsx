@@ -56,15 +56,15 @@ export function CombatHud() {
                     <>🎯 {c.skills[ui.combat.skillId!].name}: casilla elegida{c.skills[ui.combat.skillId!].area ? ' (el área se marca en la arena)' : ''}</>
                   )}
                 </div>
-                <button className="btn primary big" onClick={() => store.run(combatSkill, me.id, ui.combat.skillId!, ui.combat.target!.x, ui.combat.target!.y)}>Confirmar</button>
-                <button className="btn" onClick={() => store.setUi({ combat: { mode: null } })}>Cancelar</button>
+                <button className="btn primary big" data-key="enter" onClick={() => store.run(combatSkill, me.id, ui.combat.skillId!, ui.combat.target!.x, ui.combat.target!.y)}>Confirmar</button>
+                <button className="btn" data-key="esc" onClick={() => store.setUi({ combat: { mode: null } })}>Cancelar</button>
               </div>
             ) : (
               <div className="combat-actions">
                 {!me.moved && (
-                  <button className={`btn ${mode === 'move' ? 'on' : ''}`} onClick={() => store.setUi({ combat: { mode: mode === 'move' ? null : 'move' } })}>👣 Mover</button>
+                  <button className={`btn ${mode === 'move' ? 'on' : ''}`} data-key="m" onClick={() => store.setUi({ combat: { mode: mode === 'move' ? null : 'move' } })}>👣 Mover</button>
                 )}
-                {[...me.skills].sort((x, y) => rank(me, x) - rank(me, y)).map((id) => {
+                {[...me.skills].sort((x, y) => rank(me, x) - rank(me, y)).map((id, i) => {
                   const skill = c.skills[id];
                   const reason = canUseSkill(c, state, me, skill);
                   const ammo = skill.ammo ? ammoBonus(c, state, me) : null;
@@ -75,6 +75,7 @@ export function CombatHud() {
                     <button
                       key={id}
                       className={`btn ${mode === 'skill' && ui.combat.skillId === id ? 'on' : ''}`}
+                      data-key={i < 9 ? String(i + 1) : undefined}
                       disabled={!!reason}
                       title={reason ?? skill.description}
                       onClick={() => selectSkill(store, id)}
@@ -98,7 +99,7 @@ export function CombatHud() {
                     🧪 {item!.name} <small>×{q}</small>
                   </button>
                 ))}
-                <button className="btn" onClick={() => store.run(combatEndTurn, me.id)}>⏭️ Terminar turno</button>
+                <button className="btn" data-key="t" onClick={() => store.run(combatEndTurn, me.id)}>⏭️ Terminar turno</button>
                 {!me.acted && <button className="btn danger" onClick={() => store.run(combatFlee, me.id)}>🏃 Huir ({Math.round(fleeChance(cs) * 100)}%)</button>}
                 {mode === 'skill' && <span className="combat-hint">{c.skills[ui.combat.skillId!]?.target === 'tile' ? 'Tocá una casilla al alcance.' : 'Tocá un objetivo marcado en rojo.'}</span>}
                 {mode === 'potion' && <span className="combat-hint">Tocá a quién dársela (vos o un aliado al lado).</span>}
@@ -145,7 +146,7 @@ function CombatReportCard() {
         {r.notes.map((n, i) => <p key={i} className="small muted">• {n}</p>)}
         {r.levelUps.map((n) => <p key={n} className="good-text">⬆ {n}</p>)}
         {r.injured.map((n) => <p key={n} className="bad-text">🤕 {n} queda herido unos días.</p>)}
-        <button className="btn primary big" onClick={() => store.run(closeReport)}>Continuar</button>
+        <button className="btn primary big" data-key="enter" onClick={() => store.run(closeReport)}>Continuar</button>
       </article>
     </div>
   );

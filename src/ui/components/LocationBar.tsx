@@ -33,7 +33,7 @@ export function LocationBar() {
       <div className="locbar">
         <span className="locbar-title">Tocá un edificio para ir.</span>
         <div className="locbar-actions">
-          <button className="btn" onClick={() => store.showWorld()}>🧭 Mapa del mundo</button>
+          <button className="btn" data-key="x" onClick={() => store.showWorld()}>🧭 Mapa del mundo</button>
           <button className="btn" onClick={() => store.setUi({ view: 'location' })}>Volver a {here?.name}</button>
         </div>
       </div>
@@ -53,10 +53,10 @@ export function LocationBar() {
         {loc.id === 'herreria' && (
           <>
             {state.forge ? (
-              <button className="btn primary" onClick={() => store.openPanel('forge')}>🔨 Seguir trabajando</button>
+              <button className="btn primary" data-key="f" onClick={() => store.openPanel('forge')}>🔨 Seguir trabajando</button>
             ) : (
               <>
-                <button className="btn primary" onClick={() => store.openForge('yunque')}>🔨 Forjar</button>
+                <button className="btn primary" data-key="f" onClick={() => store.openForge('yunque')}>🔨 Forjar</button>
                 <button className="btn" onClick={() => store.openForge('joyeria')}>💍 Joyería</button>
                 <button className="btn" onClick={() => store.openForge('runas')}>ᚱ Runas</button>
               </>
@@ -64,10 +64,10 @@ export function LocationBar() {
             <button className="btn" onClick={() => store.openPanel('alchemy')}>⚗️ Alquimia</button>
             <button className="btn" onClick={() => store.openPanel('workshop')}>🏗️ Taller</button>
             <button className="btn" onClick={() => store.openPanel('talents')}>📈 Talentos{freePoints > 0 ? ` (${freePoints})` : ''}</button>
-            <button className="btn" onClick={() => store.openPanel('shop')}>{state.shop ? '🛎️ Tienda abierta' : '🛎️ Atender tienda'}</button>
+            <button className="btn" data-key="t" onClick={() => store.openPanel('shop')}>{state.shop ? '🛎️ Tienda abierta' : '🛎️ Atender tienda'}</button>
             {damaged > 0 && <button className="btn" onClick={() => store.openPanel('repair')}>🛠️ Reparar ({damaged})</button>}
-            <button className="btn" onClick={() => store.showWorld()}>🧭 Expedición</button>
-            <button className="btn" onClick={() => store.run(night ? sleepUntilMorning : restSlot)}>{night ? '🛏️ Dormir' : '⏳ Descansar'}</button>
+            <button className="btn" data-key="x" onClick={() => store.showWorld()}>🧭 Expedición</button>
+            <button className="btn" data-key="d" onClick={() => store.run(night ? sleepUntilMorning : restSlot)}>{night ? '🛏️ Dormir' : '⏳ Descansar'}</button>
           </>
         )}
         {(loc.kind === 'mercado' || loc.kind === 'muelle') && <button className="btn primary" onClick={() => store.openPanel('market')}>🧺 {loc.kind === 'muelle' ? 'Mercadería del barco' : 'Puesto de materiales'}</button>}
@@ -90,8 +90,8 @@ export function LocationBar() {
         {npcs.map((id) => (
           <button key={id} className="btn" onClick={() => store.talkTo(id)}>💬 {c.npcs[id].name.split(' ')[0]}</button>
         ))}
-        {loc.id !== 'herreria' && currentCity(state) !== homeCity() && <button className="btn" onClick={() => store.showWorld()}>🧭 Viajar</button>}
-        <button className="btn" onClick={() => store.showMap()}>🗺️ Ciudad</button>
+        {loc.id !== 'herreria' && currentCity(state) !== homeCity() && <button className="btn" data-key="x" onClick={() => store.showWorld()}>🧭 Viajar</button>}
+        <button className="btn" data-key="m" onClick={() => store.showMap()}>🗺️ Ciudad</button>
       </div>
     </div>
   );

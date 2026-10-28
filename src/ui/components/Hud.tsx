@@ -37,11 +37,11 @@ export function Hud() {
         {state.outing && <span className="chip warn" title={`Recorriendo la ciudad (${loc?.name}). La franja se gasta al volver al taller.`}>🚶 En la ciudad</span>}
       </div>
       <nav className="hud-actions">
-        <button className="btn-icon" onClick={() => store.openPanel('party')} aria-label="Grupo" title="Grupo y equipo">🛡️</button>
-        <button className="btn-icon" onClick={() => store.openPanel('inventory')} aria-label="Inventario" title="Inventario">🎒</button>
-        <button className="btn-icon" onClick={() => store.openPanel('book')} aria-label="Libro del herrero" title="Libro del herrero">📖</button>
-        <button className="btn-icon" onClick={() => store.openPanel('quests')} aria-label="Encargos" title="Encargos y contratos">📜{state.quests.active.length + state.contracts.active.length > 0 && <span className="badge">{state.quests.active.length + state.contracts.active.length}</span>}</button>
-        <button className="btn-icon" onClick={() => store.openContacts()} aria-label="Contactos" title="Contactos y regalos">🤝</button>
+        <button className="btn-icon" data-key="g" onClick={() => store.openPanel('party')} aria-label="Grupo" title="Grupo y equipo (G)">🛡️</button>
+        <button className="btn-icon" data-key="i" onClick={() => store.openPanel('inventory')} aria-label="Inventario" title="Inventario (I)">🎒</button>
+        <button className="btn-icon" data-key="l" onClick={() => store.openPanel('book')} aria-label="Libro del herrero" title="Libro del herrero (L)">📖</button>
+        <button className="btn-icon" data-key="e" onClick={() => store.openPanel('quests')} aria-label="Encargos" title="Encargos y contratos (E)">📜{state.quests.active.length + state.contracts.active.length > 0 && <span className="badge">{state.quests.active.length + state.contracts.active.length}</span>}</button>
+        <button className="btn-icon" data-key="c" onClick={() => store.openContacts()} aria-label="Contactos" title="Contactos y regalos (C)">🤝</button>
         <button className="btn-icon" onClick={() => store.openPanel('settings')} aria-label="Ajustes" title="Ajustes">⚙️</button>
         {ui.debug && <button className="btn-icon debug" onClick={() => store.openPanel('debug')} aria-label="Debug" title="Debug">🐞</button>}
       </nav>

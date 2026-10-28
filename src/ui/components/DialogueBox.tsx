@@ -32,10 +32,10 @@ export function DialogueBox() {
           <p>{node ? node.text : d.busyLine}</p>
           <div className="dialogue-options">
             {options.map(({ option, index, enabled }) => (
-              <button key={index} className="btn" disabled={!enabled} onClick={() => store.chooseDialogueOption(index)}>{option.text}</button>
+              <button key={index} className="btn" data-key={String(index + 1)} disabled={!enabled} onClick={() => store.chooseDialogueOption(index)}>{option.text}</button>
             ))}
             {!options.length && (
-              <button className="btn primary" onClick={() => (node?.next ? store.continueDialogue() : store.closeDialogue())}>
+              <button className="btn primary" data-key="enter" onClick={() => (node?.next ? store.continueDialogue() : store.closeDialogue())}>
                 {node?.next ? 'Continuar' : 'Despedirse'}
               </button>
             )}

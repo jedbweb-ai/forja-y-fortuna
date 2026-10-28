@@ -22,9 +22,9 @@ export function RegionHud() {
         })}
       </div>
       <div className="locbar-actions">
-        <button className="btn" onClick={() => store.openPanel('bag')}>🎒 Bolsa</button>
+        <button className="btn" data-key="b" onClick={() => store.openPanel('bag')}>🎒 Bolsa</button>
         <button className="btn" onClick={() => store.openPanel('party')}>🛡️ Grupo</button>
-        <button className="btn primary" onClick={() => store.run(returnHome)}>🏠 Volver</button>
+        <button className="btn primary" data-key="v" onClick={() => store.run(returnHome)}>🏠 Volver</button>
       </div>
       {e.energy <= 0 && <div className="region-hint">Sin energía: volvé a la ciudad.</div>}
       {e.energy > 0 && <div className="region-hint">Tocá el mapa para caminar · Tocá vetas y árboles para recolectar · Los grupos de monstruos pelean al contacto</div>}

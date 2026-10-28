@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Panel } from '../components/Panel';
 import { store, useGame } from '../hooks';
+import { SHORTCUTS } from '../shortcuts';
 
 export function SettingsPanel() {
   const s = useGame();
@@ -27,6 +28,10 @@ export function SettingsPanel() {
         <button className="btn" onClick={() => { store.saveNow(); store.toast('Partida guardada.', 'good'); }}>💾 Guardar ahora</button>
       </div>
       <p className="muted small">La partida se guarda sola en este dispositivo después de cada acción.</p>
+      <details className="shortcuts">
+        <summary>⌨️ Atajos de teclado</summary>
+        <ul>{SHORTCUTS.map((s) => <li key={s.keys}><kbd>{s.keys}</kbd> {s.text}</li>)}</ul>
+      </details>
       <hr />
       {!confirm ? (
         <button className="btn danger" onClick={() => setConfirm(true)}>Borrar partida y empezar de nuevo</button>

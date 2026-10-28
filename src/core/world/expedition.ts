@@ -69,10 +69,11 @@ export function partyPower(c: Content, s: GameState, members: string[]): number 
 export type DangerLevel = 'fácil' | 'parejo' | 'difícil' | 'mortal';
 
 export function dangerFor(c: Content, s: GameState, threat: number, members: string[]): DangerLevel {
-  const ratio = threat / Math.max(1, partyPower(c, s, members) * 0.45);
-  if (ratio < 0.6) return 'fácil';
-  if (ratio < 1) return 'parejo';
-  if (ratio < 1.4) return 'difícil';
+  const ratio = threat / Math.max(1, partyPower(c, s, members) * EX.dangerPowerFactor);
+  const [parejo, dificil, mortal] = EX.dangerThresholds;
+  if (ratio < parejo) return 'fácil';
+  if (ratio < dificil) return 'parejo';
+  if (ratio < mortal) return 'difícil';
   return 'mortal';
 }
 

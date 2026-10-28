@@ -19,7 +19,7 @@ export function TitleScreen({ hasSave }: { hasSave: boolean }) {
         <h1>Forja &amp; Fortuna</h1>
         <p className="tagline">No sos un héroe. Sos quien les forja el destino.</p>
         <div className="title-buttons">
-          {hasSave && <button className="btn primary big" onClick={() => start(() => store.continueGame())}>Continuar</button>}
+          {hasSave && <button className="btn primary big" data-key="enter" onClick={() => start(() => store.continueGame())}>Continuar</button>}
           {!confirm ? (
             <button className={`btn big ${hasSave ? '' : 'primary'}`} onClick={() => (hasSave ? setConfirm(true) : start(() => store.newGame()))}>
               Nueva partida

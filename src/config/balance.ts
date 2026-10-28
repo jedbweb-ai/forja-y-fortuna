@@ -228,6 +228,12 @@ export const BALANCE = {
     aggroRange: 3,
     defeatLoss: 0.5,
     fleeLoss: 0.25,
+    /**
+     * Peligro que se muestra de cada grupo: amenaza ÷ (poder del grupo × factor).
+     * Umbrales de "parejo", "difícil" y "mortal" (calibrados con la simulación de combates).
+     */
+    dangerPowerFactor: 0.45,
+    dangerThresholds: [0.35, 0.5, 0.7] as [number, number, number],
   },
 
   tools: {

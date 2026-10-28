@@ -55,7 +55,10 @@ export function planTurn(c: Content, s: GameState, cs: CombatState, u: CombatUni
     for (const id of u.skills) {
       const skill = c.skills[id];
       if (!skill || canUseSkill(c, s, u, skill)) continue;
-      for (const t of targetsFor(c, cs, ghost, skill, p)) {
+      // La unidad real sigue en su casilla de origen: para apuntarse a sí misma se usa el fantasma ya movido.
+      const targets = targetsFor(c, cs, ghost, skill, p).filter((t) => t !== u);
+      if (skill.target === 'ally' && skill.range[0] === 0) targets.push(ghost);
+      for (const t of targets) {
         let score = base;
         if (skill.target === 'enemy') {
           const calc = calcAttack(c, s, cs, ghost, t, skill, p);
@@ -70,7 +73,7 @@ export function planTurn(c: Content, s: GameState, cs: CombatState, u: CombatUni
           if (t.hp / t.maxHp > 0.6) continue;
           score += Math.min(missing, t.maxHp * skill.healPct) * 1.5;
         } else if (skill.target === 'ally') {
-          if (hasStatus(t, 'potenciado') || t === u) continue;
+          if (hasStatus(t, 'potenciado') || t === ghost) continue;
           score += enemies.some((e) => dist(e, t) <= 2) ? 9 : 2;
         } else {
           // Acciones sobre uno mismo (cubrirse, rugido, grito de guerra).

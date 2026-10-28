@@ -104,7 +104,7 @@ export const MONSTERS_6C: MonsterDef[] = [
   // Jefes
   {
     id: 'rocamuda', name: 'Rocamuda, el cíclope de las cumbres', family: 'gigantes', tier: 3, boss: true,
-    hp: 380, atk: 24, def: 10, spd: 4, move: 3, jump: 2, evasion: 0, damageType: 'contundente',
+    hp: 360, atk: 22, def: 10, spd: 4, move: 3, jump: 2, evasion: 0, damageType: 'contundente',
     resist: { contundente: 0.8 }, elemental: { rayo: 1.4 }, immune: ['aturdido'],
     skills: ['garrotazo', 'avalancha'], ai: 'jefe', threat: 18, slots: ALL,
     halfHp: { text: 'Rocamuda ruge y arranca un pedazo de montaña.', skills: ['garrotazo', 'avalancha', 'roca_lanzada'], atkPct: 20, summon: ['ogro'] },
@@ -112,11 +112,11 @@ export const MONSTERS_6C: MonsterDef[] = [
     sprite: { key: 'mon.ciclope', tint: 0xa89878, scale: 1.5 }, description: 'El cíclope más viejo de las cumbres. Anuncia sus avalanchas: hay que salir de abajo.',
   },
   {
-    id: 'madre_cienaga', name: 'Madre Ciénaga', family: 'gigantes', tier: 3, boss: true, regen: 10,
+    id: 'madre_cienaga', name: 'Madre Ciénaga', family: 'gigantes', tier: 3, boss: true, regen: 8,
     hp: 360, atk: 21, def: 9, spd: 3, move: 3, jump: 1, evasion: 0, damageType: 'cortante',
     resist: { cortante: 0.9 }, elemental: { fuego: 1.7, veneno: 0 }, immune: ['veneno', 'aturdido'],
     skills: ['zarpazo', 'marea_cienaga'], ai: 'jefe', threat: 18, slots: ALL,
-    halfHp: { text: 'Madre Ciénaga se hunde en el barro y llama al pantano.', summon: ['elemental_agua', 'elemental_agua'], skills: ['zarpazo', 'marea_cienaga', 'nube_toxica'], atkPct: 15 },
+    halfHp: { text: 'Madre Ciénaga se hunde en el barro y llama al pantano.', summon: ['elemental_agua'], skills: ['zarpazo', 'marea_cienaga', 'nube_toxica'], atkPct: 15 },
     loot: [{ material: 'corazon_cienaga', chance: 1, qty: [1, 1] }, { material: 'sangre_troll', chance: 1, qty: [2, 4] }, { material: 'cristal_marea', chance: 1, qty: [1, 2] }],
     sprite: { key: 'mon.ogro', tint: 0x4a7a3a, scale: 1.55 }, description: 'La troll más vieja del pantano. Se cura sola cada turno: hay que quemarla o pegarle muy fuerte.',
   },
@@ -219,7 +219,7 @@ export const REGIONS_6C: RegionDef[] = [
         cofres: { gold: [80, 150], materials: [{ material: 'opalo_lunar', chance: 0.2, qty: [1, 1] }, { material: 'hueso_gigante', chance: 0.4, qty: [1, 2] }], grimoires: [{ id: 'libro_tormentas', chance: 0.1 }] },
       }),
     ],
-    boss: { monsters: ['rocamuda', 'ogro', 'ogro'], zone: 3 },
+    boss: { monsters: ['rocamuda', 'ogro'], zone: 3 },
   },
   {
     id: 'pantano_niebla', name: 'Pantano de Niebla', danger: 5, available: true, travelSlots: 2, world: { x: 330, y: 380 },
@@ -248,7 +248,7 @@ export const REGIONS_6C: RegionDef[] = [
         cofres: { gold: [80, 150], materials: [{ material: 'sangre_troll', chance: 0.5, qty: [1, 2] }, { material: 'esencia_vital', chance: 0.3, qty: [1, 1] }], grimoires: [] },
       }),
     ],
-    boss: { monsters: ['madre_cienaga', 'elemental_agua', 'troll'], zone: 3 },
+    boss: { monsters: ['madre_cienaga', 'elemental_agua'], zone: 3 },
   },
 ];
 

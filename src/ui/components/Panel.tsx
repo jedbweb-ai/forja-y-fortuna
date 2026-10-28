@@ -21,7 +21,7 @@ export function Panel({ title, subtitle, children, footer, onClose, wide }: Prop
             <h2>{title}</h2>
             {subtitle && <div className="panel-sub">{subtitle}</div>}
           </div>
-          <button className="btn-icon" onClick={close} aria-label="Cerrar">✕</button>
+          <button className="btn-icon" data-key="esc" onClick={close} aria-label="Cerrar" title="Cerrar (Esc)">✕</button>
         </header>
         <div className="panel-body">{children}</div>
         {footer && <footer className="panel-foot">{footer}</footer>}
