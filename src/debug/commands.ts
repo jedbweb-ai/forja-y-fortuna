@@ -6,6 +6,8 @@ import type { GameEvent, GameState, SkillId } from '../core/types';
 import { hireMercenary } from '../core/party/mercenaries';
 import { maxHp } from '../core/party/progression';
 import { debugEngage } from '../core/world/expedition';
+import { potionItem } from '../core/magic/alchemy';
+import { acquireGrimoire } from '../core/magic/grimoires';
 
 // Comandos del modo debug. Mismo formato que los comandos del juego.
 
@@ -104,4 +106,29 @@ export function dbgKit(s: GameState, { c }: Ctx): GameEvent[] {
 export function dbgResetTalks(s: GameState): GameEvent[] {
   Object.values(s.npcs).forEach((n) => { n.lastTalkDay = 0; });
   return [{ type: 'toast', text: '[debug] Límite diario de charlas reiniciado' }];
+}
+
+/** Kit de la Fase 3: grimorios, joyas con habilidades, arrojadizos, hoz y pociones en el cinturón. */
+export function dbgMagicKit(s: GameState, { c }: Ctx): GameEvent[] {
+  for (const g of Object.keys(c.grimoires)) acquireGrimoire(s, c, g);
+  const kit: [string, Record<string, string>, string[]][] = [
+    ['anillo', { aro: 'plata', engarce: 'rubi' }, ['runa_alivio']],
+    ['anillo', { aro: 'cobre', engarce: 'zafiro' }, ['runa_paso']],
+    ['amuleto', { cadena: 'plata', colgante: 'ambar' }, ['castigo_sagrado']],
+    ['espada_larga', { hoja: 'acero', guarda: 'acero', mango: 'cuero_endurecido', pomo: 'acero' }, ['runa_chispa']],
+    ['daga', { hoja: 'acero', guarda: 'hierro', mango: 'cuero_curtido' }, ['runa_escarcha']],
+    ['cuchillos_arrojadizos', { hoja: 'acero', mango: 'roble' }, []],
+    ['bombas', { casco: 'hierro', carga: 'ascua_salamandrilla' }, []],
+    ['hoz', { hoja: 'hierro', mango: 'roble' }, []],
+  ];
+  for (const [bp, materials, ench] of kit) {
+    const runeQuality = Object.fromEntries(ench.map((e) => [e, 80]));
+    const build = buildItem(c, { blueprintId: bp, materials, stage: 'enchant', hits: 6, quality: 70, defects: 0, traits: [], finish: [], instability: 0 }, ench, runeQuality);
+    const { rarityScore: _r, design: _d, ...rest } = build;
+    s.items.push({ ...rest, uid: nextUid(s, 'it'), exhibited: false, createdDay: s.day });
+  }
+  const pot = potionItem(s, c.potions.pocion_curacion, 1, 4);
+  s.items.push(pot);
+  s.belt[pot.uid] = 3;
+  return [{ type: 'toast', text: `[debug] Kit mágico: ${kit.length} objetos, grimorios y pociones` }];
 }

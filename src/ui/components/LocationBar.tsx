@@ -45,7 +45,16 @@ export function LocationBar() {
       <div className="locbar-actions">
         {loc.id === 'herreria' && (
           <>
-            <button className="btn primary" onClick={() => store.openPanel('forge')}>{state.forge ? '🔨 Seguir forjando' : '🔨 Forjar'}</button>
+            {state.forge ? (
+              <button className="btn primary" onClick={() => store.openPanel('forge')}>🔨 Seguir trabajando</button>
+            ) : (
+              <>
+                <button className="btn primary" onClick={() => store.openForge('yunque')}>🔨 Forjar</button>
+                <button className="btn" onClick={() => store.openForge('joyeria')}>💍 Joyería</button>
+                <button className="btn" onClick={() => store.openForge('runas')}>ᚱ Runas</button>
+              </>
+            )}
+            <button className="btn" onClick={() => store.openPanel('alchemy')}>⚗️ Alquimia</button>
             <button className="btn" onClick={() => store.openPanel('shop')}>{state.shop ? '🛎️ Tienda abierta' : '🛎️ Atender tienda'}</button>
             {damaged > 0 && <button className="btn" onClick={() => store.openPanel('repair')}>🛠️ Reparar ({damaged})</button>}
             <button className="btn" onClick={() => store.showWorld()}>🧭 Expedición</button>
@@ -53,6 +62,8 @@ export function LocationBar() {
           </>
         )}
         {loc.id === 'mercado' && <button className="btn primary" onClick={() => store.openPanel('market')}>🧺 Puesto de materiales</button>}
+        {loc.kind === 'alquimista' && <button className="btn primary" onClick={() => store.openPanel('market')}>🌿 Hierbas y reactivos</button>}
+        {loc.kind === 'libreria' && <button className="btn primary" onClick={() => store.openPanel('library')}>📚 Grimorios y planos</button>}
         {loc.id === 'taberna' && <button className="btn primary" onClick={() => store.openPanel('mercenaries')}>🍺 Mercenarios</button>}
         {npcs.map((id) => (
           <button key={id} className="btn" onClick={() => store.talkTo(id)}>💬 {c.npcs[id].name.split(' ')[0]}</button>

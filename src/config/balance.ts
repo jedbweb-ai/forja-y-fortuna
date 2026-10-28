@@ -10,8 +10,15 @@ export const BALANCE = {
     materials: {
       hierro: 7, cobre: 4, pino: 5, fresno: 2, cuero_curtido: 3, cuerda_lino: 2, plumas_ganso: 3,
     } as Record<string, number>,
-    blueprints: ['daga', 'espada_larga', 'maza', 'arco_corto', 'flechas', 'escudo_mediano', 'peto', 'pico', 'hacha_tala', 'cuchillo_desuello'],
-    enchantments: ['runa_brasa', 'runa_vigor', 'runa_colmillo', 'runa_totem', 'runa_nucleo'],
+    blueprints: [
+      'daga', 'espada_larga', 'maza', 'arco_corto', 'flechas', 'escudo_mediano', 'peto', 'pico', 'hacha_tala', 'cuchillo_desuello',
+      'anillo', 'amuleto', 'talisman', 'cuchillos_arrojadizos', 'hoz',
+    ],
+    /** Las recetas de runas se conocen desde el principio; los encantamientos de grimorio se aprenden leyendo. */
+    enchantments: [
+      'runa_brasa', 'runa_vigor', 'runa_colmillo', 'runa_totem', 'runa_nucleo',
+      'runa_llama', 'runa_escarcha', 'runa_chispa', 'runa_marea', 'runa_vendaval', 'runa_roca', 'runa_alivio', 'runa_paso',
+    ],
   },
 
   time: {
@@ -228,6 +235,54 @@ export const BALANCE = {
     fleeBase: 0.45,
     fleePerSpd: 0.04,
     fleeBoss: 0.2,
+  },
+
+  // ───────────── Fase 3 ─────────────
+
+  magic: {
+    /** Usos extra de las habilidades activas por índice de rareza (común..legendario). */
+    usesByRarity: [0, 0, 1, 1, 2],
+    /** Calidad del objeto desde la que la habilidad recarga un turno antes. */
+    fastCooldownQuality: 70,
+    /** Potencia de la habilidad según la calidad de la runa: base + calidad × factor. */
+    runePowerBase: 0.8,
+    runePowerPerQuality: 0.004,
+    /** Calidad de runa desde la que da un uso extra. */
+    runeExtraUseQuality: 85,
+    /** Potencia extra si el elemento de la habilidad coincide con la afinidad del objeto (≥2). */
+    affinityPowerBonus: 0.15,
+    /** Potencia extra por punto de afinidad en joyas del mismo elemento (tope). */
+    jewelPowerPerPoint: 0.08,
+    jewelPowerMax: 0.5,
+    runeSlots: 1,
+  },
+
+  terrain: {
+    hieloTurns: 3,
+    llamasTurns: 2,
+    charcoTurns: 3,
+    /** Daño que reciben los que encadena el rayo por el agua (fracción del golpe). */
+    chainFraction: 0.5,
+    /** Multiplicador del rayo sobre mojados o parados en agua. */
+    wetShock: 1.5,
+    burnStatusTurns: 2,
+  },
+
+  alchemy: {
+    beltSize: 6,
+    /** Fuego de la destilación: potencia extra y chance de arruinar la tanda. */
+    heat: {
+      suave: { potency: 0, fail: 0 },
+      medio: { potency: 1, fail: 0.1 },
+      fuerte: { potency: 2, fail: 0.3 },
+    } as Record<string, { potency: number; fail: number }>,
+    failReductionPerLevel: 0.02,
+    healPerPotency: 0.15,
+    xpPerBrew: 6,
+  },
+
+  chests: {
+    fill: 0.6,
   },
 
   market: {

@@ -60,13 +60,15 @@ export function resolveCombat(c: Content, s: GameState, rng: Rng): CombatReport 
 
   if (outcome === 'victory') {
     const skinner = bestTool(s, 'desuello');
+    // Joyas "De la fortuna": más chance de botín.
+    const lootMult = 1 + partyUnits.reduce((a, u) => a + (u.alive ? u.combat.lootPct ?? 0 : 0), 0) / 100;
     const skinTier = skinner ? toolTier(skinner.stats.atk) : 0;
     let threat = 0;
     for (const u of cs.units.filter((x) => x.side === 'enemy' && !x.alive && x.monsterId)) {
       const m = c.monsters[u.monsterId!];
       threat += m.threat;
       for (const drop of m.loot) {
-        if (!rng.chance(drop.chance)) continue;
+        if (!rng.chance(Math.min(1, drop.chance * lootMult))) continue;
         const mat = c.materials[drop.material];
         const cause = [u.killedBy?.element, u.killedBy?.damageType].filter(Boolean) as string[];
         if (drop.spoiledBy?.some((x) => cause.includes(x))) {
@@ -90,16 +92,24 @@ export function resolveCombat(c: Content, s: GameState, rng: Rng): CombatReport 
     report.xp = Math.round(threat * CB.xpPerThreat);
     addXp(s, 'combate', report.xp / 2);
     e.groups = e.groups.filter((g) => g.id !== cs.groupId);
-    // Flechas con el rasgo "Recuperables": se junta parte de las disparadas.
+    // Flechas "Recuperables" y arrojadizos "De vuelta": se junta parte de lo lanzado.
     for (const [uid, used] of Object.entries(cs.ammoUsed)) {
       const lot = s.items.find((i) => i.uid === uid);
-      const pct = lot ? (c.traits.recuperables && lot.traits.includes('recuperables') ? Number(c.traits.recuperables.combat?.recoverPct ?? 0) : 0) : 0;
+      if (!lot) continue;
+      const pct = lot.traits.reduce((a, t) => a + Number(c.traits[t]?.combat?.recoverPct ?? 0), 0);
       const recover = Math.floor(used * pct / 100);
-      if (lot && recover) {
+      if (recover) {
         lot.quantity += recover;
-        report.notes.push(`Recuperaste ${recover} flechas.`);
+        report.notes.push(`Recuperaste ${recover} de ${lot.name}.`);
       }
     }
+  }
+
+  // Lotes que quedaron vacíos: se descartan y se sacan del cinturón.
+  const empty = s.items.filter((i) => (i.category === 'municion' || i.category === 'arrojadizo') && i.quantity <= 0).map((i) => i.uid);
+  if (empty.length) {
+    s.items = s.items.filter((i) => !empty.includes(i.uid));
+    for (const ch of Object.values(s.characters)) if (ch.equipment.cinturon && empty.includes(ch.equipment.cinturon)) delete ch.equipment.cinturon;
   }
 
   // Vida, experiencia y heridas.

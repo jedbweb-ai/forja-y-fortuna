@@ -3,7 +3,8 @@ import { combatTap, combatHighlights } from '../../bridge/combatInput';
 import type { GameStore } from '../../bridge/GameStore';
 import { currentUnit } from '../../core/combat/engine';
 import { arenaSize, heightAt, terrainAt } from '../../core/combat/grid';
-import type { ArenaDef, CombatFx, CombatState, CombatUnit } from '../../core/combat/types';
+import type { ArenaDef, CombatFx, CombatState, CombatUnit, TerrainKind } from '../../core/combat/types';
+import type { Affinity } from '../../core/types';
 import { slotName } from '../../core/time';
 import type { GameEvent } from '../../core/types';
 import { isoBounds, screenToIso } from '../render/iso';
@@ -23,10 +24,17 @@ const OBSTACLE: Record<string, string> = { pradera: 'prop.rock', bosque: 'prop.t
 const STATUS_ICON: Record<string, string> = {
   sangrado: '🩸', veneno: '☠️', quemadura: '🔥', aturdido: '💫', ralentizado: '🐌', inmovilizado: '🕸️',
   cubierto: '🛡️', potenciado: '💪', mojado: '💧', corroido: '🧪',
+  acelerado: '💨', regenerando: '💚', protegido: '🔰', resguardo: '✴️',
 };
 const STATUS_TEXT: Record<string, string> = {
   sangrado: 'Sangra', veneno: 'Envenenado', quemadura: 'Arde', aturdido: 'Aturdido', ralentizado: 'Lento', inmovilizado: 'Atrapado',
   cubierto: 'Cubierto', potenciado: 'Potenciado', mojado: 'Mojado', corroido: 'Corroído',
+  acelerado: 'Acelerado', regenerando: 'Regenera', protegido: 'Protegido', resguardo: 'Resguardo',
+};
+/** Color y opacidad de cada efecto de terreno sobre la casilla. */
+const TERRAIN_COLOR: Record<TerrainKind, [number, number]> = { hielo: [0xbfe8ff, 0.6], llamas: [0xff6a2d, 0.4], charco: [0x4a8ad8, 0.45] };
+const ELEMENT_COLOR: Partial<Record<Affinity, number>> = {
+  fuego: 0xff7a2d, hielo: 0x9ad8ff, rayo: 0xfff07a, agua: 0x4a8ad8, viento: 0xc8f0d8, tierra: 0xb08a52, sagrado: 0xfff4c8, oscuro: 0x9a6ad0,
 };
 
 /** Arena de combate táctico. Lee el estado del combate y anima lo que pasa. */
@@ -34,6 +42,9 @@ export class CombatScene extends Phaser.Scene {
   private arena!: ArenaDef;
   private units = new Map<string, UnitView>();
   private highlight!: Phaser.GameObjects.Graphics;
+  private terrainLayer!: Phaser.GameObjects.Graphics;
+  private flames = new Map<string, Phaser.GameObjects.Image>();
+  private grass = new Map<string, Phaser.GameObjects.Image>();
   private marker!: Phaser.GameObjects.Image;
   private queue: CombatFx[] = [];
   private animating = false;
@@ -52,6 +63,8 @@ export class CombatScene extends Phaser.Scene {
     const c = this.store.content;
     this.arena = c.arenas[cs.arenaId];
     this.units.clear();
+    this.flames.clear();
+    this.grass.clear();
     this.queue = [];
     this.animating = false;
     const a = this.arena;
@@ -68,11 +81,12 @@ export class CombatScene extends Phaser.Scene {
       for (let x = 0; x < cols; x++) {
         const t = terrainAt(a, x, y);
         const p = tilePos(x, y, heightAt(a, x, y));
-        if (t === ',') this.add.image(p.x, p.y + 6, 'deco.tallgrass').setOrigin(0.5, 1).setDepth(standDepth(x, y, 3));
+        if (t === ',') this.grass.set(`${x},${y}`, this.add.image(p.x, p.y + 6, 'deco.tallgrass').setOrigin(0.5, 1).setDepth(standDepth(x, y, 3)));
         if (t === '#') this.add.image(p.x, p.y + 12, OBSTACLE[a.biome]).setOrigin(0.5, 1).setScale(a.biome === 'bosque' ? 0.75 : 1).setDepth(standDepth(x, y, 5));
       }
     }
 
+    this.terrainLayer = this.add.graphics().setDepth(-5100);
     this.highlight = this.add.graphics().setDepth(-5000);
     this.marker = this.add.image(0, 0, 'fx.arrow').setDepth(9500);
     this.tweens.add({ targets: this.marker, y: '-=6', yoyo: true, repeat: -1, duration: 400 });
@@ -172,27 +186,58 @@ export class CombatScene extends Phaser.Scene {
     } else {
       this.marker.setVisible(false);
     }
+    this.drawTerrain();
     this.drawHighlights();
+  }
+
+  private diamond(g: Phaser.GameObjects.Graphics, x: number, y: number, color: number, alpha: number, stroke = false) {
+    const p = tilePos(x, y, heightAt(this.arena, x, y));
+    const pts = [new Phaser.Math.Vector2(p.x - 30, p.y), new Phaser.Math.Vector2(p.x, p.y - 15), new Phaser.Math.Vector2(p.x + 30, p.y), new Phaser.Math.Vector2(p.x, p.y + 15)];
+    if (stroke) {
+      g.lineStyle(3, color, 1);
+      g.strokePoints(pts, true);
+    } else {
+      g.fillStyle(color, alpha);
+      g.fillPoints(pts, true);
+    }
+  }
+
+  /** Hielo, llamas y charcos sobre las casillas; la hierba quemada se oscurece. */
+  private drawTerrain() {
+    const cs = this.cs;
+    if (!cs) return;
+    const g = this.terrainLayer;
+    g.clear();
+    const burning = new Set<string>();
+    for (const [k, fx] of Object.entries(cs.terrainFx)) {
+      const [x, y] = k.split(',').map(Number);
+      const [color, alpha] = TERRAIN_COLOR[fx.kind];
+      this.diamond(g, x, y, color, alpha);
+      if (fx.kind !== 'llamas') continue;
+      burning.add(k);
+      if (this.flames.has(k)) continue;
+      const p = tilePos(x, y, heightAt(this.arena, x, y));
+      const flame = this.add.image(p.x, p.y + 4, 'fx.flame').setOrigin(0.5, 1).setScale(1.4).setDepth(standDepth(x, y, 4));
+      this.tweens.add({ targets: flame, scaleY: 1.7, alpha: 0.75, yoyo: true, repeat: -1, duration: 260 + ((x * 31 + y * 17) % 140) });
+      this.flames.set(k, flame);
+    }
+    for (const [k, flame] of this.flames) {
+      if (burning.has(k)) continue;
+      flame.destroy();
+      this.flames.delete(k);
+    }
+    for (const k of cs.burnt) this.grass.get(k)?.setTint(0x3a2a20).setAlpha(0.6);
   }
 
   private drawHighlights() {
     const g = this.highlight;
     g.clear();
     const h = combatHighlights(this.store);
-    const diamond = (x: number, y: number, color: number, alpha: number, stroke = false) => {
-      const p = tilePos(x, y, heightAt(this.arena, x, y));
-      const pts = [new Phaser.Math.Vector2(p.x - 30, p.y), new Phaser.Math.Vector2(p.x, p.y - 15), new Phaser.Math.Vector2(p.x + 30, p.y), new Phaser.Math.Vector2(p.x, p.y + 15)];
-      if (stroke) {
-        g.lineStyle(3, color, 1);
-        g.strokePoints(pts, true);
-      } else {
-        g.fillStyle(color, alpha);
-        g.fillPoints(pts, true);
-      }
-    };
+    const diamond = (x: number, y: number, color: number, alpha: number, stroke = false) => this.diamond(g, x, y, color, alpha, stroke);
     h.move.forEach((t) => diamond(t.x, t.y, 0x5aa9ff, 0.38));
     h.range.forEach((t) => diamond(t.x, t.y, 0xff8a3d, 0.22));
     h.targets.forEach((t) => diamond(t.x, t.y, 0xff4a3a, 1, true));
+    h.area.forEach((t) => diamond(t.x, t.y, 0xffd04d, 0.35));
     if (h.selected) diamond(h.selected.x, h.selected.y, 0xffd04d, 1, true);
   }
 
@@ -250,7 +295,7 @@ export class CombatScene extends Phaser.Scene {
         const t = view(fx.to);
         if (!a || !t) return done();
         const skill = this.store.content.skills[fx.skill];
-        const ranged = !!skill && (skill.ammo || skill.range[1] > 1);
+        const ranged = !!skill && (skill.ammo || skill.throw || skill.range[1] > 1) && !skill.area;
         const impact = () => {
           if (fx.kind === 'hit') {
             this.flash(t, 0xffffff);
@@ -309,6 +354,36 @@ export class CombatScene extends Phaser.Scene {
         if (!t) return done();
         this.tweens.add({ targets: t.box, alpha: 0, y: t.box.y + 8, duration: 350, onComplete: () => { t.box.setVisible(false); done(); } });
         return;
+      }
+      case 'area': {
+        // Destello del área de la acción (cono, línea, radio).
+        const g = this.add.graphics().setDepth(-4900);
+        const color = (fx.element && ELEMENT_COLOR[fx.element]) ?? 0xffe9a8;
+        fx.tiles.forEach((t) => this.diamond(g, t.x, t.y, color, 0.7));
+        const a = view(fx.from);
+        if (a) this.tweens.add({ targets: a.box, scale: 1.08, yoyo: true, duration: 120 });
+        this.tweens.add({ targets: g, alpha: 0, duration: 420, onComplete: () => g.destroy() });
+        return void this.time.delayedCall(260, done);
+      }
+      case 'terrain':
+        this.drawTerrain();
+        return void this.time.delayedCall(fx.terrain ? 220 : 60, done);
+      case 'chain': {
+        // El rayo corre por el agua de casilla en casilla.
+        const g = this.add.graphics().setDepth(9650);
+        g.lineStyle(3, 0xfff07a, 1);
+        const pts = fx.tiles.map((t) => tilePos(t.x, t.y, heightAt(this.arena, t.x, t.y)));
+        for (let i = 1; i < pts.length; i++) {
+          const a = pts[i - 1];
+          const b = pts[i];
+          const mx = (a.x + b.x) / 2 + Phaser.Math.Between(-6, 6);
+          const my = (a.y + b.y) / 2 + Phaser.Math.Between(-6, 6);
+          g.lineBetween(a.x, a.y - 4, mx, my - 4);
+          g.lineBetween(mx, my - 4, b.x, b.y - 4);
+        }
+        this.cameras.main.flash(80, 255, 250, 200);
+        this.tweens.add({ targets: g, alpha: 0, duration: 380, onComplete: () => g.destroy() });
+        return void this.time.delayedCall(300, done);
       }
       case 'spawn': {
         const u = cs?.units.find((x) => x.id === fx.unit);

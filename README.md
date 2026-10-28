@@ -2,7 +2,7 @@
 
 Juego de gestión y RPG táctico: sos un herrero en un mundo de fantasía. El diseño completo está en [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (fuente de verdad).
 
-**Estado: Fase 2 (mundo y combate) terminada.**
+**Estado: Fase 3 (profundidad de la forja y magia) terminada.**
 
 ## Cómo correrlo
 
@@ -18,7 +18,7 @@ npm run icons      # regenera los íconos placeholder de la PWA
 Para probar en el celular: `npm run dev -- --host`, abrir la IP de la compu desde el celu (misma red) y girarlo a horizontal.
 
 ### Modo debug
-`?debug=1` en la URL, o 5 toques rápidos en el ⚒️ del HUD. Aparece el botón 🐞: oro, materiales, kit de equipo de prueba, contratar mercenarios, combates de prueba (gelines, goblins, bestias, jefe), curar al grupo, avanzar franjas/días, subir habilidades, reputación, relaciones con NPCs, revelar sinergias y reiniciar el límite diario de charlas. En modo debug la consola tiene `fyf` (el store), `fyfCmd` (comandos de expedición y combate) y `fyfGame` (Phaser).
+`?debug=1` en la URL, o 5 toques rápidos en el ⚒️ del HUD. Aparece el botón 🐞: oro, materiales, kit de equipo de prueba, contratar mercenarios, kit mágico (grimorios, joyas con habilidades, arrojadizos, bombas, hoz y pociones en el cinturón), combates de prueba (gelines, goblins, bestias, jefe), curar al grupo, avanzar franjas/días, subir habilidades, reputación, relaciones con NPCs, revelar sinergias y reiniciar el límite diario de charlas. En modo debug la consola tiene `fyf` (el store), `fyfCmd` (comandos de expedición y combate) y `fyfGame` (Phaser).
 
 ## Arquitectura
 
@@ -28,7 +28,8 @@ src/
     forge/      diseño, sinergias, golpes, rareza, valor, comandos de forja
     economy/    tienda, clientes, regateo, mercado
     party/      personajes, atributos, equipo, perfil de combate, mercenarios
-    combat/     motor táctico: grilla con alturas, daño, estados, IA por rol, resultado y botín
+    combat/     motor táctico: grilla con alturas, daño, estados, terreno (hielo, llamas, charcos), áreas, IA, botín
+    magic/      habilidades activas de los objetos, grimorios, alquimia y cinturón de pociones
     world/      regiones, encuentros por presupuesto de amenaza, expediciones
     city.ts     movimiento por la ciudad, NPCs presentes por franja
     dialogue.ts motor de diálogos (condiciones y efectos)
@@ -72,5 +73,17 @@ src/
 - **Requisitos**: el equipo pide fuerza según su peso y voluntad según sus encantamientos; sin cumplirlos rinde menos. El equipo roto rinde la mitad hasta repararlo en la forja.
 - Las partidas de la Fase 1 se migran solas al formato nuevo (versión 2 del guardado).
 
+## Decisiones de la Fase 3
+
+- **Dos fuentes de encantamiento**: las **runas** se graban en la mesa de runas (una sesión de trazos como la forja, con su calidad) y se gastan al encantar una pieza. Los **grimorios** se leen una vez y enseñan encantamientos para siempre; después se aplican con reactivos y oro, sin runa. Algunos piden una pieza de cierta rareza.
+- **Habilidades activas fabricadas**: sus usos por combate y su recarga dependen de cómo se hizo la pieza (rareza, calidad, calidad de la runa, afinidad del arma y rasgos). Las joyas del mismo elemento las potencian. Así las habilidades fuertes son escasas y hay que combinarlas con las acciones del arma, los arrojadizos y las pociones.
+- **Joyería**: 2 anillos y 1 amuleto por personaje, en su propia mesa. Las gemas dan defensa, resistencia a su elemento y piden voluntad.
+- **Arrojadizos** (cuchillos, hachas, estrellas, bombas) en el cinturón de cada personaje, por lote. La bomba toma el elemento de su carga.
+- **Pociones del grupo**: un cinturón compartido de 6 pociones. En combate se le dan a uno mismo o a un aliado al lado; durante la expedición se pueden tomar las de curación.
+- **Alquimia**: 2 o 3 ingredientes suman propiedades y eligen la receta; el fuego suave, medio o fuerte cambia la potencia y el riesgo. Hay recetas secretas y recetas que dan materiales (líquidos de temple, esencias para grimorios).
+- **Terreno en combate**: el hielo congela el agua (se puede cruzar y atrapa a quien estaba en ella), el fuego prende la hierba alta y se propaga, el agua apaga las llamas y el rayo corre por el agua y los charcos. Se pueden sumar más reglas en `core/combat/terrain.ts`.
+- **Ciudad**: abren la alquimia de Bastián (hierbas y reactivos) y la librería de Teodora (grimorios y planos). En las regiones aparecen hierbas (con hoz; alguna solo de noche), depósitos de gemas y cofres.
+- Las partidas anteriores se migran solas (versión 3 del guardado) y reciben los NPC y recetas nuevos del contenido.
+
 ## Pendiente para próximas fases
-Ver el plan en `docs/GAME_DESIGN.md` §15. Lo próximo es la Fase 3: profundidad de la forja (rasgos, temples especiales, runas con habilidades activas, grimorios, joyería, arrojadizos y pociones).
+Ver el plan en `docs/GAME_DESIGN.md` §15. Lo próximo es la Fase 4: economía, ciudad y relaciones.

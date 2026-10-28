@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { SkillId } from '../../core/types';
 import { relationLevel, skillLevel } from '../../core/state';
 import {
-  dbgAdvance, dbgCombat, dbgGold, dbgHealParty, dbgHire, dbgKit, dbgLevelUp, dbgMaterials, dbgRelation, dbgReputation, dbgResetTalks, dbgRevealSynergies,
+  dbgAdvance, dbgCombat, dbgGold, dbgHealParty, dbgHire, dbgKit, dbgMagicKit, dbgLevelUp, dbgMaterials, dbgRelation, dbgReputation, dbgResetTalks, dbgRevealSynergies,
 } from '../../debug/commands';
 import { setDebugPersisted } from '../../bridge/store';
 import { Panel } from '../components/Panel';
@@ -77,6 +77,7 @@ export function DebugPanel() {
           </div>
           <div className="row">
             <button className="btn" onClick={() => store.run(dbgKit)}>Kit de prueba</button>
+            <button className="btn" onClick={() => store.run(dbgMagicKit)}>Kit mágico</button>
             <button className="btn" onClick={() => store.run(dbgHealParty)}>Curar grupo / energía</button>
             {Object.keys(c.mercenaries).map((id) => <button key={id} className="btn" onClick={() => store.run(dbgHire, id)}>+ {c.mercenaries[id].name.split(' ')[0]}</button>)}
           </div>

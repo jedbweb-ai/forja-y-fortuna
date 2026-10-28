@@ -1,19 +1,24 @@
 import { GameError, type Content, type Ctx } from '../content';
-import type { GameEvent, GameState, ItemCategory, ItemInstance } from '../types';
+import type { GameEvent, GameState, ItemInstance } from '../types';
 import type { EquipSlot } from './types';
 
-export function slotFor(category: ItemCategory): EquipSlot | null {
-  switch (category) {
+/** Lugares donde puede ir un objeto. La joyería usa los dos anillos o el amuleto; los arrojadizos, el cinturón. */
+export function slotsFor(c: Content, item: ItemInstance): EquipSlot[] {
+  switch (item.category) {
     case 'arma':
     case 'distancia':
     case 'herramienta':
-      return 'arma';
+      return ['arma'];
     case 'escudo':
-      return 'escudo';
+      return ['escudo'];
     case 'armadura':
-      return 'cuerpo';
+      return ['cuerpo'];
+    case 'joyeria':
+      return c.blueprints[item.blueprintId]?.jewelSlot === 'amuleto' ? ['amuleto'] : ['anillo1', 'anillo2'];
+    case 'arrojadizo':
+      return ['cinturon'];
     default:
-      return null;
+      return [];
   }
 }
 
@@ -38,23 +43,25 @@ export function isTwoHanded(c: Content, item: ItemInstance | undefined): boolean
   return !!item && !!c.blueprints[item.blueprintId]?.twoHanded;
 }
 
-export function equipItem(s: GameState, { c }: Ctx, charId: string, uid: string): GameEvent[] {
+export function equipItem(s: GameState, { c }: Ctx, charId: string, uid: string, slot?: EquipSlot): GameEvent[] {
   if (s.expedition?.combat) throw new GameError('No podés cambiar el equipo en pleno combate.');
   const ch = character(s, charId);
   const item = s.items.find((i) => i.uid === uid);
   if (!item) throw new GameError('Ese objeto no existe.');
-  const slot = slotFor(item.category);
-  if (!slot || item.quantity !== 1) throw new GameError('Ese objeto no se puede equipar.');
+  const options = slotsFor(c, item);
+  const lot = item.category === 'arrojadizo';
+  if (!options.length || (!lot && item.quantity !== 1)) throw new GameError('Ese objeto no se puede equipar.');
+  const target = slot && options.includes(slot) ? slot : options.find((o) => !ch.equipment[o]) ?? options[0];
 
-  if (slot === 'escudo' && isTwoHanded(c, s.items.find((i) => i.uid === ch.equipment.arma))) {
+  if (target === 'escudo' && isTwoHanded(c, s.items.find((i) => i.uid === ch.equipment.arma))) {
     throw new GameError('El arma que tiene ocupa las dos manos.');
   }
-  // Si otro personaje lo tenía, se lo saca.
-  if (item.equippedBy && item.equippedBy !== charId) {
+  // Si otro personaje (u otro lugar del mismo) lo tenía, se lo saca.
+  if (item.equippedBy) {
     const other = s.characters[item.equippedBy];
     if (other) for (const k of Object.keys(other.equipment) as EquipSlot[]) if (other.equipment[k] === uid) delete other.equipment[k];
   }
-  setSlot(s, charId, slot, uid);
+  setSlot(s, charId, target, uid);
   item.equippedBy = charId;
   item.exhibited = false;
   if (isTwoHanded(c, item) && ch.equipment.escudo) setSlot(s, charId, 'escudo', undefined);

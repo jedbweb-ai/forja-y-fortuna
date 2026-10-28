@@ -5,7 +5,11 @@ import type { Affinities, Affinity, TimeSlot } from '../types';
 
 export type StatusId =
   | 'sangrado' | 'veneno' | 'quemadura' | 'aturdido' | 'ralentizado' | 'inmovilizado'
-  | 'cubierto' | 'potenciado' | 'mojado' | 'corroido';
+  | 'cubierto' | 'potenciado' | 'mojado' | 'corroido'
+  | 'acelerado' | 'regenerando' | 'protegido' | 'resguardo';
+
+/** Efectos que una acción deja sobre el terreno de la arena. */
+export type TerrainKind = 'hielo' | 'llamas' | 'charco';
 
 export type AiRole = 'bruto' | 'tirador' | 'sanador' | 'tanque' | 'manada' | 'embestidor' | 'gelatina' | 'jefe';
 
@@ -22,8 +26,24 @@ export interface CombatSkill {
   name: string;
   /** Distancia mínima y máxima (casillas, sin diagonales). 0 = uno mismo. */
   range: [number, number];
-  target: 'enemy' | 'ally' | 'self';
-  area?: 'single' | 'adjacent';
+  /** 'tile': se apunta a una casilla (áreas, bombas). */
+  target: 'enemy' | 'ally' | 'self' | 'tile';
+  /**
+   * Forma del área. 'adjacent' = los vecinos del atacante (en acciones sobre uno mismo: todo su bando).
+   * 'cone' y 'line' salen del atacante hacia el objetivo; 'radius' rodea al objetivo.
+   */
+  area?: 'single' | 'adjacent' | 'cone' | 'line' | 'radius';
+  /** Largo del cono o la línea, o radio. */
+  size?: number;
+  /** Efecto que deja en el terreno (hielo sobre agua, llamas sobre hierba, charcos). */
+  terrain?: TerrainKind;
+  /** El rayo se propaga por el agua y a los mojados. */
+  chain?: boolean;
+  /** Usa el arrojadizo del cinturón (gasta una unidad). */
+  throw?: boolean;
+  /** Golpea también a los aliados dentro del área. */
+  friendlyFire?: boolean;
+  lifeStealPct?: number;
   /** Multiplicador sobre el ataque. 0 = no hace daño. */
   power: number;
   damageType?: DamageType;
@@ -109,6 +129,15 @@ export interface StatusEffect {
   id: StatusId;
   turns: number;
   power: number;
+  /** Para 'resguardo': elemento del que protege. */
+  element?: Affinity;
+}
+
+/** Habilidad activa disponible en combate, con sus usos restantes. */
+export interface UnitAbility {
+  uses: number;
+  cooldown: number;
+  power: number;
 }
 
 export type Dir = 0 | 1 | 2 | 3; // +x, +y, -x, -y
@@ -148,6 +177,11 @@ export interface CombatUnit {
   boss?: boolean;
   /** Lote de flechas que usa (uid del objeto). */
   ammoUid?: string;
+  /** Habilidades activas de su equipo (id de acción → usos y enfriamiento). */
+  abilities: Record<string, UnitAbility>;
+  /** Lote de arrojadizos del cinturón y su daño. */
+  throwUid?: string;
+  throwAtk?: number;
   moved: boolean;
   acted: boolean;
   alive: boolean;
@@ -168,6 +202,10 @@ export interface CombatState {
   /** Flechas usadas por lote, para recuperar parte al final. */
   ammoUsed: Record<string, number>;
   nextUnitId: number;
+  /** Efectos sobre el terreno: "x,y" → tipo y turnos que quedan. */
+  terrainFx: Record<string, { kind: TerrainKind; turns: number }>;
+  /** Casillas de hierba que ya se quemaron. */
+  burnt: string[];
 }
 
 /** Resultado que se muestra al terminar un combate. */
@@ -192,4 +230,7 @@ export type CombatFx =
   | { kind: 'push'; unit: string; to: { x: number; y: number }; damage: number }
   | { kind: 'death'; unit: string }
   | { kind: 'spawn'; unit: string }
-  | { kind: 'buff'; unit: string; skill: string };
+  | { kind: 'buff'; unit: string; skill: string }
+  | { kind: 'area'; from: string; tiles: { x: number; y: number }[]; skill: string; element?: Affinity }
+  | { kind: 'terrain'; tiles: { x: number; y: number }[]; terrain: TerrainKind | null }
+  | { kind: 'chain'; tiles: { x: number; y: number }[] };

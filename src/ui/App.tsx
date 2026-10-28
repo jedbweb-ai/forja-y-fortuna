@@ -1,8 +1,10 @@
+import { AlchemyPanel } from './panels/AlchemyPanel';
 import { BookPanel } from './panels/BookPanel';
 import { DebugPanel } from './panels/DebugPanel';
 import { ExpeditionPanel } from './panels/ExpeditionPanel';
 import { ForgePanel } from './panels/forge/ForgePanel';
 import { InventoryPanel } from './panels/InventoryPanel';
+import { LibraryPanel } from './panels/LibraryPanel';
 import { MarketPanel } from './panels/MarketPanel';
 import { MercenaryPanel } from './panels/MercenaryPanel';
 import { PartyPanel } from './panels/PartyPanel';
@@ -47,6 +49,8 @@ export function App() {
           {ui.panel === 'repair' && <RepairPanel />}
           {ui.panel === 'expedition' && <ExpeditionPanel />}
           {ui.panel === 'bag' && <BagPanel />}
+          {ui.panel === 'alchemy' && <AlchemyPanel />}
+          {ui.panel === 'library' && <LibraryPanel />}
           {ui.panel === 'debug' && ui.debug && <DebugPanel />}
           {ui.dialogue && <DialogueBox />}
           {ui.itemCard && (

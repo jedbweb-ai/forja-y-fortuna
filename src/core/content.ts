@@ -1,4 +1,5 @@
 import type { ArenaDef, CombatSkill, MonsterDef } from './combat/types';
+import type { GrimoireDef, PotionDef } from './magic/types';
 import type { MercenaryDef, WeaponKind } from './party/types';
 import type { Rng } from './rng';
 import type {
@@ -28,6 +29,8 @@ export interface Content {
   arenas: Record<string, ArenaDef>;
   regions: Record<string, RegionDef>;
   marketEvents: Record<string, MarketEventDef>;
+  grimoires: Record<string, GrimoireDef>;
+  potions: Record<string, PotionDef>;
 }
 
 export function indexById<T extends { id: string }>(list: T[]): Record<string, T> {

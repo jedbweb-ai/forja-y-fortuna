@@ -100,6 +100,7 @@ export const MONSTERS: MonsterDef[] = [
     loot: [
       { material: 'piel_jabali', chance: 0.8, qty: [1, 1], skin: true, spoiledBy: ['fuego'] },
       { material: 'colmillo_jabali', chance: 0.7, qty: [1, 2] },
+      { material: 'sangre_bestia', chance: 0.5, qty: [1, 1], spoiledBy: ['fuego'] },
     ],
     sprite: { key: 'mon.jabali', tint: 0x6b4a32 }, description: 'Embiste en línea recta. Mejor no quedar al borde de una loma.',
   },
@@ -118,7 +119,7 @@ export const MONSTERS: MonsterDef[] = [
     id: 'oso_musgoso', name: 'Oso musgoso', family: 'bestias', tier: 2, rare: true, aggressive: true,
     hp: 135, atk: 20, def: 8, spd: 4, move: 3, jump: 1, evasion: 0, damageType: 'cortante',
     resist: { contundente: 0.8 }, elemental: { fuego: 1.3 }, skills: ['zarpazo', 'rugido'], ai: 'bruto', threat: 8, slots: ['mañana', 'tarde'],
-    loot: [{ material: 'garra_oso', chance: 0.9, qty: [1, 2] }, { material: 'piel_jabali', chance: 0.5, qty: [1, 2], skin: true, spoiledBy: ['fuego'] }],
+    loot: [{ material: 'garra_oso', chance: 0.9, qty: [1, 2] }, { material: 'sangre_bestia', chance: 0.8, qty: [1, 2] }, { material: 'piel_jabali', chance: 0.5, qty: [1, 2], skin: true, spoiledBy: ['fuego'] }],
     sprite: { key: 'mon.oso', tint: 0x4f5a3a, scale: 1.3 }, description: 'Tiene musgo en el lomo de tanto dormir. Despierto, es otra cosa.',
   },
   {

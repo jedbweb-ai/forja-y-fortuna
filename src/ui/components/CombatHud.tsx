@@ -1,10 +1,17 @@
-import { activePartyUnit, attackPreview, effectiveMode, selectSkill } from '../../bridge/combatInput';
+import { activePartyUnit, attackPreview, effectiveMode, selectPotion, selectSkill } from '../../bridge/combatInput';
 import { ammoBonus } from '../../core/combat/damage';
 import { canUseSkill, currentUnit, fleeChance } from '../../core/combat/engine';
+import type { CombatUnit } from '../../core/combat/types';
 import { closeReport, combatEndTurn, combatFlee, combatSkill } from '../../core/world/expedition';
 import { store, useSnapshot } from '../hooks';
 
 const SIDE_TEXT = { front: 'de frente', side: 'de costado', back: '¡por la espalda!' };
+
+/** Primero las habilidades del equipo, después los arrojadizos y al final las acciones del arma. */
+function rank(me: CombatUnit, id: string) {
+  if (me.abilities[id]) return 0;
+  return store.content.skills[id]?.throw ? 1 : 2;
+}
 
 export function CombatHud() {
   const { state, ui } = useSnapshot();
@@ -16,6 +23,7 @@ export function CombatHud() {
   const me = activePartyUnit(store);
   const mode = me ? effectiveMode(store, me) : null;
   const preview = attackPreview(store);
+  const belt = Object.entries(state.belt).filter(([, q]) => q > 0).map(([uid, q]) => ({ item: state.items.find((i) => i.uid === uid), q })).filter((b) => b.item);
   const upcoming = cs.order.slice(cs.turnIndex).map((id) => cs.units.find((u) => u.id === id)).filter((u) => u?.alive).slice(0, 8);
 
   return (
@@ -35,12 +43,18 @@ export function CombatHud() {
               <div className="meter thin hp"><span style={{ width: `${(me.hp / me.maxHp) * 100}%` }} /></div>
               <small className="muted">❤️ {me.hp}/{me.maxHp}{me.statuses.length ? ` · ${me.statuses.map((x) => x.id).join(', ')}` : ''}</small>
             </div>
-            {preview ? (
+            {preview || (mode === 'skill' && ui.combat.target) ? (
               <div className="combat-actions">
                 <div className="preview-line">
-                  🎯 {preview.target.name}: acierto <b>{Math.round(preview.calc.hit * 100)}%</b> · daño <b>{preview.calc.min}–{preview.calc.max}</b>
-                  {' '}· crítico {Math.round(preview.calc.crit * 100)}% · {SIDE_TEXT[preview.calc.side]}
-                  {preview.calc.element ? ` · ${preview.calc.element}` : ''}
+                  {preview ? (
+                    <>
+                      🎯 {preview.target.name}: acierto <b>{Math.round(preview.calc.hit * 100)}%</b> · daño <b>{preview.calc.min}–{preview.calc.max}</b>
+                      {' '}· crítico {Math.round(preview.calc.crit * 100)}% · {SIDE_TEXT[preview.calc.side]}
+                      {preview.calc.element ? ` · ${preview.calc.element}` : ''}
+                    </>
+                  ) : (
+                    <>🎯 {c.skills[ui.combat.skillId!].name}: casilla elegida{c.skills[ui.combat.skillId!].area ? ' (el área se marca en la arena)' : ''}</>
+                  )}
                 </div>
                 <button className="btn primary big" onClick={() => store.run(combatSkill, me.id, ui.combat.skillId!, ui.combat.target!.x, ui.combat.target!.y)}>Confirmar</button>
                 <button className="btn" onClick={() => store.setUi({ combat: { mode: null } })}>Cancelar</button>
@@ -50,11 +64,13 @@ export function CombatHud() {
                 {!me.moved && (
                   <button className={`btn ${mode === 'move' ? 'on' : ''}`} onClick={() => store.setUi({ combat: { mode: mode === 'move' ? null : 'move' } })}>👣 Mover</button>
                 )}
-                {me.skills.map((id) => {
+                {[...me.skills].sort((x, y) => rank(me, x) - rank(me, y)).map((id) => {
                   const skill = c.skills[id];
                   const reason = canUseSkill(c, state, me, skill);
                   const ammo = skill.ammo ? ammoBonus(c, state, me) : null;
                   const left = skill.ammo && me.ammoUid ? state.items.find((i) => i.uid === me.ammoUid)?.quantity ?? 0 : null;
+                  const thrown = skill.throw && me.throwUid ? state.items.find((i) => i.uid === me.throwUid)?.quantity ?? 0 : null;
+                  const ab = me.abilities[id];
                   return (
                     <button
                       key={id}
@@ -63,15 +79,29 @@ export function CombatHud() {
                       title={reason ?? skill.description}
                       onClick={() => selectSkill(store, id)}
                     >
-                      ⚔️ {skill.name}
-                      {me.cooldowns[id] ? <small> ({me.cooldowns[id]})</small> : null}
+                      {ab ? '✨' : skill.throw ? '🗡️' : '⚔️'} {skill.name}
+                      {ab ? <small> ×{ab.uses}</small> : null}
+                      {me.cooldowns[id] ? <small> ⏳{me.cooldowns[id]}</small> : null}
                       {ammo && left !== null ? <small> 🏹{left}</small> : null}
+                      {thrown !== null ? <small> ·{thrown}</small> : null}
                     </button>
                   );
                 })}
+                {belt.map(({ item, q }) => (
+                  <button
+                    key={item!.uid}
+                    className={`btn ${mode === 'potion' && ui.combat.potionUid === item!.uid ? 'on' : ''}`}
+                    disabled={me.acted}
+                    title={store.content.potions[item!.potion!.recipe]?.description}
+                    onClick={() => selectPotion(store, item!.uid)}
+                  >
+                    🧪 {item!.name} <small>×{q}</small>
+                  </button>
+                ))}
                 <button className="btn" onClick={() => store.run(combatEndTurn, me.id)}>⏭️ Terminar turno</button>
                 {!me.acted && <button className="btn danger" onClick={() => store.run(combatFlee, me.id)}>🏃 Huir ({Math.round(fleeChance(cs) * 100)}%)</button>}
-                {mode === 'skill' && <span className="small muted">Tocá un objetivo marcado en rojo.</span>}
+                {mode === 'skill' && <span className="combat-hint">{c.skills[ui.combat.skillId!]?.target === 'tile' ? 'Tocá una casilla al alcance.' : 'Tocá un objetivo marcado en rojo.'}</span>}
+                {mode === 'potion' && <span className="combat-hint">Tocá a quién dársela (vos o un aliado al lado).</span>}
               </div>
             )}
           </>

@@ -1,5 +1,7 @@
+import type { ItemAbility } from '../../core/magic/types';
 import type { Affinities, ItemCategory, Stats } from '../../core/types';
 import { AFFINITY_LABEL, statsFor } from '../format';
+import { store } from '../hooks';
 
 export function StatList({ stats, category, compare }: { stats: Stats; category: ItemCategory; compare?: Stats }) {
   return (
@@ -29,5 +31,21 @@ export function AffinityList({ affinities }: { affinities: Affinities }) {
     <div className="affinities">
       {entries.map(([a, v]) => <span key={a} className={`aff aff-${a}`}>{AFFINITY_LABEL[a]} {v}</span>)}
     </div>
+  );
+}
+
+/** Habilidades activas del objeto: usos por combate, recarga y potencia (dependen de cómo se fabricó). */
+export function AbilityList({ abilities }: { abilities?: ItemAbility[] }) {
+  if (!abilities?.length) return null;
+  const c = store.content;
+  return (
+    <ul className="abilities">
+      {abilities.map((a) => (
+        <li key={a.skill}>
+          ✨ <b>{c.skills[a.skill]?.name ?? a.skill}</b>
+          <small> · {a.uses} uso{a.uses === 1 ? '' : 's'} por combate · recarga {a.cooldown} · potencia ×{a.power.toFixed(2)}</small>
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -113,6 +113,42 @@ export function validateContent(c: Content): string[] {
   for (const m of Object.values(c.mercenaries)) if (!c.npcs[m.id]) errors.push(`mercenario ${m.id}: falta su NPC`);
   for (const ev of Object.values(c.marketEvents)) ev.materials?.forEach((id) => mat(id, `noticia ${ev.id}`));
 
+  // ── Fase 3 ──
+  for (const e of Object.values(c.enchantments)) {
+    if (e.ability) skill(e.ability.skill, `encantamiento ${e.id}`);
+    if (e.kind === 'activa' && !e.ability) errors.push(`encantamiento ${e.id}: activo sin habilidad`);
+  }
+  for (const bp of Object.values(c.blueprints)) if (bp.throwSkill) skill(bp.throwSkill, `plano ${bp.id}`);
+  for (const g of Object.values(c.grimoires)) {
+    g.teaches.forEach((e) => { if (c.enchantments[e]?.source !== 'grimorio') errors.push(`grimorio ${g.id}: "${e}" no es un encantamiento de grimorio`); });
+    g.reveals?.forEach((x) => { if (!c.synergies[x]) errors.push(`grimorio ${g.id}: sinergia inexistente "${x}"`); });
+  }
+  for (const e of Object.values(c.enchantments).filter((x) => x.source === 'grimorio')) {
+    if (!Object.values(c.grimoires).some((g) => g.teaches.includes(e.id))) errors.push(`encantamiento ${e.id}: ningún grimorio lo enseña`);
+  }
+  for (const p of Object.values(c.potions)) if (p.output.kind === 'material') mat(p.output.material, `receta ${p.id}`);
+  for (const q of Object.values(c.quench)) effect(q.effect, `temple ${q.id}`);
+  for (const r of Object.values(c.regions).filter((x) => x.available)) {
+    for (const z of r.zoneDefs) {
+      [...(z.hierbas ?? []), ...(z.gemas ?? [])].forEach((o) => mat(o.material, `región ${r.id}.${z.id}`));
+      z.cofres?.materials.forEach((m) => mat(m.material, `cofre ${r.id}.${z.id}`));
+      z.cofres?.grimoires.forEach((g) => { if (!c.grimoires[g.id]) errors.push(`cofre ${r.id}.${z.id}: grimorio inexistente "${g.id}"`); });
+    }
+  }
+  for (const loc of Object.values(c.cities).flatMap((x) => x.locations)) {
+    loc.stock?.forEach((m) => mat(m, `tienda ${loc.id}`));
+    loc.grimoires?.forEach((g) => { if (!c.grimoires[g]) errors.push(`librería ${loc.id}: grimorio inexistente "${g}"`); });
+    loc.blueprintsForSale?.forEach((b) => { if (!c.blueprints[b.id]) errors.push(`librería ${loc.id}: plano inexistente "${b.id}"`); });
+  }
+  for (const d of Object.values(c.dialogues)) {
+    for (const node of Object.values(d.nodes)) {
+      for (const e of [...(node.effects ?? []), ...(node.options ?? []).flatMap((o) => o.effects ?? [])]) {
+        if (e.type === 'giveGrimoire' && !c.grimoires[e.id]) errors.push(`diálogo ${d.id}: grimorio inexistente "${e.id}"`);
+        if (e.type === 'discoverPotion' && !c.potions[e.id]) errors.push(`diálogo ${d.id}: receta inexistente "${e.id}"`);
+      }
+    }
+  }
+
   Object.keys(BALANCE.start.materials).forEach((m) => mat(m, 'balance.start.materials'));
   BALANCE.start.blueprints.forEach((b) => { if (!c.blueprints[b]) errors.push(`balance.start.blueprints: "${b}"`); });
   BALANCE.start.enchantments.forEach((e) => { if (!c.enchantments[e]) errors.push(`balance.start.enchantments: "${e}"`); });

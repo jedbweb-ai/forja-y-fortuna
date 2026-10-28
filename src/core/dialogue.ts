@@ -1,6 +1,7 @@
 import { BALANCE } from '../config/balance';
 import { npcsAt } from './city';
 import { GameError, type Content, type Ctx } from './content';
+import { acquireGrimoire } from './magic/grimoires';
 import { addMaterial, changeRelation, changeReputation, currentCity, hasMaterial } from './state';
 import { slotName } from './time';
 import type { Condition, Dialogue, DialogueEffect, DialogueNode, DialogueOption, GameEvent, GameState } from './types';
@@ -47,6 +48,12 @@ export function applyEffect(s: GameState, c: Content, e: DialogueEffect): GameEv
         { type: 'synergyDiscovered', id: e.id },
         { type: 'toast', text: `Libro del herrero: anotaste «${c.synergies[e.id].name}».`, tone: 'good' },
       ];
+    case 'giveGrimoire':
+      return acquireGrimoire(s, c, e.id);
+    case 'discoverPotion':
+      if (s.discoveredPotions.includes(e.id)) return [];
+      s.discoveredPotions.push(e.id);
+      return [{ type: 'toast', text: `Receta nueva: ${c.potions[e.id].name}.`, tone: 'good' }];
   }
 }
 

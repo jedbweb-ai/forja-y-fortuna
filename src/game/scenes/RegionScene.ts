@@ -116,6 +116,8 @@ export class RegionScene extends Phaser.Scene {
         if (ch === 'T') this.add.image(p.x, p.y + 12, 'prop.tree').setOrigin(0.5, 1).setScale(0.75).setDepth(d);
         if (ch === 'R') this.add.image(p.x, p.y + 10, 'prop.rock').setOrigin(0.5, 1).setDepth(d);
         if (ch === 'v') this.add.image(p.x, p.y + 10, 'prop.vein').setOrigin(0.5, 1).setDepth(d);
+        if (ch === 'h') this.add.image(p.x, p.y + 8, 'prop.herbs').setOrigin(0.5, 1).setDepth(d);
+        if (ch === 'g') this.add.image(p.x, p.y + 10, 'prop.gemrock').setOrigin(0.5, 1).setDepth(d);
         if (ch === 't') this.add.image(p.x, p.y + 12, 'prop.tree').setOrigin(0.5, 1).setScale(0.8).setDepth(d);
         if (ch === 'B') this.add.image(p.x + 20, p.y + 4, 'prop.tent').setOrigin(0.5, 1).setDepth(d - 1);
         if (ch === 'E') this.add.image(p.x - 10, p.y + 6, 'prop.sign').setOrigin(0.5, 1).setDepth(d);
@@ -135,12 +137,20 @@ export class RegionScene extends Phaser.Scene {
     }
     for (const n of e.nodes) {
       if (this.nodeObjs.has(n.id)) continue;
-      const mat = this.store.content.materials[n.material];
       const p = this.at(n.x, n.y);
+      if (n.kind === 'cofre') {
+        const chest = this.add.image(p.x, p.y + 8, 'prop.chest').setOrigin(0.5, 1).setDepth(standDepth(n.x, n.y, 6));
+        const glow = this.add.image(p.x, p.y - 30, 'fx.ore').setTint(0xffd04d).setDepth(standDepth(n.x, n.y, 7));
+        this.tweens.add({ targets: glow, alpha: 0.3, yoyo: true, repeat: -1, duration: 700 });
+        this.nodeObjs.set(n.id, [chest, glow]);
+        continue;
+      }
+      const mat = this.store.content.materials[n.material];
+      const low = n.kind === 'veta' || n.kind === 'gema' || n.kind === 'hierba';
       const color = parseInt(mat.color.slice(1), 16);
-      const sparkle = this.add.image(p.x, p.y - (n.kind === 'veta' ? 14 : 44), 'fx.ore').setTint(color).setDepth(standDepth(n.x, n.y, 6));
+      const sparkle = this.add.image(p.x, p.y - (low ? 14 : 44), 'fx.ore').setTint(color).setDepth(standDepth(n.x, n.y, 6));
       this.tweens.add({ targets: sparkle, alpha: 0.4, yoyo: true, repeat: -1, duration: 600 + (n.x * 37) % 400 });
-      const label = this.add.text(p.x, p.y - (n.kind === 'veta' ? 26 : 60), mat.name, {
+      const label = this.add.text(p.x, p.y - (low ? 26 : 60), n.night ? `${mat.name} (de noche)` : mat.name, {
         fontFamily: 'system-ui, sans-serif', fontSize: '12px', color: '#ffffff', stroke: '#1a1220', strokeThickness: 3,
       }).setOrigin(0.5, 1).setResolution(2).setDepth(8000).setAlpha(0.9);
       this.nodeObjs.set(n.id, [sparkle, label]);

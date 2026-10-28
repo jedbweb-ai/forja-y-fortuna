@@ -154,7 +154,11 @@ export class LiveScene extends Phaser.Scene {
     const act = () => {
       this.tweens.add({ targets: label, scale: 1.15, yoyo: true, duration: 90 });
       switch (h.action) {
-        case 'forge': return this.store.openPanel('forge');
+        case 'forge': return this.store.openForge('yunque');
+        case 'runas': return this.store.openForge('runas');
+        case 'joyeria': return this.store.openForge('joyeria');
+        case 'alquimia': return this.store.openPanel('alchemy');
+        case 'libreria': return this.store.openPanel('library');
         case 'shop': return this.store.openPanel('shop');
         case 'market': return this.store.openPanel('market');
         case 'inventory': return this.store.openPanel('inventory');

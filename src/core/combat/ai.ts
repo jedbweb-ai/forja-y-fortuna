@@ -108,7 +108,7 @@ export function aiTurn(c: Content, s: GameState, rng: Rng): CombatFx[] {
   const fx: CombatFx[] = [];
   if (!u || !u.alive || u.side !== 'enemy') return fx;
   const plan = planTurn(c, s, cs, u);
-  if (plan.move.x !== u.x || plan.move.y !== u.y) fx.push(...moveUnit(c, s, u.id, plan.move));
+  if (plan.move.x !== u.x || plan.move.y !== u.y) fx.push(...moveUnit(c, s, u.id, plan.move, rng));
   if (plan.skill && plan.target && !cs.outcome) fx.push(...useSkill(c, s, rng, u.id, plan.skill, plan.target));
   if (!cs.outcome) fx.push(...endTurn(c, s, rng));
   return fx;

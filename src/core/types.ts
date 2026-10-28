@@ -1,5 +1,6 @@
 // Tipos compartidos del núcleo del juego. Sin dependencias visuales.
 import type { CombatFx } from './combat/types';
+import type { AlchemyProps, ItemAbility, PotionData } from './magic/types';
 import type { Character, WeaponKind } from './party/types';
 import type { ExpeditionState, MarketState } from './world/types';
 
@@ -18,7 +19,7 @@ export type TimeSlot = (typeof SLOTS)[number];
 export const RARITIES = ['común', 'poco común', 'raro', 'épico', 'legendario'] as const;
 export type Rarity = (typeof RARITIES)[number];
 
-export type MaterialType = 'metal' | 'madera' | 'cuero' | 'fibra' | 'gema' | 'monstruo' | 'especial';
+export type MaterialType = 'metal' | 'madera' | 'cuero' | 'fibra' | 'gema' | 'monstruo' | 'hierba' | 'especial';
 
 export type ItemCategory =
   | 'arma'        // cuerpo a cuerpo
@@ -29,7 +30,8 @@ export type ItemCategory =
   | 'armadura'
   | 'joyeria'
   | 'herramienta'
-  | 'pocion';
+  | 'pocion'
+  | 'runa';
 
 export type Station = 'yunque' | 'flecheria' | 'joyeria' | 'runas' | 'alquimia';
 
@@ -46,6 +48,8 @@ export interface Material {
   price: number;
   /** Color placeholder para el aspecto visual del objeto. */
   color: string;
+  /** Propiedades alquímicas (hierbas, partes de monstruo, gemas molidas...). */
+  alchemy?: AlchemyProps;
   description: string;
 }
 
@@ -82,6 +86,10 @@ export interface Blueprint {
   weaponKind?: WeaponKind;
   /** Ocupa las dos manos: no se puede usar con escudo. */
   twoHanded?: boolean;
+  /** Arrojadizos: acción de combate que da al llevarlos en el cinturón. */
+  throwSkill?: string;
+  /** Joyería: en qué lugar se usa. */
+  jewelSlot?: 'anillo' | 'amuleto';
   description: string;
 }
 
@@ -156,9 +164,16 @@ export interface FinishOption {
   quality?: number;
   /** Valoración estética: nobles y coleccionistas la aprecian. */
   beauty?: number;
+  /** Si se define, solo para estas categorías de objeto. */
+  categories?: ItemCategory[];
   description: string;
 }
 
+/**
+ * Encantamiento. Dos fuentes:
+ * - 'runa': se fabrica una runa en la mesa de runas con `cost` y se gasta al encantar.
+ * - 'grimorio': se aprende leyendo un grimorio y se aplica pagando `cost` (reactivos) y `gold`, sin runa.
+ */
 export interface Enchantment {
   id: string;
   name: string;
@@ -166,8 +181,13 @@ export interface Enchantment {
   kind: 'pasiva' | 'activa';
   categories: ItemCategory[];
   cost: { material: string; qty: number }[];
+  gold?: number;
   effect: Effect;
   combat?: Record<string, number | string>;
+  /** Habilidad activa que da al objeto, con sus usos y enfriamiento base. */
+  ability?: { skill: string; uses: number; cooldown: number };
+  /** Rareza mínima del objeto para poder aplicarlo. */
+  minRarity?: Rarity;
   description: string;
 }
 
@@ -214,7 +234,9 @@ export type DialogueEffect =
   | { type: 'giveMaterial'; id: string; qty: number }
   | { type: 'takeMaterial'; id: string; qty: number }
   | { type: 'discoverSynergy'; id: string }
-  | { type: 'reputation'; delta: number };
+  | { type: 'reputation'; delta: number }
+  | { type: 'giveGrimoire'; id: string }
+  | { type: 'discoverPotion'; id: string };
 
 export interface DialogueOption {
   text: string;
@@ -286,7 +308,7 @@ export interface HotspotDef {
   label: string;
   x: number;
   y: number;
-  action: 'forge' | 'shop' | 'market' | 'npc' | 'inventory' | 'book';
+  action: 'forge' | 'shop' | 'market' | 'npc' | 'inventory' | 'book' | 'runas' | 'joyeria' | 'alquimia' | 'libreria';
   npc?: string;
 }
 
@@ -316,6 +338,9 @@ export interface CityLocation {
   scene?: LiveSceneDef;
   /** Materiales que se venden en este lugar. */
   stock?: string[];
+  /** Grimorios y planos a la venta (librería). */
+  grimoires?: string[];
+  blueprintsForSale?: { id: string; price: number }[];
   description: string;
 }
 
@@ -356,6 +381,10 @@ export interface ItemInstance {
   color: string;
   /** Personaje que lo tiene equipado (no se puede vender ni exhibir). */
   equippedBy?: string;
+  /** Habilidades activas que dan sus encantamientos. */
+  abilities?: ItemAbility[];
+  /** Si es una poción: receta y potencia. */
+  potion?: PotionData;
 }
 
 export interface SavedDesign {
@@ -366,6 +395,9 @@ export interface SavedDesign {
 }
 
 export interface ForgeSession {
+  /** 'runa': grabado de una runa en la mesa de runas (solo tiene la etapa de golpes). */
+  kind?: 'pieza' | 'runa';
+  /** Para runas: id del encantamiento de la runa. */
   blueprintId: string;
   materials: Record<string, string>;
   stage: 'forging' | 'quench' | 'finish' | 'enchant';
@@ -418,7 +450,7 @@ export interface NpcState {
 
 export type SkillId =
   | 'herreria' | 'armeria' | 'flecheria' | 'comercio' | 'runas'
-  | 'combate' | 'mineria' | 'tala' | 'desuello';
+  | 'combate' | 'mineria' | 'tala' | 'desuello' | 'joyeria' | 'alquimia' | 'siega';
 
 export interface GameSettings {
   skipItemCard: boolean;
@@ -451,6 +483,12 @@ export interface GameState {
   party: string[];
   expedition: ExpeditionState | null;
   market: MarketState | null;
+  /** Grimorios conseguidos (leídos o no). */
+  grimoires: { id: string; read: boolean }[];
+  /** Cinturón de pociones del grupo: uid de la poción → unidades que se llevan. */
+  belt: Record<string, number>;
+  /** Recetas de alquimia descubiertas. */
+  discoveredPotions: string[];
   stats: { itemsForged: number; itemsRuined: number; goldEarned: number; itemsSold: number };
   settings: GameSettings;
   nextUid: number;
@@ -473,4 +511,6 @@ export type GameEvent =
   | { type: 'gathered'; nodeId: string; material: string; qty: number }
   | { type: 'combatStarted' }
   | { type: 'combatFx'; fx: CombatFx[] }
-  | { type: 'combatEnded'; outcome: 'victory' | 'defeat' | 'fled' };
+  | { type: 'combatEnded'; outcome: 'victory' | 'defeat' | 'fled' }
+  | { type: 'brewed'; recipe: string; name: string; qty: number; discovered: boolean }
+  | { type: 'grimoireFound'; id: string };

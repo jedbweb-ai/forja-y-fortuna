@@ -4,7 +4,7 @@ export const ATTRIBUTES = ['fuerza', 'agilidad', 'resistencia', 'voluntad'] as c
 export type Attribute = (typeof ATTRIBUTES)[number];
 export type Attributes = Record<Attribute, number>;
 
-export const EQUIP_SLOTS = ['arma', 'escudo', 'cuerpo'] as const;
+export const EQUIP_SLOTS = ['arma', 'escudo', 'cuerpo', 'anillo1', 'anillo2', 'amuleto', 'cinturon'] as const;
 export type EquipSlot = (typeof EQUIP_SLOTS)[number];
 
 export type Specialty = 'herrero' | 'guerrero' | 'arquero' | 'explorador' | 'porteador';

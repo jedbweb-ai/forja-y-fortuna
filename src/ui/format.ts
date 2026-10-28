@@ -16,12 +16,12 @@ export const AFFINITY_LABEL: Record<Affinity, string> = {
 };
 
 export const MATERIAL_TYPE_LABEL: Record<MaterialType, string> = {
-  metal: 'Metales', madera: 'Maderas', cuero: 'Cueros', fibra: 'Fibras', gema: 'Gemas', monstruo: 'Partes de monstruo', especial: 'Especiales',
+  metal: 'Metales', madera: 'Maderas', cuero: 'Cueros', fibra: 'Fibras', gema: 'Gemas', monstruo: 'Partes de monstruo', hierba: 'Hierbas', especial: 'Especiales y alquimia',
 };
 
 export const CATEGORY_LABEL: Record<ItemCategory, string> = {
   arma: 'Arma cuerpo a cuerpo', distancia: 'Arma a distancia', municion: 'Munición', arrojadizo: 'Arrojadizo',
-  escudo: 'Escudo', armadura: 'Armadura', joyeria: 'Joyería', herramienta: 'Herramienta', pocion: 'Poción',
+  escudo: 'Escudo', armadura: 'Armadura', joyeria: 'Joyería', herramienta: 'Herramienta', pocion: 'Poción', runa: 'Runa',
 };
 
 const STAT_LABEL: Record<StatKey, string> = { atk: 'Daño', def: 'Defensa', spd: 'Velocidad', wgt: 'Peso', dur: 'Durabilidad' };

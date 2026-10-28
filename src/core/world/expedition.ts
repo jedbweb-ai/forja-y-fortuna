@@ -1,6 +1,7 @@
 import { BALANCE } from '../../config/balance';
 import { aiTurn } from '../combat/ai';
-import { beginTurn, buildCombat, currentUnit, endTurn, moveUnit, tryFlee, useSkill } from '../combat/engine';
+import { beginTurn, buildCombat, currentUnit, endTurn, moveUnit, tryFlee, usePotion, useSkill } from '../combat/engine';
+import { acquireGrimoire, hasGrimoire } from '../magic/grimoires';
 import { addToBag, bagLoad, bestTool, loseFromBag, resolveCombat, toolTier } from '../combat/result';
 import { GameError, type Content, type Ctx } from '../content';
 import { attr, isInjured, maxHp, partyMembers } from '../party/progression';
@@ -131,16 +132,24 @@ export function startExpedition(s: GameState, { c, rng }: Ctx, regionId: string)
   };
   s.expedition = e;
 
-  // Recursos: cada lugar de veta o árbol tiene recurso con cierta probabilidad.
-  for (const [ch, kind] of [['v', 'veta'], ['t', 'arbol']] as const) {
+  // Recursos: cada lugar de veta, árbol, hierba o gema tiene recurso con cierta probabilidad.
+  for (const [ch, kind] of [['v', 'veta'], ['t', 'arbol'], ['h', 'hierba'], ['g', 'gema']] as const) {
     for (const p of findTiles(r, ch)) {
       if (!rng.chance(EX.nodeFill)) continue;
       const zone = r.zoneDefs[zoneAt(r, p.x, p.y)];
-      const options = kind === 'veta' ? zone.vetas : zone.arboles;
+      const options = { veta: zone.vetas, arbol: zone.arboles, hierba: zone.hierbas ?? [], gema: zone.gemas ?? [] }[kind];
       if (!options.length) continue;
       const opt = rng.weighted(options.map((o) => [o, o.weight] as const));
-      e.nodes.push({ id: `n${e.nextId++}`, x: p.x, y: p.y, kind, material: opt.material, tier: opt.tier, qty: opt.qty, uses: rng.int(EX.nodeUses[0], EX.nodeUses[1]) });
+      e.nodes.push({
+        id: `n${e.nextId++}`, x: p.x, y: p.y, kind, material: opt.material, tier: opt.tier, qty: opt.qty,
+        uses: kind === 'gema' ? 1 : rng.int(EX.nodeUses[0], EX.nodeUses[1]), night: opt.night,
+      });
     }
+  }
+  // Cofres: se abren sin herramienta y pueden tener grimorios.
+  for (const p of findTiles(r, 'c')) {
+    if (!rng.chance(BALANCE.chests.fill) || !r.zoneDefs[zoneAt(r, p.x, p.y)].cofres) continue;
+    e.nodes.push({ id: `n${e.nextId++}`, x: p.x, y: p.y, kind: 'cofre', material: '', tier: 0, qty: [0, 0], uses: 1 });
   }
 
   // Grupos de monstruos por zona, con desafíos opcionales y el jefe en su guarida.
@@ -249,15 +258,17 @@ export function gather(s: GameState, { c, rng }: Ctx, nodeId: string): GameEvent
   if (!node) throw new GameError('Ahí ya no queda nada.');
   if (!adjacent(node, e.pos)) throw new GameError('Acercate primero.');
   if (e.energy < EX.gatherEnergy) throw new GameError('No te queda energía para eso.');
-  const tag = node.kind === 'veta' ? 'mineria' : 'tala';
-  const tool = bestTool(s, tag);
+  if (node.kind === 'cofre') return openChest(s, { c, rng }, node.id);
+  const job = { veta: ['mineria', 'pico de minero'], gema: ['mineria', 'pico de minero'], arbol: ['tala', 'hacha de tala'], hierba: ['siega', 'hoz'] }[node.kind] as ['mineria' | 'tala' | 'siega', string];
+  const tool = bestTool(s, job[0]);
   const mat = c.materials[node.material];
-  if (!tool) throw new GameError(node.kind === 'veta' ? 'Necesitás un pico de minero.' : 'Necesitás un hacha de tala.');
+  if (!tool) throw new GameError(`Necesitás ${job[1] === 'hoz' ? 'una' : 'un'} ${job[1]}.`);
   if (toolTier(tool.stats.atk) < node.tier) {
     throw new GameError(`${mat.name} necesita una herramienta más potente (potencia ${BALANCE.tools.tierPower[node.tier - 1]}).`);
   }
+  if (node.night && slotName(s) !== 'noche') throw new GameError(`${mat.name} solo se puede cortar de noche.`);
   if (bagLoad(e.bag) >= e.capacity) throw new GameError('La bolsa está llena.');
-  const skill = node.kind === 'veta' ? 'mineria' : 'tala';
+  const skill = job[0];
   let qty = rng.int(node.qty[0], node.qty[1]);
   if (rng.chance((skillLevel(s.skills[skill]) - 1) * BALANCE.tools.gatherBonusPerLevel)) qty += 1;
   if (tool.traits.includes('veta_certera') && rng.chance(0.25)) qty += 1;
@@ -271,6 +282,35 @@ export function gather(s: GameState, { c, rng }: Ctx, nodeId: string): GameEvent
     { type: 'toast', text: `+${got} ${mat.name}${got < qty ? ' (la bolsa se llenó)' : ''}`, tone: 'good' },
   ];
   events.push(...spendEnergy(c, s, rng, EX.gatherEnergy));
+  return events;
+}
+
+/** Abrir un cofre: oro, materiales y, con suerte, un grimorio. */
+function openChest(s: GameState, { c, rng }: Ctx, nodeId: string): GameEvent[] {
+  const e = expedition(s);
+  const node = e.nodes.find((n) => n.id === nodeId)!;
+  const loot = c.regions[e.regionId].zoneDefs[zoneAt(c.regions[e.regionId], node.x, node.y)].cofres;
+  e.nodes = e.nodes.filter((n) => n.id !== nodeId);
+  const events: GameEvent[] = [];
+  const found: string[] = [];
+  if (loot) {
+    const gold = rng.int(loot.gold[0], loot.gold[1]);
+    s.gold += gold;
+    found.push(`${gold} de oro`);
+    for (const m of loot.materials) {
+      if (!rng.chance(m.chance)) continue;
+      const got = addToBag(s, m.material, rng.int(m.qty[0], m.qty[1]));
+      if (got) found.push(`${got}× ${c.materials[m.material].name}`);
+    }
+    for (const g of loot.grimoires) {
+      if (rng.chance(g.chance) && !hasGrimoire(s, g.id)) {
+        events.push(...acquireGrimoire(s, c, g.id));
+        break;
+      }
+    }
+  }
+  events.unshift({ type: 'gathered', nodeId, material: '', qty: 0 }, { type: 'toast', text: `Cofre: ${found.join(', ') || 'vacío'}.`, tone: 'good' });
+  events.push(...spendEnergy(c, s, rng, 1));
   return events;
 }
 
@@ -347,7 +387,7 @@ function partyTurn(s: GameState, unitId: string) {
 
 export function combatMove(s: GameState, { c, rng }: Ctx, unitId: string, x: number, y: number): GameEvent[] {
   partyTurn(s, unitId);
-  const fx = moveUnit(c, s, unitId, { x, y });
+  const fx = moveUnit(c, s, unitId, { x, y }, rng);
   return [{ type: 'combatFx', fx }, ...settle(c, s, rng)];
 }
 
@@ -364,6 +404,15 @@ export function combatSkill(s: GameState, { c, rng }: Ctx, unitId: string, skill
 export function combatEndTurn(s: GameState, { c, rng }: Ctx, unitId: string): GameEvent[] {
   partyTurn(s, unitId);
   const fx = endTurn(c, s, rng);
+  return [{ type: 'combatFx', fx }, ...settle(c, s, rng)];
+}
+
+export function combatPotion(s: GameState, { c, rng }: Ctx, unitId: string, potionUid: string, x: number, y: number): GameEvent[] {
+  partyTurn(s, unitId);
+  const fx = usePotion(c, s, rng, unitId, potionUid, { x, y });
+  const cs = s.expedition!.combat!;
+  const u = currentUnit(cs);
+  if (!cs.outcome && u && u.acted && u.moved) fx.push(...endTurn(c, s, rng));
   return [{ type: 'combatFx', fx }, ...settle(c, s, rng)];
 }
 

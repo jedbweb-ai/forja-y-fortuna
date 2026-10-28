@@ -1,15 +1,19 @@
 import { useState } from 'react';
-import { equipItem, slotFor, unequipItem } from '../../core/party/equipment';
+import { BALANCE } from '../../config/balance';
+import { beltTotal, fieldPotion, setBelt } from '../../core/magic/alchemy';
+import { equipItem, slotsFor, unequipItem } from '../../core/party/equipment';
 import { dismissMercenary } from '../../core/party/mercenaries';
 import { isInjured, xpToNext } from '../../core/party/progression';
 import { characterProfile, itemRequirements } from '../../core/party/stats';
-import { ATTRIBUTES, type EquipSlot } from '../../core/party/types';
+import { ATTRIBUTES, EQUIP_SLOTS, type EquipSlot } from '../../core/party/types';
 import { relationLevel } from '../../core/state';
 import { Panel } from '../components/Panel';
 import { RARITY_CLASS } from '../format';
 import { store, useGame } from '../hooks';
 
-const SLOT_LABEL: Record<EquipSlot, string> = { arma: 'Arma', escudo: 'Escudo', cuerpo: 'Armadura' };
+const SLOT_LABEL: Record<EquipSlot, string> = {
+  arma: 'Arma', escudo: 'Escudo', cuerpo: 'Armadura', anillo1: 'Anillo', anillo2: 'Anillo', amuleto: 'Amuleto', cinturon: 'Cinturón',
+};
 const SPECIALTY: Record<string, string> = { herrero: 'Herrero', guerrero: 'Guerrera/o', arquero: 'Arquera/o', explorador: 'Exploradora/or', porteador: 'Porteador/a' };
 const ATTR_LABEL: Record<string, string> = { fuerza: 'Fuerza', agilidad: 'Agilidad', resistencia: 'Resistencia', voluntad: 'Voluntad' };
 
@@ -24,7 +28,7 @@ export function PartyPanel() {
   const arrows = s.items.filter((i) => i.category === 'municion').reduce((a, i) => a + i.quantity, 0);
 
   const candidates = picking
-    ? s.items.filter((i) => slotFor(i.category) === picking && i.quantity === 1 && i.equippedBy !== ch.id)
+    ? s.items.filter((i) => slotsFor(c, i).includes(picking) && (i.quantity === 1 || i.category === 'arrojadizo') && i.equippedBy !== ch.id)
     : [];
 
   return (
@@ -57,7 +61,16 @@ export function PartyPanel() {
           </dl>
           <h4>Acciones (del equipo)</h4>
           <ul className="tag-list">
-            {p.skills.map((id) => <li key={id}>⚔️ <b>{c.skills[id].name}</b> <span className="muted">— {c.skills[id].description}</span></li>)}
+            {p.skills.map((id) => {
+              const ab = p.abilities[id];
+              return (
+                <li key={id}>
+                  {ab ? '✨' : '⚔️'} <b>{c.skills[id].name}</b>
+                  {ab && <span className="small"> · {ab.uses} uso{ab.uses === 1 ? '' : 's'} · recarga {ab.cooldown} · potencia ×{ab.power.toFixed(2)}</span>}
+                  <span className="muted"> — {c.skills[id].description}</span>
+                </li>
+              );
+            })}
           </ul>
           {p.weaponKind === 'arco' && <p className={arrows ? 'small' : 'bad-text'}>🏹 Flechas en el inventario: {arrows}</p>}
           {p.warnings.map((w) => <p key={w} className="bad-text small">⚠ {w}</p>)}
@@ -74,7 +87,7 @@ export function PartyPanel() {
 
         <section>
           <h4>Equipo</h4>
-          {(['arma', 'escudo', 'cuerpo'] as EquipSlot[]).map((slot) => {
+          {EQUIP_SLOTS.map((slot) => {
             const item = ch.equipment[slot] ? s.items.find((i) => i.uid === ch.equipment[slot]) : undefined;
             return (
               <div key={slot} className={`equip-slot ${item ? RARITY_CLASS[item.rarity] : ''}`}>
@@ -82,10 +95,12 @@ export function PartyPanel() {
                 {item ? (
                   <span className="grow">
                     <b>{item.name}</b>
-                    <small className="muted block">Durabilidad {item.durability}/{item.maxDurability}{item.durability <= 0 ? ' · ROTA' : ''}</small>
+                    <small className="muted block">
+                      {item.category === 'arrojadizo' ? `Quedan ${item.quantity}` : item.category === 'joyeria' ? jewelLine(item) : `Durabilidad ${item.durability}/${item.maxDurability}${item.durability <= 0 ? ' · ROTA' : ''}`}
+                    </small>
                   </span>
                 ) : <span className="grow muted">— vacío —</span>}
-                <button className="btn" disabled={!!s.expedition?.combat} onClick={() => setPicking(picking === slot ? null : slot)}>Cambiar</button>
+                <button className="btn" disabled={!!s.expedition?.combat} onClick={() => setPicking(picking === slot ? null : slot)}>{item ? 'Cambiar' : 'Poner'}</button>
                 {item && <button className="btn" disabled={!!s.expedition?.combat} onClick={() => store.run(unequipItem, ch.id, slot)}>Quitar</button>}
               </div>
             );
@@ -100,12 +115,13 @@ export function PartyPanel() {
                   const weak = Math.floor(ch.attributes.fuerza) < req.fuerza || Math.floor(ch.attributes.voluntad) < req.voluntad;
                   const other = i.equippedBy ? s.characters[i.equippedBy]?.name : null;
                   return (
-                    <li key={i.uid} className={`clickable ${RARITY_CLASS[i.rarity]}`} onClick={() => { if (store.run(equipItem, ch.id, i.uid)) setPicking(null); }}>
+                    <li key={i.uid} className={`clickable ${RARITY_CLASS[i.rarity]}`} onClick={() => { if (store.run(equipItem, ch.id, i.uid, picking)) setPicking(null); }}>
                       <span className="swatch" style={{ background: i.color }} />
                       <span className="grow">
                         <b>{i.name}</b>
                         <small className="muted block">
-                          {i.category === 'escudo' || i.category === 'armadura' ? `Def ${i.stats.def}` : `Daño ${i.stats.atk}`} · Peso {i.stats.wgt}
+                          {i.category === 'joyeria' ? jewelLine(i) : i.category === 'escudo' || i.category === 'armadura' ? `Def ${i.stats.def}` : `Daño ${i.stats.atk}`}
+                          {i.category === 'arrojadizo' ? ` · ${i.quantity} unidades` : ` · Peso ${i.stats.wgt}`}
                           {req.fuerza ? ` · Fuerza ${req.fuerza}` : ''}{req.voluntad ? ` · Voluntad ${req.voluntad}` : ''}
                           {other ? ` · lo tiene ${other}` : ''}
                         </small>
@@ -117,8 +133,52 @@ export function PartyPanel() {
               </ul>
             </div>
           )}
+          <BeltSection charId={ch.id} />
         </section>
       </div>
     </Panel>
+  );
+}
+
+function jewelLine(item: { affinities: Record<string, number | undefined>; stats: { def: number }; abilities?: unknown[] }) {
+  const aff = Object.entries(item.affinities).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(', ');
+  return [aff || 'sin gema', item.stats.def ? `Def ${item.stats.def}` : '', item.abilities?.length ? `${item.abilities.length} habilidad(es)` : ''].filter(Boolean).join(' · ');
+}
+
+/** Cinturón de pociones que comparte todo el grupo. */
+function BeltSection({ charId }: { charId: string }) {
+  const s = useGame();
+  const c = store.content;
+  const potions = s.items.filter((i) => i.potion);
+  const total = beltTotal(s);
+  const max = BALANCE.alchemy.beltSize;
+  return (
+    <div className="belt">
+      <h4>Cinturón del grupo <small className="muted">· {total}/{max} pociones</small></h4>
+      {!potions.length && <p className="muted small">No tenés pociones. Se destilan en la mesa de alquimia de tu herrería.</p>}
+      <ul className="item-rows">
+        {potions.map((i) => {
+          const def = c.potions[i.potion!.recipe];
+          const inBelt = s.belt[i.uid] ?? 0;
+          return (
+            <li key={i.uid}>
+              <span className="swatch" style={{ background: i.color }} />
+              <span className="grow">
+                <b>{i.name}</b>
+                <small className="muted block">{def?.description} · tenés {i.quantity}</small>
+              </span>
+              <span className="qty-stepper">
+                <button className="btn" disabled={inBelt <= 0 || !!s.expedition?.combat} onClick={() => store.run(setBelt, i.uid, inBelt - 1)}>−</button>
+                <b>{inBelt}</b>
+                <button className="btn" disabled={inBelt >= i.quantity || total >= max || !!s.expedition?.combat} onClick={() => store.run(setBelt, i.uid, inBelt + 1)}>+</button>
+              </span>
+              {s.expedition && !s.expedition.combat && inBelt > 0 && (
+                <button className="btn" onClick={() => store.run(fieldPotion, i.uid, charId)}>Usar</button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

@@ -232,6 +232,42 @@ export function generatePlaceholders(scene: Phaser.Scene, content: Content) {
     for (let i = 0; i < 6; i++) poly(g, [4 + i * 9.5, 18, 8 + i * 9.5, 4, 13 + i * 9.5, 4, 9 + i * 9.5, 18], i % 2 ? 0xf4f1ea : color);
     px(g, 16, 30, 6, 6, 0xc87533); px(g, 26, 31, 8, 5, 0x8a8f98); px(g, 38, 30, 6, 6, 0x7ccf6a);
   });
+  // ── Puestos de la Fase 3 ──
+  prop(scene, 'prop.runetable', 64, 52, (g) => {
+    block(g, 32, 42, 52, 14, 0x4a3a5a);
+    poly(g, [20, 24, 32, 18, 44, 24, 32, 30], 0x8a7ab0);
+    px(g, 29, 21, 2, 6, 0xc9b8ff); px(g, 27, 23, 6, 2, 0xc9b8ff);
+    px(g, 46, 14, 3, 12, 0xe8dfc8); px(g, 46, 12, 3, 3, 0xffd27a);
+  });
+  prop(scene, 'prop.jewelbench', 64, 52, (g) => {
+    block(g, 32, 42, 52, 14, 0x7a4e26);
+    px(g, 18, 22, 6, 4, 0xd9a441); px(g, 30, 20, 4, 4, 0x9ad8ff); px(g, 38, 22, 4, 4, 0xd33a2c);
+    g.fillStyle(0xc3ccd6, 1); g.fillCircle(46, 18, 5); g.fillStyle(0x2b2e33, 1); g.fillCircle(46, 18, 3);
+  });
+  prop(scene, 'prop.alchemy', 64, 60, (g) => {
+    block(g, 32, 48, 52, 14, 0x5e3a1e);
+    px(g, 16, 18, 8, 14, 0x7ccf6a); px(g, 18, 14, 4, 5, 0xe8dfc8);
+    g.fillStyle(0x9a6ad0, 1); g.fillCircle(34, 26, 7); px(g, 32, 14, 4, 6, 0xe8dfc8);
+    px(g, 44, 20, 6, 12, 0xd33a2c); px(g, 45, 16, 4, 5, 0xe8dfc8);
+  });
+  prop(scene, 'prop.shelf', 64, 80, (g) => {
+    block(g, 32, 70, 56, 56, 0x6b4220);
+    for (let r = 0; r < 4; r++) for (let i = 0; i < 6; i++) px(g, 10 + i * 7, 22 + r * 12, 5, 9, [0xa6573a, 0x2e6da4, 0x3e8a3a, 0xd9a441, 0x7a2a4a][(i + r) % 5]);
+  });
+  prop(scene, 'prop.potionshelf', 64, 80, (g) => {
+    block(g, 32, 70, 56, 56, 0x5e3a1e);
+    for (let r = 0; r < 4; r++) for (let i = 0; i < 5; i++) {
+      g.fillStyle([0x7ccf6a, 0xd33a2c, 0x9a6ad0, 0x6fb7e0][(i + r) % 4], 1); g.fillCircle(13 + i * 9, 28 + r * 12, 3);
+    }
+  });
+  prop(scene, 'prop.cauldron', 56, 52, (g) => {
+    px(g, 14, 40, 4, 8, 0x2b2e33); px(g, 38, 40, 4, 8, 0x2b2e33);
+    g.fillStyle(0x2b2e33, 1); g.fillEllipse(28, 32, 40, 26);
+    g.fillStyle(0x7ccf6a, 1); g.fillEllipse(28, 22, 32, 9);
+    g.fillStyle(0xb8f0a0, 1); g.fillCircle(22, 21, 2); g.fillCircle(32, 22, 3);
+    px(g, 20, 46, 16, 4, 0xff7a2d);
+  });
+
   stall('prop.stall_red', 0xc0392b);
   stall('prop.stall_blue', 0x2e6da4);
   stall('prop.stall_green', 0x3e8a3a);
@@ -241,6 +277,10 @@ export function generatePlaceholders(scene: Phaser.Scene, content: Content) {
     for (let r = 64; r > 0; r -= 4) { g.fillStyle(0xffc46b, 0.05); g.fillCircle(64, 64, r); }
   });
   prop(scene, 'fx.spark', 4, 4, (g) => px(g, 0, 0, 4, 4, 0xffffff));
+  prop(scene, 'fx.flame', 20, 26, (g) => {
+    poly(g, [2, 26, 6, 10, 10, 16, 12, 2, 16, 14, 18, 26], 0xff7a2d);
+    poly(g, [6, 26, 9, 16, 12, 20, 14, 26], 0xffd04d);
+  });
   prop(scene, 'fx.shadow', 24, 8, (g) => { g.fillStyle(0x000000, 0.3); g.fillEllipse(12, 4, 22, 7); });
   prop(scene, 'fx.bubble', 20, 16, (g) => {
     g.fillStyle(0xffffff, 1); g.fillRoundedRect(0, 0, 20, 12, 4); poly(g, [6, 11, 10, 11, 6, 16], 0xffffff);

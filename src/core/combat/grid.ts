@@ -73,7 +73,7 @@ export function hasStatus(u: CombatUnit, id: string): boolean {
 
 export function effectiveMove(u: CombatUnit): number {
   if (hasStatus(u, 'inmovilizado')) return 0;
-  return Math.max(0, u.move - (hasStatus(u, 'ralentizado') ? 1 : 0));
+  return Math.max(0, u.move - (hasStatus(u, 'ralentizado') ? 1 : 0) + (hasStatus(u, 'acelerado') ? 1 : 0));
 }
 
 /** Casillas a las que puede moverse una unidad (Dijkstra con costo de terreno y salto). */
@@ -93,7 +93,10 @@ export function reachable(c: Content, cs: CombatState, u: CombatUnit): Map<strin
       if (Math.abs(heightAt(a, nx, ny) - heightAt(a, cur.x, cur.y)) > u.jump) continue;
       const other = unitAt(cs, nx, ny);
       if (other && other.side !== u.side) continue; // los enemigos bloquean el paso
-      const cost = cur.cost + (terrainAt(a, nx, ny) === 'w' ? BALANCE.combat.waterMoveCost : 1);
+      // El agua cuesta más (salvo congelada); las llamas se evitan.
+      const fx = cs.terrainFx[`${nx},${ny}`]?.kind;
+      const water = terrainAt(a, nx, ny) === 'w' && fx !== 'hielo';
+      const cost = cur.cost + (water ? BALANCE.combat.waterMoveCost : 1) + (fx === 'llamas' ? 1 : 0);
       if (cost > budget) continue;
       const k = key({ x: nx, y: ny });
       if ((best.get(k)?.cost ?? Infinity) <= cost) continue;
@@ -110,7 +113,7 @@ export function reachable(c: Content, cs: CombatState, u: CombatUnit): Map<strin
 /** Alcance real de una acción: las de distancia ganan alcance desde la altura. */
 export function skillRange(c: Content, cs: CombatState, u: CombatUnit, skill: CombatSkill, from: Pt = u, target?: Pt): [number, number] {
   let max = skill.range[1];
-  if (skill.ammo || skill.range[1] > 1) {
+  if (skill.ammo || skill.throw || skill.range[1] > 1) {
     max += u.combat.range ?? 0;
     if (target) {
       const a = arenaOf(c, cs);
@@ -141,10 +144,20 @@ export function chargeLanding(c: Content, cs: CombatState, u: CombatUnit, from: 
   return prev;
 }
 
+/** ¿Se puede apuntar esta casilla con la acción desde `from`? */
+export function tileInRange(c: Content, cs: CombatState, u: CombatUnit, skill: CombatSkill, tile: Pt, from: Pt = u): boolean {
+  const a = arenaOf(c, cs);
+  if (!isFloor(a, tile.x, tile.y)) return false;
+  const [min, max] = skillRange(c, cs, u, skill, from, tile);
+  const d = dist(from, tile);
+  return d >= Math.max(1, min) && d <= max;
+}
+
 /** Unidades que una acción puede alcanzar desde una posición. */
 export function targetsFor(c: Content, cs: CombatState, u: CombatUnit, skill: CombatSkill, from: Pt = u): CombatUnit[] {
   const alive = cs.units.filter((t) => t.alive);
   if (skill.target === 'self') return [u];
+  // Las acciones sobre casillas se apuntan a enemigos dentro del alcance (la UI permite además cualquier casilla).
   const pool = skill.target === 'ally' ? alive.filter((t) => t.side === u.side) : alive.filter((t) => t.side !== u.side);
   return pool.filter((t) => {
     if (skill.charge && dist(from, t) > 1) return !!chargeLanding(c, cs, u, from, t, skill.charge);

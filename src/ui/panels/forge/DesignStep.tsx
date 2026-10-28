@@ -20,12 +20,17 @@ function defaultMaterials(bp: Blueprint, s: GameState): Record<string, string> {
   return out;
 }
 
-export function DesignStep() {
+/** ¿El plano se trabaja en este puesto? La mesa de joyería tiene sus planos; el resto sale del yunque. */
+export function onStation(bp: Blueprint, station: 'yunque' | 'joyeria') {
+  return station === 'joyeria' ? bp.station === 'joyeria' : bp.station !== 'joyeria';
+}
+
+export function DesignStep({ station }: { station: 'yunque' | 'joyeria' }) {
   const s = useGame();
   const { ui } = useSnapshot();
   const c = store.content;
-  const known = s.knownBlueprints.map((id) => c.blueprints[id]);
-  const draft = ui.forgeDraft;
+  const known = s.knownBlueprints.map((id) => c.blueprints[id]).filter((b) => onStation(b, station));
+  const draft = ui.forgeDraft && onStation(c.blueprints[ui.forgeDraft.blueprintId], station) ? ui.forgeDraft : null;
   const [bpId, setBpId] = useState(draft?.blueprintId ?? known[0].id);
   const [materials, setMaterials] = useState<Record<string, string>>(() => draft?.materials ?? defaultMaterials(c.blueprints[draft?.blueprintId ?? known[0].id], s));
   const bp = c.blueprints[bpId];
@@ -39,6 +44,8 @@ export function DesignStep() {
     setMaterials(defaultMaterials(c.blueprints[id], s));
     if (draft) store.setUi({ forgeDraft: null });
   };
+
+  const designs = s.designs.filter((d) => onStation(c.blueprints[d.blueprintId], station));
 
   const begin = () => {
     if (store.run(forgeBegin, bpId, materials)) store.setUi({ forgeDraft: null });
@@ -59,8 +66,8 @@ export function DesignStep() {
             <small>{CATEGORY_LABEL[b.category]} · {b.slots} franja{b.slots > 1 ? 's' : ''}{b.batch ? ` · lote ×${b.batch}` : ''}</small>
           </button>
         ))}
-        {s.designs.length > 0 && <h4>Diseños propios</h4>}
-        {s.designs.map((d) => (
+        {designs.length > 0 && <h4>Diseños propios</h4>}
+        {designs.map((d) => (
           <button key={d.id} className="bp design" onClick={() => { setBpId(d.blueprintId); setMaterials({ ...d.materials }); }}>
             <b>★ {d.name}</b>
           </button>
@@ -96,7 +103,7 @@ export function DesignStep() {
       <div className="preview">
         <div className="row tight">
           <button className="btn primary grow" disabled={missing.length > 0} onClick={begin}>
-            🔨 Forjar · {bp.slots} franja{bp.slots > 1 ? 's' : ''}
+            {station === 'joyeria' ? '💍 Engarzar' : '🔨 Forjar'} · {bp.slots} franja{bp.slots > 1 ? 's' : ''}
           </button>
           <button className="btn" onClick={save} title="Guardar esta combinación en el libro" aria-label="Guardar diseño">★</button>
         </div>

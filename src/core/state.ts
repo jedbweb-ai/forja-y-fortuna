@@ -5,7 +5,17 @@ import { RELATION_LEVELS, type GameState, type RelationLevel, type SkillId } fro
 
 export const EMPTY_SKILLS: Record<SkillId, number> = {
   herreria: 0, armeria: 0, flecheria: 0, comercio: 0, runas: 0, combate: 0, mineria: 0, tala: 0, desuello: 0,
+  joyeria: 0, alquimia: 0, siega: 0,
 };
+
+/**
+ * Completa una partida cargada con lo que el contenido sumó después (NPC nuevos, recetas no secretas).
+ * Así los datos se pueden ampliar sin romper partidas guardadas.
+ */
+export function syncWithContent(s: GameState, c: Content) {
+  for (const id of Object.keys(c.npcs)) s.npcs[id] ??= { relation: 0, lastTalkDay: 0, seenDialogues: [] };
+  for (const p of Object.values(c.potions)) if (!p.secret && !s.discoveredPotions.includes(p.id)) s.discoveredPotions.push(p.id);
+}
 
 export function createInitialState(c: Content, seed = Date.now() >>> 0): GameState {
   const npcs: GameState['npcs'] = {};
@@ -33,6 +43,9 @@ export function createInitialState(c: Content, seed = Date.now() >>> 0): GameSta
     party: ['herrero'],
     expedition: null,
     market: null,
+    grimoires: [],
+    belt: {},
+    discoveredPotions: Object.values(c.potions).filter((p) => !p.secret).map((p) => p.id),
     stats: { itemsForged: 0, itemsRuined: 0, goldEarned: 0, itemsSold: 0 },
     settings: { skipItemCard: false, fullscreenOnStart: true },
     nextUid: 1,

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { deleteDesign } from '../../core/forge/commands';
+import { readGrimoire } from '../../core/magic/grimoires';
 import { Panel, Tabs } from '../components/Panel';
 import { CATEGORY_LABEL } from '../format';
 import { store, useGame } from '../hooks';
@@ -7,7 +8,7 @@ import { store, useGame } from '../hooks';
 export function BookPanel() {
   const s = useGame();
   const c = store.content;
-  const [tab, setTab] = useState<'syn' | 'designs' | 'bps'>('syn');
+  const [tab, setTab] = useState<'syn' | 'designs' | 'bps' | 'grim'>('syn');
   const all = Object.values(c.synergies);
   const known = all.filter((x) => s.discoveredSynergies.includes(x.id));
   const craft = all.filter((x) => !x.secret && !s.discoveredSynergies.includes(x.id));
@@ -15,7 +16,7 @@ export function BookPanel() {
 
   return (
     <Panel title="Libro del herrero" subtitle={`Sinergias descubiertas: ${known.length}/${all.length}`}>
-      <Tabs value={tab} onChange={setTab} options={[{ id: 'syn', label: 'Combinaciones' }, { id: 'designs', label: 'Diseños propios' }, { id: 'bps', label: 'Planos' }]} />
+      <Tabs value={tab} onChange={setTab} options={[{ id: 'syn', label: 'Combinaciones' }, { id: 'designs', label: 'Diseños propios' }, { id: 'bps', label: 'Planos' }, { id: 'grim', label: `Grimorios (${s.grimoires.length})` }]} />
       {tab === 'syn' && (
         <>
           {known.map((x) => (
@@ -48,6 +49,26 @@ export function BookPanel() {
                 <button className="btn" onClick={() => store.run(deleteDesign, d.id)} aria-label="Borrar diseño">🗑️</button>
               </li>
             ))}
+          </ul>
+        </>
+      )}
+      {tab === 'grim' && (
+        <>
+          {!s.grimoires.length && <p className="muted">No tenés grimorios. Se compran en la librería o aparecen en cofres y conversaciones.</p>}
+          <ul className="item-rows">
+            {s.grimoires.map(({ id, read }) => {
+              const g = c.grimoires[id];
+              return (
+                <li key={id}>
+                  <span className="grow">
+                    <b>📖 {g.name}</b> {read && <span className="tag">leído</span>}
+                    <small className="muted block">{g.description}</small>
+                    <small className="block">Enseña: {g.teaches.map((e) => c.enchantments[e].name).join(', ')}</small>
+                  </span>
+                  {!read && <button className="btn primary" onClick={() => store.run(readGrimoire, id)}>Leer</button>}
+                </li>
+              );
+            })}
           </ul>
         </>
       )}

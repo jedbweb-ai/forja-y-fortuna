@@ -2,7 +2,7 @@ import { qualityLabel } from '../../core/forge/item';
 import type { ItemInstance } from '../../core/types';
 import { CATEGORY_LABEL, money, RARITY_CLASS } from '../format';
 import { store } from '../hooks';
-import { AffinityList, StatList } from './ItemView';
+import { AbilityList, AffinityList, StatList } from './ItemView';
 
 /** Tarjeta liviana del objeto terminado. Se cierra con un toque. */
 export function ItemCard({ item, newSynergies = [], onClose }: { item: ItemInstance; newSynergies?: string[]; onClose: () => void }) {
@@ -24,6 +24,7 @@ export function ItemCard({ item, newSynergies = [], onClose }: { item: ItemInsta
         {lot && <p className="lot">Lote de {item.quantity} unidades · {money(item.value)} oro c/u</p>}
         <StatList stats={item.stats} category={item.category} />
         <AffinityList affinities={item.affinities} />
+        <AbilityList abilities={item.abilities} />
         {item.traits.length > 0 && (
           <ul className="tag-list">
             {item.traits.map((t) => <li key={t} className="trait" title={c.traits[t]?.description}>◆ {c.traits[t]?.name}: <span className="muted">{c.traits[t]?.description}</span></li>)}

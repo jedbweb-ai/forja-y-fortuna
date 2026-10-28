@@ -8,6 +8,8 @@ export interface NodeOption {
   /** Nivel de herramienta necesario. */
   tier: number;
   qty: [number, number];
+  /** Solo se puede recolectar de noche. */
+  night?: boolean;
 }
 
 export interface ZoneDef {
@@ -22,12 +24,25 @@ export interface ZoneDef {
   families: Record<string, number>;
   vetas: NodeOption[];
   arboles: NodeOption[];
+  /** Se cortan con hoz. */
+  hierbas?: NodeOption[];
+  /** Depósitos de gemas (pico). */
+  gemas?: NodeOption[];
+  /** Qué puede haber en los cofres de la zona. */
+  cofres?: ChestLoot;
+}
+
+export interface ChestLoot {
+  gold: [number, number];
+  materials: { material: string; chance: number; qty: [number, number] }[];
+  grimoires: { id: string; chance: number }[];
 }
 
 /**
  * Región explorable. `terrain` es una grilla de texto:
  * '.' pasto, ',' pasto alto, '=' camino, 'T' árbol (bloquea), 'R' roca (bloquea), 'w' agua (bloquea),
- * 'v' lugar de veta, 't' árbol talable, 'm' lugar de monstruos, 'B' guarida del jefe, 'E' entrada.
+ * 'v' lugar de veta, 't' árbol talable, 'h' hierbas, 'g' depósito de gemas, 'c' cofre,
+ * 'm' lugar de monstruos, 'B' guarida del jefe, 'E' entrada.
  * `heights`: un dígito de altura por casilla. `zones`: un dígito por casilla que indica la zona (índice + 1).
  */
 export interface RegionDef {
@@ -51,11 +66,12 @@ export interface ResourceNode {
   id: string;
   x: number;
   y: number;
-  kind: 'veta' | 'arbol';
+  kind: 'veta' | 'arbol' | 'hierba' | 'gema' | 'cofre';
   material: string;
   tier: number;
   qty: [number, number];
   uses: number;
+  night?: boolean;
 }
 
 export interface MonsterGroup {

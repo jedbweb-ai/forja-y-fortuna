@@ -4,7 +4,7 @@ import { CONTENT } from '../../data';
 import { createRng, fixedRng } from '../rng';
 import { setup, withRng } from '../testUtils';
 import type { ForgeSession } from '../types';
-import { forgeBegin, forgeComplete, forgeFinish, forgeQuench, forgeStop, forgeStrike } from './commands';
+import { forgeBegin, forgeComplete, forgeFinish, forgeQuench, forgeStop, forgeStrike, runeBegin } from './commands';
 import { computeDesign, isAllowed, quenchApplies } from './design';
 import { defectChanceFor, hitOdds, rollTraits, strike, traitTierFor } from './forging';
 import { buildItem, enchantSlotsFor, rarityFromScore } from './item';
@@ -174,18 +174,26 @@ describe('flujo completo de forja', () => {
     expect(events.some((e) => e.type === 'forgeRuined')).toBe(true);
   });
 
-  it('encantar con runa consume sus materiales', () => {
+  it('la runa se graba en la mesa de runas y se gasta al encantar', () => {
     const { s, ctx } = setup();
     s.materials.piedra_runica = 1;
     s.materials.ascua_salamandrilla = 1;
+    runeBegin(s, ctx, 'runa_brasa');
+    expect(s.materials.piedra_runica).toBeUndefined();
+    forgeStrike(s, withRng(ctx, fixedRng([0.99, 0.5, 0.99])));
+    forgeStop(s, ctx);
+    const rune = s.items.find((i) => i.category === 'runa')!;
+    expect(rune.blueprintId).toBe('runa_brasa');
     forgeBegin(s, ctx, 'daga', { hoja: 'hierro', guarda: 'hierro', mango: 'pino' });
     forgeStrike(s, withRng(ctx, fixedRng([0.99, 0.5, 0.99])));
     forgeStop(s, ctx);
     forgeQuench(s, ctx, 'agua');
     forgeFinish(s, ctx, { polish: 'pulido_basico' });
-    forgeComplete(s, ctx, ['runa_brasa']);
-    expect(s.items[0].enchantments).toEqual(['runa_brasa']);
-    expect(s.items[0].affinities.fuego).toBeGreaterThanOrEqual(2);
-    expect(s.materials.piedra_runica).toBeUndefined();
+    expect(() => forgeComplete(s, ctx, [{ id: 'runa_brasa' }])).toThrow();
+    forgeComplete(s, ctx, [{ id: 'runa_brasa', rune: rune.uid }]);
+    const daga = s.items.find((i) => i.category === 'arma')!;
+    expect(daga.enchantments).toEqual(['runa_brasa']);
+    expect(daga.affinities.fuego).toBeGreaterThanOrEqual(2);
+    expect(s.items.some((i) => i.category === 'runa')).toBe(false);
   });
 });

@@ -131,6 +131,15 @@ export function generateWorldPlaceholders(scene: Phaser.Scene) {
     px(g, 14, 14, 4, 30, 0x6b4220); px(g, 2, 8, 28, 12, 0x8b5a2b); px(g, 4, 12, 20, 2, 0x3a2418);
   });
   prop(scene, 'prop.stump', 40, 28, (g) => block(g, 20, 22, 22, 8, 0x8b5a2b));
+  prop(scene, 'prop.herbs', 40, 28, (g) => {
+    g.fillStyle(0x3e7a3a, 1); g.fillEllipse(20, 20, 34, 14);
+    g.fillStyle(0x5aa04a, 1); g.fillEllipse(14, 16, 14, 10); g.fillEllipse(27, 15, 14, 10);
+    px(g, 10, 10, 3, 3, 0xe8e070); px(g, 22, 8, 3, 3, 0xd77ab0); px(g, 29, 12, 3, 3, 0xffffff);
+  });
+  prop(scene, 'prop.gemrock', 48, 40, (g) => {
+    g.fillStyle(0x7d7a74, 1); g.fillEllipse(24, 30, 42, 18);
+    poly(g, [14, 30, 18, 10, 23, 30], 0x9ad8ff); poly(g, [22, 30, 28, 4, 33, 30], 0xd77ab0); poly(g, [31, 30, 35, 16, 39, 30], 0x7ce0a0);
+  });
 
   // ── Marcadores ──
   prop(scene, 'fx.arrow', 16, 14, (g) => poly(g, [0, 0, 16, 0, 8, 12], 0xffd04d));

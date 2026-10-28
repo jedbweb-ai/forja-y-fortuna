@@ -4,7 +4,7 @@ import { runCommand, type Command } from '../core/commands';
 import { GameError, type Content, type Ctx } from '../core/content';
 import { chooseOption, continueNode, startTalk, type TalkResult } from '../core/dialogue';
 import { createRng } from '../core/rng';
-import { createInitialState } from '../core/state';
+import { createInitialState, syncWithContent } from '../core/state';
 import type { GameEvent, GameState, ItemInstance } from '../core/types';
 import { combatAiStep } from '../core/world/expedition';
 import type { CombatFx } from '../core/combat/types';
@@ -12,7 +12,10 @@ import { makeSaveFile, type SaveRepository } from '../persistence/saveFile';
 
 export type PanelId =
   | 'forge' | 'shop' | 'market' | 'inventory' | 'book' | 'settings' | 'debug'
-  | 'party' | 'mercenaries' | 'repair' | 'expedition' | 'bag';
+  | 'party' | 'mercenaries' | 'repair' | 'expedition' | 'bag' | 'alchemy' | 'library';
+
+/** Puesto de trabajo de la herrería: yunque (y flechería), mesa de joyería o mesa de runas. */
+export type ForgeStation = 'yunque' | 'joyeria' | 'runas';
 
 export interface DialogueView {
   npcId: string;
@@ -41,7 +44,9 @@ export interface UiState {
   /** Región elegida en el mapa del mundo (panel de expedición). */
   regionId: string | null;
   /** Modo de la UI de combate: mover, elegir objetivo de una acción, o nada. */
-  combat: { mode: 'move' | 'skill' | null; skillId?: string; target?: { x: number; y: number } };
+  combat: { mode: 'move' | 'skill' | 'potion' | null; skillId?: string; potionUid?: string; target?: { x: number; y: number } };
+  /** Puesto de la herrería que abrió el panel de forja. */
+  forgeStation: ForgeStation;
   /** Hay animaciones o turnos enemigos en curso: la UI de combate espera. */
   busy: boolean;
 }
@@ -83,7 +88,7 @@ export class GameStore {
     this.snapshot = {
       state: null,
       ui: { screen: 'loading', view: 'location', panel: null, dialogue: null, itemCard: null, toasts: [], debug, hasSave: false, forgeDraft: null,
-        regionId: null, combat: { mode: null }, busy: false,
+        regionId: null, combat: { mode: null }, busy: false, forgeStation: 'yunque',
       },
     };
   }
@@ -205,9 +210,14 @@ export class GameStore {
     this.setUi({ panel: null });
   }
 
+  openForge(station: ForgeStation) {
+    this.setUi({ panel: 'forge', forgeStation: station, dialogue: null });
+  }
+
   useDesign(blueprintId: string, materials: Record<string, string>) {
     if (this.state.location !== 'herreria') return this.toast('Los diseños se usan en tu herrería.', 'bad');
-    this.setUi({ panel: 'forge', forgeDraft: { blueprintId, materials: { ...materials } } });
+    const station = this.content.blueprints[blueprintId]?.station === 'joyeria' ? 'joyeria' : 'yunque';
+    this.setUi({ panel: 'forge', forgeStation: station, forgeDraft: { blueprintId, materials: { ...materials } } });
   }
 
   talkTo(npcId: string) {
@@ -267,6 +277,7 @@ export class GameStore {
   }
 
   private startWith(state: GameState) {
+    syncWithContent(state, this.content);
     this.publish({ state });
     this.setUi({ screen: 'game', view: 'location', panel: null, dialogue: null, itemCard: null, combat: { mode: null }, busy: false });
     // Comando vacío: prepara el mercado del día si hace falta.

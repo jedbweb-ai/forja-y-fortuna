@@ -3,7 +3,7 @@ import { EMPTY_SKILLS } from '../core/state';
 import type { GameState } from '../core/types';
 
 /** Versión actual del formato de guardado. Subirla junto con una migración. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 /**
  * Formato del guardado. Es JSON plano para que el mismo archivo pueda subirse
@@ -39,6 +39,35 @@ export const MIGRATIONS: Record<number, Migration> = {
         market: null,
         knownBlueprints: add(st.knownBlueprints, ['hacha_tala', 'cuchillo_desuello']),
         knownEnchantments: add(st.knownEnchantments, ['runa_totem', 'runa_nucleo']),
+      },
+    };
+  },
+  // Fase 3: grimorios, cinturón de pociones, alquimia, joyería, arrojadizos y runas nuevas.
+  2: (save) => {
+    type Exp = { combat?: { terrainFx?: unknown; burnt?: unknown; units?: { abilities?: unknown }[] } | null } | null;
+    const st = save.state as Record<string, unknown> & {
+      skills?: Record<string, number>; knownBlueprints?: string[]; knownEnchantments?: string[]; expedition?: Exp;
+    };
+    const add = (list: string[] | undefined, ids: string[]) => [...new Set([...(list ?? []), ...ids])];
+    const combat = st.expedition?.combat;
+    if (combat) {
+      combat.terrainFx ??= {};
+      combat.burnt ??= [];
+      for (const u of combat.units ?? []) u.abilities ??= {};
+    }
+    return {
+      ...save,
+      version: 3,
+      state: {
+        ...st,
+        skills: { ...EMPTY_SKILLS, ...(st.skills ?? {}) },
+        grimoires: [],
+        belt: {},
+        discoveredPotions: ['pocion_curacion', 'antidoto', 'tonico_fuerza', 'elixir_piel_hierro', 'bomba_humo', 'r_agua_bendita', 'r_aceite_alquimico'],
+        knownBlueprints: add(st.knownBlueprints, ['anillo', 'amuleto', 'talisman', 'cuchillos_arrojadizos', 'hoz']),
+        knownEnchantments: add(st.knownEnchantments, [
+          'runa_llama', 'runa_escarcha', 'runa_chispa', 'runa_marea', 'runa_vendaval', 'runa_roca', 'runa_alivio', 'runa_paso',
+        ]),
       },
     };
   },

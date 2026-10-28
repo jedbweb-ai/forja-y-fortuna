@@ -48,8 +48,8 @@ export const QUENCH_MEDIA: QuenchMedium[] = [
 export const FINISHES: FinishOption[] = [
   // Empuñadura / forro
   { id: 'grip_ninguno', name: 'Sin forro', kind: 'grip', cost: {}, effect: {}, description: 'Mango desnudo.' },
-  { id: 'grip_cordel', name: 'Cordel', kind: 'grip', cost: { material: 'cuerda_lino', qty: 1 }, effect: { statPct: { spd: 4 } }, description: 'Cordel enrollado: mejor agarre. Velocidad +4%.' },
-  { id: 'grip_cuero', name: 'Forro de cuero', kind: 'grip', cost: { material: 'cuero_curtido', qty: 1 }, effect: { statPct: { spd: 7 }, valuePct: 4 }, beauty: 1, description: 'Cuero cosido a mano. Velocidad +7%.' },
+  { id: 'grip_cordel', name: 'Cordel', kind: 'grip', categories: ['arma', 'herramienta', 'distancia'], cost: { material: 'cuerda_lino', qty: 1 }, effect: { statPct: { spd: 4 } }, description: 'Cordel enrollado: mejor agarre. Velocidad +4%.' },
+  { id: 'grip_cuero', name: 'Empuñadura de cuero', kind: 'grip', categories: ['arma', 'herramienta', 'distancia'], cost: { material: 'cuero_curtido', qty: 1 }, effect: { statPct: { spd: 7 }, valuePct: 4 }, beauty: 1, description: 'Cuero cosido a mano. Velocidad +7%.' },
 
   // Pulido
   { id: 'pulido_basico', name: 'Pulido básico', kind: 'polish', cost: {}, effect: {}, quality: 0, description: 'Limpio y presentable.' },

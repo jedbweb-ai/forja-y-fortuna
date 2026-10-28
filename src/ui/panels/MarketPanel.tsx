@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cityLocation } from '../../core/city';
 import { buyMaterial, marketStock, quickSell, quickSellPrice } from '../../core/economy/market';
 import { materialPrice, materialStock } from '../../core/economy/monsterMarket';
 import type { MaterialType } from '../../core/types';
@@ -14,9 +15,9 @@ export function MarketPanel() {
   const groups = [...new Set(stock.map((m) => m.type))] as MaterialType[];
 
   return (
-    <Panel title="Puesto de Ilse" subtitle={`🪙 ${Math.floor(s.gold)} disponibles`} wide>
+    <Panel title={s.location === 'mercado' ? 'Puesto de Ilse' : cityLocation(c, s.location)?.name ?? 'Tienda'} subtitle={`🪙 ${Math.floor(s.gold)} disponibles`} wide>
       <Tabs value={tab} onChange={setTab} options={[{ id: 'buy', label: 'Comprar materiales' }, { id: 'sell', label: 'Venta rápida' }]} />
-      {tab === 'buy' && s.market && (
+      {tab === 'buy' && s.market && s.location === 'mercado' && (
         <div className="news">
           <b>📰 Noticias del día {s.market.day}</b>
           {s.market.news.map((n) => <p key={n} className="small">{n}</p>)}

@@ -1,5 +1,6 @@
 import { BALANCE } from '../../config/balance';
 import type { Content } from '../content';
+import { computeAbilities } from '../magic/abilities';
 import { RARITIES, STAT_KEYS, type Affinities, type Effect, type ForgeSession, type ItemInstance, type Rarity } from '../types';
 import { addAffinities, applyStatPct, computeDesign, sumStatPct, type DesignPreview } from './design';
 
@@ -35,7 +36,7 @@ export function qualityLabel(q: number): string {
 }
 
 /** Construye el objeto resultante de una sesión de forja (sirve también de vista previa). */
-export function buildItem(c: Content, session: ForgeSession, enchantments: string[] = []): ItemBuild {
+export function buildItem(c: Content, session: ForgeSession, enchantments: string[] = [], runeQuality: Record<string, number> = {}): ItemBuild {
   const design = computeDesign(c, session.blueprintId, session.materials);
   const bp = design.blueprint;
   const stats = { ...design.stats };
@@ -114,6 +115,7 @@ export function buildItem(c: Content, session: ForgeSession, enchantments: strin
     value,
     quantity,
     color: design.color,
+    abilities: computeAbilities(c, enchantments, { rarity, quality: Math.round(quality), affinities, traits: allTraits }, runeQuality),
     rarityScore,
     design,
   };

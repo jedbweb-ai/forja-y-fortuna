@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONTENT } from '../data';
-import { createInitialState } from '../core/state';
+import { createInitialState, syncWithContent } from '../core/state';
 import { makeSaveFile, migrateSave, SAVE_VERSION, type Migration } from './saveFile';
 
 describe('guardado', () => {
@@ -27,7 +27,8 @@ describe('guardado', () => {
     for (const k of ['characters', 'party', 'expedition', 'market']) delete v1.state[k];
     v1.state.skills = { herreria: 40, armeria: 0, flecheria: 0, comercio: 5, runas: 0 };
     const out = migrateSave(JSON.parse(JSON.stringify(v1)));
-    expect(out.version).toBe(2);
+    expect(out.version).toBe(SAVE_VERSION);
+    expect(out.state.grimoires).toEqual([]);
     expect(out.state.party).toEqual(['herrero']);
     expect(out.state.characters.herrero.hp).toBeGreaterThan(0);
     expect(out.state.skills.herreria).toBe(40);
@@ -39,5 +40,15 @@ describe('guardado', () => {
     expect(() => migrateSave(null)).toThrow();
     expect(() => migrateSave({ version: SAVE_VERSION + 1, state: {} })).toThrow();
     expect(() => migrateSave({ version: 0, state: {} }, {}, 1)).toThrow();
+  });
+
+  it('una partida vieja recibe los NPC y recetas que se sumaron al contenido', () => {
+    const s = createInitialState(CONTENT, 1);
+    delete s.npcs.teodora;
+    s.discoveredPotions = [];
+    syncWithContent(s, CONTENT);
+    expect(s.npcs.teodora).toEqual({ relation: 0, lastTalkDay: 0, seenDialogues: [] });
+    expect(s.discoveredPotions).toContain('pocion_curacion');
+    expect(s.discoveredPotions.every((id) => !CONTENT.potions[id].secret)).toBe(true);
   });
 });

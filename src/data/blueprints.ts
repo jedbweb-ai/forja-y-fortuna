@@ -81,7 +81,8 @@ export const BLUEPRINTS: Blueprint[] = [
     ],
     base: { def: 8, dur: 12 },
     scale: { def: 1.2, spd: 0.2, wgt: 1.2, dur: 1 },
-    quench: true, grip: false, engrave: true, tags: ['pecho'],
+    // El 'grip' del peto es su forro.
+    quench: true, grip: true, engrave: true, tags: ['pecho'],
     description: 'Protección de torso. Metal para aguantar, cuero para moverse.',
   },
   {
