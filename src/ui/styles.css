@@ -117,7 +117,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 
 /* ── Listas ── */
 .item-rows { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
-.item-rows li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--panel-2); border-left: 4px solid transparent; }
+.item-rows li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--panel-2); border: 1px solid transparent; }
 .item-rows li.clickable { cursor: pointer; }
 .item-rows li small { margin-left: 4px; }
 .item-rows li small.block { margin-left: 0; }
@@ -132,7 +132,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .r-raro { --rc: var(--r-raro); }
 .r-epico { --rc: var(--r-epico); }
 .r-legendario { --rc: var(--r-legendario); }
-.item-rows li[class*='r-'] { border-left-color: var(--rc); }
+.item-rows li[class*='r-'] { border-color: color-mix(in srgb, var(--rc) 55%, transparent); }
 .rarity-label { color: var(--rc, var(--muted)); font-weight: 700; display: inline-block; }
 .rarity-label::first-letter { text-transform: uppercase; }
 
@@ -345,7 +345,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .attrs div { display: flex; justify-content: space-between; background: rgba(0, 0, 0, 0.2); padding: 3px 8px; border-radius: 6px; font-size: 0.88rem; }
 .attrs dt { color: var(--muted); }
 .attrs dd { margin: 0; font-weight: 700; }
-.equip-slot { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--panel-2); margin-bottom: 6px; border-left: 4px solid var(--rc, var(--line)); }
+.equip-slot { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--panel-2); margin-bottom: 6px; border: 1px solid color-mix(in srgb, var(--rc, var(--line)) 55%, transparent); }
 .slot-name { width: 74px; font-size: 0.8rem; color: var(--accent-2); text-transform: uppercase; font-weight: 700; }
 .pick-list { margin-top: 8px; }
 
