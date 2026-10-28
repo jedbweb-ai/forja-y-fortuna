@@ -428,7 +428,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .contact.on { border-color: var(--accent); background: #4a2f2a; }
 .contact-detail h3 { margin-top: 0; }
 .rel-bar { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #6a2a2a, #4d3a48 45%, #2f5a34); margin: 8px 0 4px; overflow: hidden; border: 1px solid var(--line); }
-.rel-bar span { position: absolute; left: 0; top: 0; bottom: 0; border-right: 3px solid var(--accent-2); background: rgba(255, 255, 255, 0.08); }
+.rel-bar span { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255, 255, 255, 0.08); }
+.rel-bar span::after { content: ''; position: absolute; right: -1px; top: 0; bottom: 0; width: 3px; background: var(--accent-2); }
 .rel-bar i { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(0, 0, 0, 0.5); }
 .taste-ama { color: #ff9fb0; }
 .taste-gusta { color: var(--good); }
