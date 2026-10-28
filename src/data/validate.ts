@@ -98,6 +98,7 @@ export function validateContent(c: Content): string[] {
       if (a.terrain[p.y]?.[p.x] === undefined || a.terrain[p.y][p.x] === '#') errors.push(`arena ${a.id}: aparición en (${p.x},${p.y}) bloqueada`);
     }
     if (a.enemySpawns.length < 7) errors.push(`arena ${a.id}: necesita 7 lugares de enemigos`);
+    if (a.partySpawns.length < BALANCE.MAX_PARTY_SIZE + 1) errors.push(`arena ${a.id}: necesita ${BALANCE.MAX_PARTY_SIZE + 1} lugares para el grupo`);
   }
   for (const r of Object.values(c.regions).filter((x) => x.available)) {
     const cols = r.terrain[0]?.length ?? 0;
@@ -297,6 +298,15 @@ export function validateContent(c: Content): string[] {
   }
   for (const m of Object.values(c.monsters)) m.shieldedBy?.forEach((id) => { if (!c.monsters[id]) errors.push(`monstruo ${m.id}: protegido por "${id}" inexistente`); });
   for (const sk of Object.values(c.skills)) if (sk.telegraph && sk.target !== 'tile') errors.push(`acción ${sk.id}: un golpe anunciado tiene que apuntar a una casilla`);
+
+  // ── Fase 6 ──
+  for (const t of Object.values(c.talents)) {
+    if (t.requires && !c.talents[t.requires]) errors.push(`talento ${t.id}: requiere "${t.requires}" inexistente`);
+    if (t.requires && c.talents[t.requires]?.skill !== t.skill) errors.push(`talento ${t.id}: requiere un talento de otra habilidad`);
+  }
+  for (const u of Object.values(c.upgrades)) {
+    u.levels.forEach((l, i) => l.cost.materials.forEach((m) => mat(m.id, `mejora ${u.id} nivel ${i + 1}`)));
+  }
 
   Object.keys(BALANCE.start.materials).forEach((m) => mat(m, 'balance.start.materials'));
   BALANCE.start.blueprints.forEach((b) => { if (!c.blueprints[b]) errors.push(`balance.start.blueprints: "${b}"`); });

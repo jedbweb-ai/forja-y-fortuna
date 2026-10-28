@@ -40,6 +40,8 @@ export interface Character {
   bond?: 'esclavo' | 'liberado';
   /** Se escapó (ya no está con vos). */
   escaped?: boolean;
+  /** Murió en una mazmorra con la muerte permanente activada. */
+  dead?: boolean;
 }
 
 /** Mercenario contratable en la taberna (datos). Su id coincide con el de su NPC. */

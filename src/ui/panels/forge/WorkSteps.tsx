@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { BALANCE } from '../../../config/balance';
-import { forgeComplete, forgeFinish, forgeQuench, forgeStop, forgeStrike, type EnchantPick } from '../../../core/forge/commands';
+import { forgeComplete, forgeFinish, forgeQuench, forgeStop, forgeStrike, type EnchantPick, forgeMods } from '../../../core/forge/commands';
 import { hitOdds } from '../../../core/forge/forging';
 import { buildItem, enchantSlotsFor, qualityLabel } from '../../../core/forge/item';
 import { skillLevel } from '../../../core/state';
@@ -60,7 +60,7 @@ export function ForgingStep() {
   const s = useGame();
   const f = s.forge!;
   const level = skillLevel(s.skills[f.kind === 'runa' ? 'runas' : store.content.blueprints[f.blueprintId]?.station === 'joyeria' ? 'joyeria' : 'herreria']);
-  const odds = hitOdds(f, level);
+  const odds = hitOdds(f, level, forgeMods(store.content, s));
   const rune = f.kind === 'runa';
   const hitText = { bueno: '¡Buen golpe!', perfecto: '¡GOLPE PERFECTO!', defecto: '¡Crack! Apareció un defecto.' };
 

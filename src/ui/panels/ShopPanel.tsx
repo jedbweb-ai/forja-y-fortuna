@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BALANCE } from '../../config/balance';
+import { displaySlots } from '../../core/progress/progress';
 import {
   acceptOffer, askPrice, closeShop, customerCount, declineCustomer, exhibitedItems, nextCustomer, openShop, suggestedPrice, toggleExhibit,
 } from '../../core/economy/shop';
@@ -20,7 +20,7 @@ function ShopSetup() {
   return (
     <Panel
       title="Tu tienda"
-      subtitle={`Exhibición ${shown}/${BALANCE.shop.displaySlots} · Esperás unos ${customerCount(s)} clientes esta ${slotName(s)}`}
+      subtitle={`Exhibición ${shown}/${displaySlots(store.content, s)} · Esperás unos ${customerCount(s)} clientes esta ${slotName(s)}`}
       footer={
         <button className="btn primary big" disabled={!!s.forge} onClick={() => store.run(openShop)}>
           🛎️ Abrir la tienda · consume la franja

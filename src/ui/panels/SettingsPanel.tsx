@@ -15,6 +15,13 @@ export function SettingsPanel() {
         <input type="checkbox" checked={s.settings.skipItemCard} onChange={(e) => store.updateSettings({ skipItemCard: e.target.checked })} />
         <span>Saltear la tarjeta del objeto terminado <small className="muted block">Muestra solo un aviso breve.</small></span>
       </label>
+      <label className="setting">
+        <input type="checkbox" checked={!!s.settings.permadeath} onChange={(e) => store.updateSettings({ permadeath: e.target.checked })} />
+        <span>
+          Muerte permanente en mazmorras peligrosas
+          <small className="muted block">Los compañeros que caen en mazmorras de 5 estrellas o más no vuelven. El herrero nunca muere.</small>
+        </span>
+      </label>
       <div className="row">
         <button className="btn" onClick={toggleFullscreen}>⛶ Pantalla completa</button>
         <button className="btn" onClick={() => { store.saveNow(); store.toast('Partida guardada.', 'good'); }}>💾 Guardar ahora</button>
@@ -29,7 +36,7 @@ export function SettingsPanel() {
           <button className="btn" onClick={() => setConfirm(false)}>Cancelar</button>
         </div>
       )}
-      <p className="muted small">Forja &amp; Fortuna · Fase 1 · v{__APP_VERSION__}</p>
+      <p className="muted small">Forja &amp; Fortuna · v{__APP_VERSION__}</p>
     </Panel>
   );
 }

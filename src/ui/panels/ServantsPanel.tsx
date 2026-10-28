@@ -1,4 +1,5 @@
 import { BALANCE } from '../../config/balance';
+import { maxPartySize } from '../../core/progress/progress';
 import { refusesTrade } from '../../core/town/relations';
 import { buyServant, freeServant, ownedServants, servantPrice } from '../../core/town/servants';
 import { relationLevel } from '../../core/state';
@@ -13,7 +14,7 @@ export function ServantsPanel() {
   const c = store.content;
   const offer = s.servantMarket.offer.map((id) => c.mercenaries[id]).filter(Boolean);
   const owned = ownedServants(s);
-  const full = s.party.length >= BALANCE.MAX_PARTY_SIZE;
+  const full = s.party.length >= maxPartySize(c, s);
   const refuse = refusesTrade(c, s, s.location);
   const nextRefresh = s.servantMarket.lastRefresh + BALANCE.servants.refreshDays;
 

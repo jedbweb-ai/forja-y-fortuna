@@ -1,7 +1,7 @@
 import type { ArenaDef } from '../core/combat/types';
 
 // Arenas de 10×8. terrain: '.' suelo, ',' hierba alta, 'w' agua baja, '#' bloqueo. heights: un dígito por casilla.
-const PARTY = [{ x: 0, y: 3 }, { x: 0, y: 4 }, { x: 1, y: 2 }];
+const PARTY = [{ x: 0, y: 3 }, { x: 0, y: 4 }, { x: 1, y: 2 }, { x: 1, y: 5 }];
 
 export const ARENAS: ArenaDef[] = [
   {
@@ -22,14 +22,14 @@ export const ARENAS: ArenaDef[] = [
     id: 'bosque_claro', biome: 'bosque',
     terrain: ['#..,,..#..', '..#....,,.', '..,,.#....', '.........#', '...#..,,..', '.,,....#..', '..#..,,...', '#....#...#'],
     heights: ['0000000000', '0000000000', '0000000000', '0000000000', '0000000000', '0000000000', '0000000000', '0000000000'],
-    partySpawns: [{ x: 0, y: 2 }, { x: 1, y: 3 }, { x: 0, y: 4 }],
+    partySpawns: [{ x: 0, y: 2 }, { x: 1, y: 3 }, { x: 0, y: 4 }, { x: 1, y: 5 }],
     enemySpawns: [{ x: 9, y: 1 }, { x: 8, y: 2 }, { x: 8, y: 3 }, { x: 9, y: 4 }, { x: 8, y: 5 }, { x: 9, y: 6 }, { x: 8, y: 6 }],
   },
   {
     id: 'bosque_raices', biome: 'bosque',
     terrain: ['..........', '.#..,,..#.', '...,,,....', '..#....#..', '..........', '.#..,,..#.', '....,,....', '..........'],
     heights: ['0000000000', '0000000000', '0000110000', '0001111000', '0001221000', '0000110000', '0000000000', '0000000000'],
-    partySpawns: [{ x: 0, y: 3 }, { x: 0, y: 4 }, { x: 0, y: 5 }],
+    partySpawns: [{ x: 0, y: 3 }, { x: 0, y: 4 }, { x: 0, y: 5 }, { x: 1, y: 4 }],
     enemySpawns: [{ x: 9, y: 2 }, { x: 9, y: 3 }, { x: 8, y: 4 }, { x: 9, y: 5 }, { x: 9, y: 6 }, { x: 8, y: 7 }, { x: 9, y: 1 }],
   },
   {

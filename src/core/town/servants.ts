@@ -7,6 +7,7 @@ import type { Rng } from '../rng';
 import { changeRelation, relationLevel } from '../state';
 import type { GameEvent, GameState } from '../types';
 import { refusesTrade, tradeMult } from './relations';
+import { maxPartySize } from '../progress/progress';
 
 // Mercado de esclavos y lealtad. La lealtad es la relación con el compañero:
 // arranca baja, sube con buen trato y charlas, y cambia cómo pelea (y si te obedece).
@@ -23,13 +24,13 @@ export function isServantNpc(c: Content, id: string): boolean {
 
 /** Compañeros comprados (esclavos o liberados) que siguen con vos. */
 export function ownedServants(s: GameState): Character[] {
-  return Object.values(s.characters).filter((ch) => ch.bond && !ch.escaped);
+  return Object.values(s.characters).filter((ch) => ch.bond && !ch.escaped && !ch.dead);
 }
 
 /** Dónde está un candidato o compañero: en venta, en tu herrería (si no va en el grupo) o en ningún lado. */
 export function servantLocation(s: GameState, id: string): string | null {
   const ch = s.characters[id];
-  if (ch?.bond) return ch.escaped || s.party.includes(id) ? null : 'herreria';
+  if (ch?.bond) return ch.escaped || ch.dead || s.party.includes(id) ? null : 'herreria';
   return s.servantMarket.offer.includes(id) ? 'esclavos' : null;
 }
 
@@ -60,7 +61,7 @@ export function buyServant(s: GameState, { c }: Ctx, id: string): GameEvent[] {
   if (!s.servantMarket.offer.includes(id)) throw new GameError('Ya no está en venta.');
   const refuse = refusesTrade(c, s, s.location);
   if (refuse) throw new GameError(refuse);
-  if (s.party.length >= BALANCE.MAX_PARTY_SIZE) throw new GameError(`Tu grupo ya está completo (máximo ${BALANCE.MAX_PARTY_SIZE}).`);
+  if (s.party.length >= maxPartySize(c, s)) throw new GameError(`Tu grupo ya está completo (máximo ${maxPartySize(c, s)}).`);
   const price = servantPrice(c, s, id);
   if (s.gold < price) throw new GameError(`Cuesta ${price} de oro.`);
   s.gold -= price;
@@ -86,13 +87,14 @@ export function freeServant(s: GameState, { c }: Ctx, id: string): GameEvent[] {
 }
 
 /** Vuelve al grupo un compañero que esperaba en la herrería. */
-export function rejoinServant(s: GameState, _ctx: Ctx, id: string): GameEvent[] {
+export function rejoinServant(s: GameState, { c }: Ctx, id: string): GameEvent[] {
   const ch = s.characters[id];
-  if (!ch?.bond || ch.escaped) throw new GameError('No está con vos.');
+  if (!ch?.bond || ch.escaped || ch.dead) throw new GameError('No está con vos.');
+  if (s.assistant === id) throw new GameError(`${ch.name} está atendiendo la tienda.`);
   if (s.expedition) throw new GameError('Estás de expedición.');
   if (s.party.includes(id)) throw new GameError('Ya está en el grupo.');
   if (s.location !== 'herreria') throw new GameError(`${ch.name} te espera en la herrería.`);
-  if (s.party.length >= BALANCE.MAX_PARTY_SIZE) throw new GameError(`Tu grupo ya está completo (máximo ${BALANCE.MAX_PARTY_SIZE}).`);
+  if (s.party.length >= maxPartySize(c, s)) throw new GameError(`Tu grupo ya está completo (máximo ${maxPartySize(c, s)}).`);
   s.party.push(id);
   return [{ type: 'toast', text: `${ch.name} vuelve al grupo.` }];
 }

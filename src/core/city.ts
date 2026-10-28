@@ -14,7 +14,11 @@ export function npcsAt(c: Content, s: GameState, locationId: string): string[] {
   const slot = slotName(s);
   // Los mercenarios contratados andan con vos, no en su lugar habitual.
   return Object.values(c.npcs)
-    .filter((n) => (isServantNpc(c, n.id) ? servantLocation(s, n.id) === locationId : n.routine[slot] === locationId) && !s.party.includes(n.id))
+    .filter((n) => {
+      if (s.party.includes(n.id) || s.characters[n.id]?.dead) return false;
+      if (s.assistant === n.id) return locationId === 'herreria';
+      return isServantNpc(c, n.id) ? servantLocation(s, n.id) === locationId : n.routine[slot] === locationId;
+    })
     .map((n) => n.id);
 }
 

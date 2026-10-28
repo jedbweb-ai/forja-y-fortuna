@@ -1,4 +1,5 @@
 import { BALANCE } from '../../config/balance';
+import { bonus } from '../progress/progress';
 import { GameError, type Content, type Ctx } from '../content';
 import { maxHp } from '../party/progression';
 import { addMaterial, addXp, hasMaterial, nextUid, skillLevel } from '../state';
@@ -30,8 +31,8 @@ export function potencyFor(def: PotionDef, props: AlchemyProps, heatBonus: numbe
   return Math.max(1, 1 + over + heatBonus);
 }
 
-export function failChance(s: GameState, heat: Heat): number {
-  return Math.max(0, AL.heat[heat].fail - (skillLevel(s.skills.alquimia) - 1) * AL.failReductionPerLevel);
+export function failChance(s: GameState, heat: Heat, extraReduction = 0): number {
+  return Math.max(0, AL.heat[heat].fail - (skillLevel(s.skills.alquimia) - 1) * AL.failReductionPerLevel - extraReduction);
 }
 
 export function potionItem(s: GameState, def: PotionDef, potency: number, qty: number): ItemInstance {
@@ -61,7 +62,7 @@ export function brew(s: GameState, { c, rng }: Ctx, ingredients: string[], heat:
   const props = mixProps(c, ingredients);
   const def = matchRecipe(c, props);
   const events: GameEvent[] = [];
-  if (!def || rng.chance(failChance(s, heat))) {
+  if (!def || rng.chance(failChance(s, heat, bonus(c, s, 'alquimiaFalla')))) {
     addXp(s, 'alquimia', 2);
     events.push({ type: 'toast', text: def ? '¡El fuego fue demasiado fuerte y se arruinó la tanda!' : 'Salió un brebaje turbio que no sirve para nada.', tone: 'bad' });
     return [...events, ...advanceTime(s, 1)];
@@ -69,16 +70,17 @@ export function brew(s: GameState, { c, rng }: Ctx, ingredients: string[], heat:
   const potency = potencyFor(def, props, AL.heat[heat].potency);
   const discovered = !s.discoveredPotions.includes(def.id);
   if (discovered) s.discoveredPotions.push(def.id);
+  const qty = def.qty + bonus(c, s, 'alquimiaExtra');
   if (def.output.kind === 'material') {
-    addMaterial(s, def.output.material, def.qty);
+    addMaterial(s, def.output.material, qty);
   } else {
     const same = s.items.find((i) => i.potion?.recipe === def.id && i.potion.potency === potency);
-    if (same) same.quantity += def.qty;
-    else s.items.push(potionItem(s, def, potency, def.qty));
+    if (same) same.quantity += qty;
+    else s.items.push(potionItem(s, def, potency, qty));
   }
   addXp(s, 'alquimia', AL.xpPerBrew + potency);
-  events.push({ type: 'brewed', recipe: def.id, name: def.name, qty: def.qty, discovered });
-  events.push({ type: 'toast', text: `${discovered ? '¡Receta nueva! ' : ''}${def.name} ×${def.qty}${def.output.kind === 'pocion' ? ` (potencia ${potency})` : ''}.`, tone: 'good' });
+  events.push({ type: 'brewed', recipe: def.id, name: def.name, qty, discovered });
+  events.push({ type: 'toast', text: `${discovered ? '¡Receta nueva! ' : ''}${def.name} ×${qty}${def.output.kind === 'pocion' ? ` (potencia ${potency})` : ''}.`, tone: 'good' });
   return [...events, ...advanceTime(s, 1)];
 }
 

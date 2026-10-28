@@ -5,6 +5,7 @@ import { addXp, changeReputation, clamp, currentCity, skillLevel } from '../stat
 import { advanceTime, slotName } from '../time';
 import { customerMult } from '../town/cityEvents';
 import { demandOf, registerSale } from '../town/demand';
+import { bonus, displaySlots } from '../progress/progress';
 import { STAT_KEYS, type CustomerType, type GameEvent, type GameState, type ItemInstance, type ShopCustomer, type ShopSession } from '../types';
 
 const S = BALANCE.shop;
@@ -42,7 +43,9 @@ export function generateCustomers(c: Content, s: GameState, rng: Rng): ShopCusto
   const out: ShopCustomer[] = [];
   for (let i = 0, n = customerCount(s); i < n && types.length; i++) {
     // Los eventos de la ciudad traen más de cierto tipo de cliente (torneo: aventureros; festival: nobles...).
-    const type = rng.weighted(types.map((t) => [t, t.appearance[slot] * customerMult(c, s, t.id)] as const));
+    // La decoración atrae más clientes de nivel alto.
+    const attract = 1 + bonus(c, s, 'atractivo') * BALANCE.workshop.attractPerPoint;
+    const type = rng.weighted(types.map((t) => [t, t.appearance[slot] * customerMult(c, s, t.id) * (BALANCE.workshop.attractTypes.includes(t.id) ? attract : 1)] as const));
     out.push({
       id: `c${i}`, typeId: type.id, name: rng.pick(c.customerNames),
       budget: rng.int(type.budget[0], type.budget[1]),
@@ -61,11 +64,12 @@ export function exhibitedItems(s: GameState): ItemInstance[] {
   return s.items.filter((i) => i.exhibited && i.quantity > 0 && !i.equippedBy);
 }
 
-export function toggleExhibit(s: GameState, _ctx: Ctx, uid: string): GameEvent[] {
+export function toggleExhibit(s: GameState, { c }: Ctx, uid: string): GameEvent[] {
   const item = s.items.find((i) => i.uid === uid);
   if (!item) throw new GameError('Ese objeto no existe.');
   if (item.equippedBy) throw new GameError('Ese objeto está equipado.');
-  if (!item.exhibited && exhibitedItems(s).length >= S.displaySlots) throw new GameError(`Solo tenés ${S.displaySlots} lugares de exhibición.`);
+  const slots = displaySlots(c, s);
+  if (!item.exhibited && exhibitedItems(s).length >= slots) throw new GameError(`Solo tenés ${slots} lugares de exhibición.`);
   item.exhibited = !item.exhibited;
   return [];
 }
@@ -103,7 +107,7 @@ export function nextCustomer(s: GameState, { c, rng }: Ctx): GameEvent[] {
   const { item } = rng.weighted(candidates.map((x) => [x, x.score] as const));
   const range = bulkRange(type, item);
   const qty = range ? Math.min(item.quantity, rng.int(range[0], range[1])) : 1;
-  const commerce = 1 + S.commerceBonusPerLevel * (skillLevel(s.skills.comercio) - 1);
+  const commerce = 1 + S.commerceBonusPerLevel * (skillLevel(s.skills.comercio) - 1) + bonus(c, s, 'regateo') / 100;
   const rep = s.reputation[currentCity()] ?? 0;
   const valuation = item.value * qty * type.generosity * (1 + preferenceMatch(type, item)) * (0.9 + rep / 200) * commerce
     * demandOf(s, item.category) * rng.range(S.maxPriceJitter[0], S.maxPriceJitter[1]);
@@ -204,6 +208,45 @@ export function declineCustomer(s: GameState, _ctx: Ctx): GameEvent[] {
   sh.status = 'resolved';
   sh.line = 'Bueno, otra vez será.';
   return [];
+}
+
+/**
+ * El ayudante atiende mientras no estás: por cada franja, los clientes compran lo exhibido
+ * sin regatear, a una parte de lo que habrían pagado.
+ */
+export function assistantShift(s: GameState, c: Content, rng: Rng, slots: number): GameEvent[] {
+  if (!s.assistant || !s.characters[s.assistant] || slots <= 0) return [];
+  let sold = 0;
+  let earned = 0;
+  for (let i = 0; i < slots; i++) {
+    for (const customer of generateCustomers(c, s, rng)) {
+      const type = c.customers[customer.typeId];
+      const candidates = exhibitedItems(s)
+        .map((item) => ({ item, score: interestScore(type, item) * (1 + (demandOf(s, item.category) - 1) * BALANCE.demand.customerWeight) }))
+        .filter(({ item, score }) => score > 0 && item.value <= customer.budget * 1.1);
+      if (!candidates.length) continue;
+      const { item } = rng.weighted(candidates.map((x) => [x, x.score] as const));
+      const range = bulkRange(type, item);
+      const qty = range ? Math.min(item.quantity, rng.int(range[0], range[1])) : 1;
+      const rep = s.reputation[currentCity()] ?? 0;
+      const valuation = item.value * qty * type.generosity * (1 + preferenceMatch(type, item)) * (0.9 + rep / 200) * demandOf(s, item.category);
+      const price = Math.max(1, Math.round(Math.min(valuation, customer.budget) * BALANCE.assistant.priceRatio));
+      item.quantity -= qty;
+      if (item.quantity <= 0) {
+        s.items = s.items.filter((x) => x.uid !== item.uid);
+        delete s.belt[item.uid];
+      }
+      registerSale(s, item.category, qty);
+      s.gold += price;
+      s.stats.goldEarned += price;
+      s.stats.itemsSold += qty;
+      changeReputation(s, currentCity(), S.repOnSale);
+      sold += qty;
+      earned += price;
+    }
+  }
+  if (!sold) return [];
+  return [{ type: 'toast', text: `${s.characters[s.assistant].name} atendió la tienda: vendió ${sold} por ${earned} de oro.`, tone: 'good' }];
 }
 
 export function closeShop(s: GameState, _ctx: Ctx): GameEvent[] {

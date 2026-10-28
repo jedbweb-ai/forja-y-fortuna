@@ -138,7 +138,7 @@ export function DungeonPanel() {
         <li>👑 Jefe: <b>{def.boss.name}</b> · {bossReady(s, def) ? 'te espera en el último piso' : `vuelve el día ${back}`}</li>
         <li>✦ Tesoros únicos encontrados: {found}/{def.uniques.length}</li>
         <li>🗺️ Piso más hondo: {prog.deepest || '—'} · Veces completada: {prog.clears}</li>
-        <li>⚡ Energía: {expeditionEnergy(s, members)} · 🎒 Carga: {expeditionCapacity(s, members)}</li>
+        <li>⚡ Energía: {expeditionEnergy(s, members, c)} · 🎒 Carga: {expeditionCapacity(s, members, c)}</li>
         {injured.map((ch) => <li key={ch.id} className="muted">🤕 {ch.name} se queda: herido hasta el día {ch.injuredUntilDay}.</li>)}
       </ul>
       <p className="muted small">

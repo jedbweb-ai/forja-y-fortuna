@@ -11,6 +11,8 @@ import { addMaterial, addXp, skillLevel } from '../state';
 import { advanceTime, sleep, slotName } from '../time';
 import type { GameEvent, GameState } from '../types';
 import { recordKills } from '../town/quests';
+import { bonus } from '../progress/progress';
+import { unequipAll } from '../party/equipment';
 import { servantEscapes, servantsAfterCombat } from '../town/servants';
 import {
   checkLanding, discoverEntrance, dungeonDef, exhausted, expMap, grantUnique, onBossDefeated, recordLeave, revealAround, trapAt, triggerTrap,
@@ -37,13 +39,13 @@ export function readyMembers(s: GameState): string[] {
   return partyMembers(s).filter((ch) => !isInjured(s, ch)).map((ch) => ch.id);
 }
 
-export function expeditionEnergy(s: GameState, members: string[]): number {
+export function expeditionEnergy(s: GameState, members: string[], c?: Content): number {
   const explorer = members.some((id) => s.characters[id]?.specialty === 'explorador');
-  return EX.baseEnergy + (explorer ? BALANCE.mercenaries.exploradorEnergy : 0);
+  return EX.baseEnergy + (explorer ? BALANCE.mercenaries.exploradorEnergy : 0) + (c ? bonus(c, s, 'energia') : 0);
 }
 
-export function expeditionCapacity(s: GameState, members: string[]): number {
-  let cap = EX.baseCapacity;
+export function expeditionCapacity(s: GameState, members: string[], c?: Content): number {
+  let cap = EX.baseCapacity + (c ? bonus(c, s, 'carga') : 0);
   for (const id of members) {
     const ch = s.characters[id];
     if (!ch) continue;
@@ -134,8 +136,8 @@ export function startExpedition(s: GameState, { c, rng }: Ctx, regionId: string)
   for (const id of members) s.characters[id].hp = maxHp(s.characters[id]);
   const entry = findTiles(r, 'E')[0] ?? { x: 1, y: 1 };
   s.expedition = {
-    regionId, pos: { ...entry }, energy: expeditionEnergy(s, members), maxEnergy: expeditionEnergy(s, members), spent: 0,
-    bag: {}, capacity: expeditionCapacity(s, members), nodes: [], groups: [], members, combat: null, report: null,
+    regionId, pos: { ...entry }, energy: expeditionEnergy(s, members, c), maxEnergy: expeditionEnergy(s, members, c), spent: 0,
+    bag: {}, capacity: expeditionCapacity(s, members, c), nodes: [], groups: [], members, combat: null, report: null,
     nightSpawned: false, nextId: 1,
   };
   populate(c, s, rng, r);
@@ -312,7 +314,8 @@ export function gather(s: GameState, { c, rng }: Ctx, nodeId: string): GameEvent
   if (bagLoad(e.bag) >= e.capacity) throw new GameError('La bolsa está llena.');
   const skill = job[0];
   let qty = rng.int(node.qty[0], node.qty[1]);
-  if (rng.chance((skillLevel(s.skills[skill]) - 1) * BALANCE.tools.gatherBonusPerLevel)) qty += 1;
+  const talentKey = ({ mineria: 'mineriaExtra', tala: 'talaExtra', siega: 'siegaExtra' } as const)[skill];
+  if (rng.chance((skillLevel(s.skills[skill]) - 1) * BALANCE.tools.gatherBonusPerLevel + bonus(c, s, talentKey))) qty += 1;
   if (tool.traits.includes('veta_certera') && rng.chance(0.25)) qty += 1;
   const got = addToBag(s, node.material, qty);
   tool.durability = Math.max(0, tool.durability - BALANCE.tools.wearPerUse);
@@ -426,6 +429,7 @@ function settle(c: Content, s: GameState, rng: Rng): GameEvent[] {
   e.report = resolveCombat(c, s, rng);
   const events: GameEvent[] = [];
   if (cs.outcome === 'victory' && group?.boss && e.dungeon) events.push(...onBossDefeated(s, c, rng, group));
+  events.push(...permadeath(s, c));
   if (cs.outcome === 'fled') {
     e.fled = true;
     const g = e.groups.find((x) => x.id === cs.groupId);
@@ -437,6 +441,24 @@ function settle(c: Content, s: GameState, rng: Rng): GameEvent[] {
   }
   if (cs.outcome !== 'fled') servantsAfterCombat(s, e.members, cs.outcome === 'victory');
   return [{ type: 'combatEnded', outcome: cs.outcome }, ...events];
+}
+
+/** Con la opción activada, los compañeros que cayeron en una mazmorra muy peligrosa no vuelven. */
+export function permadeath(s: GameState, c: Content): GameEvent[] {
+  const e = expedition(s);
+  const def = dungeonDef(c, s);
+  if (!s.settings.permadeath || !def || def.danger < BALANCE.permadeath.minDanger || !e.combat) return [];
+  const events: GameEvent[] = [];
+  for (const u of e.combat.units.filter((x) => x.side === 'party' && !x.alive && x.charId && x.charId !== 'herrero')) {
+    const ch = s.characters[u.charId!];
+    if (!ch || ch.dead) continue;
+    unequipAll(s, ch.id);
+    ch.dead = true;
+    s.party = s.party.filter((p) => p !== ch.id);
+    e.members = e.members.filter((m) => m !== ch.id);
+    events.push({ type: 'toast', text: `${ch.name} cayó en ${def.name} y no va a volver. Su equipo vuelve al arcón.`, tone: 'bad' });
+  }
+  return events;
 }
 
 function partyTurn(s: GameState, unitId: string) {

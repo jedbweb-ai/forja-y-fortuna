@@ -2,6 +2,7 @@ import { indexById, type Content } from '../core/content';
 import type { Material } from '../core/types';
 import { ABILITY_SKILLS } from './abilities';
 import { ARENAS } from './arenas';
+import { TALENTS, UPGRADES } from './progress';
 import { DUNGEONS, RIDDLES, ROOM_PIECES, TRAPS } from './dungeons';
 import { BLUEPRINTS_5, ENCHANTMENTS_5, GRIMOIRES_5, MATERIALS_5, POTIONS_5, QUENCH_5, SYNERGIES_5 } from './forge5';
 import { ARENAS_5, MONSTERS_5, SKILLS_5 } from './monsters5';
@@ -69,4 +70,6 @@ export const CONTENT: Content = {
   roomPieces: indexById(ROOM_PIECES),
   riddles: indexById(RIDDLES),
   traps: TRAPS,
+  talents: indexById(TALENTS),
+  upgrades: indexById(UPGRADES),
 };

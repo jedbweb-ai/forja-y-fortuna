@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { maxPartySize } from '../../core/progress/progress';
 import { BALANCE } from '../../config/balance';
 import { beltTotal, fieldPotion, setBelt } from '../../core/magic/alchemy';
 import { equipItem, slotsFor, unequipItem } from '../../core/party/equipment';
@@ -33,7 +34,7 @@ export function PartyPanel() {
     : [];
 
   return (
-    <Panel title="Grupo" subtitle={`${s.party.length} de ${3} · Las habilidades de combate salen del equipo que les forjás`} wide>
+    <Panel title="Grupo" subtitle={`${s.party.length} de ${maxPartySize(c, s)} · Las habilidades de combate salen del equipo que les forjás`} wide>
       <div className="tabs">
         {s.party.map((id) => (
           <button key={id} className={`tab ${id === ch.id ? 'on' : ''}`} onClick={() => { setSel(id); setPicking(null); }}>
@@ -168,7 +169,7 @@ function WaitingCompanions() {
         {waiting.map((ch) => (
           <li key={ch.id}>
             <span className="grow"><b>{ch.name}</b> <small className="muted">nivel {ch.level} · lealtad {relationLevel(s.npcs[ch.id]?.relation ?? 0)}</small></span>
-            <button className="btn" disabled={s.party.length >= BALANCE.MAX_PARTY_SIZE || s.location !== 'herreria' || !!s.expedition} onClick={() => store.run(rejoinServant, ch.id)}>
+            <button className="btn" disabled={s.party.length >= maxPartySize(store.content, s) || s.location !== 'herreria' || !!s.expedition} onClick={() => store.run(rejoinServant, ch.id)}>
               Sumar al grupo
             </button>
           </li>

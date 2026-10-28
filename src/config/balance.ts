@@ -399,6 +399,24 @@ export const BALANCE = {
     secretUniqueChance: 0.4,
   },
 
+  assistant: {
+    /** Relación mínima para dejar a un compañero a cargo de la tienda (los liberados siempre pueden). */
+    minLevel: 'amigo',
+    /** Vende sin regatear: cobra esta parte de lo que pagaría el cliente. */
+    priceRatio: 0.8,
+  },
+
+  workshop: {
+    /** Cuánto más aparecen nobles, coleccionistas y magos por cada punto de atractivo. */
+    attractPerPoint: 0.25,
+    attractTypes: ['noble', 'coleccionista', 'mago'] as string[],
+  },
+
+  permadeath: {
+    /** Peligro mínimo de la mazmorra para que la muerte sea permanente. */
+    minDanger: 5,
+  },
+
   servants: {
     offerSize: 2,
     refreshDays: 7,

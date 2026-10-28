@@ -5,6 +5,7 @@ import { isInjured } from '../party/progression';
 import { characterProfile } from '../party/stats';
 import { loyaltyCombat } from '../town/servants';
 import { exhausted } from '../dungeon/dungeon';
+import { bonus } from '../progress/progress';
 import type { Rng } from '../rng';
 import type { Affinity, GameState } from '../types';
 import type { MonsterGroup } from '../world/types';
@@ -40,11 +41,14 @@ export function partyUnits(c: Content, s: GameState, members: string[]): CombatU
       const loyalty = loyaltyCombat(s, ch);
       // En la mazmorra, sin energía el grupo pelea agotado.
       if (exhausted(s)) loyalty.mult *= BALANCE.dungeon.exhaustedMult;
+      // Talentos de combate del herrero.
+      const atkTalent = ch.id === 'herrero' ? 1 + bonus(c, s, 'combateAtaque') / 100 : 1;
+      const defTalent = ch.id === 'herrero' ? 1 + bonus(c, s, 'combateDefensa') / 100 : 1;
       return {
         id: `p_${ch.id}`, side: 'party', name: ch.name, charId: ch.id,
         sprite: { key: ch.id === 'herrero' ? 'char.herrero' : `char.npc.${ch.id}` }, look: ch.look,
         x: 0, y: 0, facing: 0, hp: Math.min(ch.hp, p.maxHp) + hpBonus, maxHp: p.maxHp + hpBonus,
-        atk: Math.round(p.atk * loyalty.mult), def: Math.round(p.def * loyalty.mult), spd: p.spd, move: p.move, jump: p.jump, evasion: p.evasion, crit: p.crit,
+        atk: Math.round(p.atk * loyalty.mult * atkTalent), def: Math.round(p.def * loyalty.mult * defTalent), spd: p.spd, move: p.move, jump: p.jump, evasion: p.evasion, crit: p.crit,
         damageType: p.damageType, weaponKind: p.weaponKind, affinities: p.affinities, resist: {}, elemental: p.elemental,
         immune: [], combat: p.combat, skills: p.skills, cooldowns: {}, statuses: [],
         ammoUid: p.weaponKind === 'arco' || Object.keys(p.abilities).some((k) => c.skills[k]?.ammo) ? bestArrows(s) : undefined,

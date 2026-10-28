@@ -2,7 +2,7 @@
 
 Juego de gestión y RPG táctico: sos un herrero en un mundo de fantasía. El diseño completo está en [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (fuente de verdad).
 
-**Estado: Fase 5 (mazmorras) terminada.**
+**Estado: Fase 6 (expansión y pulido) en curso: 6A terminada.**
 
 ## Cómo correrlo
 
@@ -32,6 +32,7 @@ src/
     magic/      habilidades activas de los objetos, grimorios, alquimia y cinturón de pociones
     town/       relaciones y regalos, encargos, contratos, demanda, eventos de ciudad, subasta y compañeros por lealtad
     dungeon/    mazmorras: generación de pisos con salas hechas a mano, niebla, secretos, trampas, descansos y jefes
+    progress/   talentos por habilidad, mejoras de la herrería, ayudante de la tienda y tamaño del grupo
     world/      regiones, encuentros por presupuesto de amenaza, expediciones
     city.ts     movimiento por la ciudad, NPCs presentes por franja
     dialogue.ts motor de diálogos (condiciones y efectos)
@@ -115,5 +116,14 @@ src/
 - **Arenas de mazmorra** con columnas, sarcófagos, canales y **lava** (arde todo el combate). Encargos nuevos del gremio y del tablón para las mazmorras.
 - Las partidas anteriores se migran solas (versión 5 del guardado).
 
+## Decisiones de la Fase 6A (progresión y herrería)
+
+- **Talentos**: cada nivel de una habilidad (después del primero) da un punto para su árbol. Hay talentos para todas las habilidades (más calidad, menos defectos, más rasgos y perfectos, intuición para anotar combinaciones, armas y armaduras más fuertes, lotes más grandes, joyas y runas mejores, alquimia más segura, recolección extra, mejor regateo y venta rápida, y combate, carga y energía del herrero). Están en `data/progress.ts`.
+- **Mejoras de la herrería** (oro y materiales): yunque, banco de flechería, mesas de joyería, runas y alquimia, vitrinas (de 8 a 12 y 16 lugares), decoración (más nobles, coleccionistas y magos) y el **cuarto para compañeros**, que con reputación renombrada agranda el grupo a 4.
+- Talentos y mejoras suman **bonos con nombre** que cada sistema lee con `bonus()`: se agregan talentos o mejoras nuevas sin tocar la lógica.
+- **Ayudante**: un compañero con relación "amigo" o más (o uno liberado) atiende la tienda en las franjas en que no atendés vos. Vende lo exhibido sin regatear, al 80%, cobra su sueldo y no sale de expedición.
+- **Muerte permanente**: opción en Ajustes, apagada por defecto. Solo para compañeros y solo en mazmorras de 5 estrellas o más.
+- Las partidas anteriores se migran solas (versión 6 del guardado).
+
 ## Pendiente para próximas fases
-Ver el plan en `docs/GAME_DESIGN.md` §15. Lo próximo es la Fase 6: expansión y pulido.
+Lo que sigue de la Fase 6: 6B (Puertoseco, Fuerte Ceniza y viajes), 6C (Montañas Grises, Pantano de Niebla, gigantes, elementales y tiendas especializadas) y 6D (balance y pulido).

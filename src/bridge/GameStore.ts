@@ -13,7 +13,7 @@ import { makeSaveFile, type SaveRepository } from '../persistence/saveFile';
 export type PanelId =
   | 'forge' | 'shop' | 'market' | 'inventory' | 'book' | 'settings' | 'debug'
   | 'party' | 'mercenaries' | 'repair' | 'expedition' | 'bag' | 'alchemy' | 'library'
-  | 'quests' | 'contacts' | 'auction' | 'servants' | 'dungeon';
+  | 'quests' | 'contacts' | 'auction' | 'servants' | 'dungeon' | 'talents' | 'workshop';
 
 /** Puesto de trabajo de la herrería: yunque (y flechería), mesa de joyería o mesa de runas. */
 export type ForgeStation = 'yunque' | 'joyeria' | 'runas';

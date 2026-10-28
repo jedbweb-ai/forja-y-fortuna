@@ -58,6 +58,19 @@ describe('guardado', () => {
     expect(out.state.dungeons).toEqual({ progress: {}, uniques: [] });
   });
 
+  it('migra un guardado de la Fase 5 (v5) a la v6 con talentos y mejoras vacíos', () => {
+    const v5 = makeSaveFile(createInitialState(CONTENT, 1)) as unknown as { version: number; state: Record<string, unknown> };
+    v5.version = 5;
+    for (const k of ['talents', 'workshop', 'assistant']) delete v5.state[k];
+    delete (v5.state.settings as Record<string, unknown>).permadeath;
+    const out = migrateSave(JSON.parse(JSON.stringify(v5)));
+    expect(out.version).toBe(SAVE_VERSION);
+    expect(out.state.talents).toEqual({});
+    expect(out.state.workshop).toEqual({});
+    expect(out.state.assistant).toBeNull();
+    expect(out.state.settings.permadeath).toBe(false);
+  });
+
   it('rechaza saves inválidos o de versiones futuras', () => {
     expect(() => migrateSave(null)).toThrow();
     expect(() => migrateSave({ version: SAVE_VERSION + 1, state: {} })).toThrow();

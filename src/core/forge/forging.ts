@@ -6,6 +6,14 @@ import type { ForgeSession, ItemCategory, Trait } from '../types';
 
 const F = BALANCE.forge;
 
+/** Bonos de talentos y mejoras que cambian los golpes. */
+export interface ForgeMods {
+  defect: number;
+  perfect: number;
+  trait: number;
+}
+export const NO_MODS: ForgeMods = { defect: 0, perfect: 0, trait: 0 };
+
 export interface HitOdds {
   /** Probabilidad de defecto del próximo golpe. */
   defect: number;
@@ -25,13 +33,13 @@ export function traitTierFor(hits: number): number {
   return F.traitTierHits.filter((h) => hits >= h).length;
 }
 
-export function traitChanceFor(hits: number, smithLevel: number): number {
+export function traitChanceFor(hits: number, smithLevel: number, mods: ForgeMods = NO_MODS): number {
   if (traitTierFor(hits) === 0) return 0;
-  return clamp(F.traitChanceBase + F.traitChancePerHit * hits + F.traitChancePerLevel * (smithLevel - 1), 0, F.traitChanceMax);
+  return clamp(F.traitChanceBase + F.traitChancePerHit * hits + F.traitChancePerLevel * (smithLevel - 1) + mods.trait, 0, F.traitChanceMax);
 }
 
-export function defectChanceFor(session: Pick<ForgeSession, 'hits' | 'instability'>, smithLevel: number): number {
-  const p = F.defectBase + F.defectPerHit * session.hits + session.instability - F.defectReductionPerLevel * (smithLevel - 1);
+export function defectChanceFor(session: Pick<ForgeSession, 'hits' | 'instability'>, smithLevel: number, mods: ForgeMods = NO_MODS): number {
+  const p = F.defectBase + F.defectPerHit * session.hits + session.instability - F.defectReductionPerLevel * (smithLevel - 1) - mods.defect;
   return clamp(p, 0.01, F.defectMax);
 }
 
@@ -40,23 +48,23 @@ function gainRange(quality: number): [number, number] {
   return [F.qualityPerHit[0] * factor, F.qualityPerHit[1] * factor];
 }
 
-export function hitOdds(session: ForgeSession, smithLevel: number): HitOdds {
+export function hitOdds(session: ForgeSession, smithLevel: number, mods: ForgeMods = NO_MODS): HitOdds {
   const tier = traitTierFor(session.hits);
   const nextThreshold = F.traitTierHits.find((h) => h > session.hits);
   return {
-    defect: defectChanceFor(session, smithLevel),
-    perfect: F.perfectChance,
+    defect: defectChanceFor(session, smithLevel, mods),
+    perfect: F.perfectChance + mods.perfect,
     gain: gainRange(session.quality),
     traitTier: tier,
-    traitChance: traitChanceFor(session.hits, smithLevel),
+    traitChance: traitChanceFor(session.hits, smithLevel, mods),
     hitsToNextTier: nextThreshold === undefined ? null : nextThreshold - session.hits,
     defectsLeft: F.maxDefects - session.defects,
   };
 }
 
 /** Un golpe de martillo. Muta la sesión. Devuelve el resultado y si la pieza se arruinó. */
-export function strike(session: ForgeSession, rng: Rng, smithLevel: number): { result: 'bueno' | 'perfecto' | 'defecto'; ruined: boolean } {
-  const pDefect = defectChanceFor(session, smithLevel);
+export function strike(session: ForgeSession, rng: Rng, smithLevel: number, mods: ForgeMods = NO_MODS): { result: 'bueno' | 'perfecto' | 'defecto'; ruined: boolean } {
+  const pDefect = defectChanceFor(session, smithLevel, mods);
   session.hits += 1;
   if (rng.chance(pDefect)) {
     session.defects += 1;
@@ -67,7 +75,7 @@ export function strike(session: ForgeSession, rng: Rng, smithLevel: number): { r
   const [lo, hi] = gainRange(session.quality);
   let gain = rng.range(lo, hi);
   let result: 'bueno' | 'perfecto' = 'bueno';
-  if (rng.chance(F.perfectChance)) {
+  if (rng.chance(F.perfectChance + mods.perfect)) {
     gain += F.perfectBonus;
     result = 'perfecto';
   }
@@ -83,7 +91,7 @@ export function traitPool(c: Content, category: ItemCategory, maxTier: number, e
 }
 
 /** Al frenar: sortea los rasgos según los golpes dados. */
-export function rollTraits(c: Content, session: ForgeSession, category: ItemCategory, rng: Rng, smithLevel: number, already: string[]): string[] {
+export function rollTraits(c: Content, session: ForgeSession, category: ItemCategory, rng: Rng, smithLevel: number, already: string[], mods: ForgeMods = NO_MODS): string[] {
   const tier = traitTierFor(session.hits);
   if (tier === 0) return [];
   const got: string[] = [];
@@ -93,7 +101,7 @@ export function rollTraits(c: Content, session: ForgeSession, category: ItemCate
     // Los rasgos del tier más alto habilitado salen más seguido.
     got.push(rng.weighted(pool.map((t) => [t.id, t.tier === tier ? 3 : 1] as const)));
   };
-  if (rng.chance(traitChanceFor(session.hits, smithLevel))) pickOne();
+  if (rng.chance(traitChanceFor(session.hits, smithLevel, mods))) pickOne();
   if (got.length && tier >= 3 && rng.chance(F.secondTraitChance)) pickOne();
   return got;
 }

@@ -3,6 +3,7 @@ import { BALANCE } from '../../config/balance';
 import { brew, failChance, matchRecipe, mixProps, potencyFor, type Heat } from '../../core/magic/alchemy';
 import { ALCHEMY_PROPS, type AlchemyProp } from '../../core/magic/types';
 import { skillLevel } from '../../core/state';
+import { bonus } from '../../core/progress/progress';
 import { Panel, Tabs } from '../components/Panel';
 import { pct } from '../format';
 import { store, useGame } from '../hooks';
@@ -70,14 +71,14 @@ export function AlchemyPanel() {
                   role="radio"
                   aria-checked={heat === h}
                   className={`btn ${heat === h ? 'on' : ''}`}
-                  title={`+${BALANCE.alchemy.heat[h].potency} potencia · riesgo ${pct(failChance(s, h))}`}
+                  title={`+${BALANCE.alchemy.heat[h].potency} potencia · riesgo ${pct(failChance(s, h, bonus(c, s, 'alquimiaFalla')))}`}
                   onClick={() => setHeat(h)}
                 >
                   {HEAT_LABEL[h]}
                 </button>
               ))}
             </div>
-            <small className="muted">Fuego {heat}: +{BALANCE.alchemy.heat[heat].potency} potencia · riesgo de arruinarla {pct(failChance(s, heat))}</small>
+            <small className="muted">Fuego {heat}: +{BALANCE.alchemy.heat[heat].potency} potencia · riesgo de arruinarla {pct(failChance(s, heat, bonus(c, s, 'alquimiaFalla')))}</small>
             <h4>Caldero</h4>
             <div className="chips">
               {mix.map((id, i) => (

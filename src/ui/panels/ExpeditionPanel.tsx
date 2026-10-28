@@ -22,7 +22,7 @@ export function ExpeditionPanel() {
   });
   const TOOL_NAME = { mineria: 'Pico (vetas)', tala: 'Hacha (árboles)', desuello: 'Cuchillo de desuello (cueros)' };
   const unarmed = members.filter((id) => characterProfile(c, s, s.characters[id]).weaponKind === 'punos');
-  const days = Math.ceil((r.travelSlots * 2 + expeditionEnergy(s, members) / BALANCE.expedition.energyPerSlot) / 3);
+  const days = Math.ceil((r.travelSlots * 2 + expeditionEnergy(s, members, c) / BALANCE.expedition.energyPerSlot) / 3);
 
   return (
     <Panel
@@ -51,8 +51,8 @@ export function ExpeditionPanel() {
 
       <h4>Preparación</h4>
       <ul className="tag-list">
-        <li>⚡ Energía: {expeditionEnergy(s, members)} (cada {BALANCE.expedition.energyPerSlot} gastados pasa una franja)</li>
-        <li>🎒 Carga: {expeditionCapacity(s, members)} unidades</li>
+        <li>⚡ Energía: {expeditionEnergy(s, members, c)} (cada {BALANCE.expedition.energyPerSlot} gastados pasa una franja)</li>
+        <li>🎒 Carga: {expeditionCapacity(s, members, c)} unidades</li>
         {tools.map((t) => (
           <li key={t.tag} className={t.item ? '' : 'bad-text'}>
             🔧 {TOOL_NAME[t.tag]}: {t.item ? `${t.item.name} (nivel ${t.tier})` : 'no tenés'}

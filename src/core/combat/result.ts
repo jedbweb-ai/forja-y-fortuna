@@ -1,4 +1,5 @@
 import { BALANCE } from '../../config/balance';
+import { bonus } from '../progress/progress';
 import type { Content } from '../content';
 import { gainXp } from '../party/progression';
 import { characterProfile } from '../party/stats';
@@ -79,7 +80,8 @@ export function resolveCombat(c: Content, s: GameState, rng: Rng): CombatReport 
           report.notes.push(skinner ? `${mat.name}: tu cuchillo de desuello no alcanza.` : `${mat.name}: sin cuchillo de desuello no se puede sacar.`);
           continue;
         }
-        const qty = rng.int(drop.qty[0], drop.qty[1]);
+        let qty = rng.int(drop.qty[0], drop.qty[1]);
+        if (drop.skin && rng.chance(bonus(c, s, 'desuelloExtra'))) qty += 1;
         const got = addToBag(s, drop.material, qty);
         if (got) report.loot[drop.material] = (report.loot[drop.material] ?? 0) + got;
         if (got < qty) report.notes.push(`No entra más en la bolsa: dejaste ${qty - got}× ${mat.name}.`);

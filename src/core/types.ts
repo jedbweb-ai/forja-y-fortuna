@@ -482,6 +482,8 @@ export type SkillId =
 export interface GameSettings {
   skipItemCard: boolean;
   fullscreenOnStart: boolean;
+  /** Los compañeros que caen en mazmorras de mucho peligro mueren para siempre. */
+  permadeath: boolean;
 }
 
 export interface GameState {
@@ -506,7 +508,7 @@ export interface GameState {
   shop: ShopSession | null;
   /** Todos los personajes conocidos (herrero y mercenarios contratados alguna vez). */
   characters: Record<string, Character>;
-  /** Grupo actual: el herrero primero. Máximo BALANCE.MAX_PARTY_SIZE. */
+  /** Grupo actual: el herrero primero. Máximo maxPartySize() (crece con la herrería). */
   party: string[];
   expedition: ExpeditionState | null;
   market: MarketState | null;
@@ -526,6 +528,13 @@ export interface GameState {
   servantMarket: ServantMarketState;
   // ── Fase 5 ──
   dungeons: DungeonsState;
+  // ── Fase 6 ──
+  /** Rango de cada talento aprendido. */
+  talents: Record<string, number>;
+  /** Nivel de cada mejora de la herrería. */
+  workshop: Record<string, number>;
+  /** Compañero a cargo de la tienda cuando el herrero no está. */
+  assistant: string | null;
   settings: GameSettings;
   nextUid: number;
 }

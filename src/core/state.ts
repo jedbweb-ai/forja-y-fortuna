@@ -66,7 +66,10 @@ export function createInitialState(c: Content, seed = Date.now() >>> 0): GameSta
     stats: { itemsForged: 0, itemsRuined: 0, goldEarned: 0, itemsSold: 0 },
     ...emptyTownState(),
     dungeons: { progress: {}, uniques: [] },
-    settings: { skipItemCard: false, fullscreenOnStart: true },
+    talents: {},
+    workshop: {},
+    assistant: null,
+    settings: { skipItemCard: false, fullscreenOnStart: true, permadeath: false },
     nextUid: 1,
   };
 }

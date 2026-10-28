@@ -145,9 +145,9 @@ export function startDungeon(s: GameState, { c, rng }: Ctx, id: string): GameEve
   if (s.auction.session) throw new GameError('Estás en plena subasta.');
   const members = readyMembers(s);
   for (const mid of members) s.characters[mid].hp = maxHp(s.characters[mid]);
-  const energy = expeditionEnergy(s, members);
+  const energy = expeditionEnergy(s, members, c);
   s.expedition = {
-    regionId: def.id, pos: { x: 0, y: 0 }, energy, maxEnergy: energy, spent: 0, bag: {}, capacity: expeditionCapacity(s, members),
+    regionId: def.id, pos: { x: 0, y: 0 }, energy, maxEnergy: energy, spent: 0, bag: {}, capacity: expeditionCapacity(s, members, c),
     nodes: [], groups: [], members, combat: null, report: null, nightSpawned: true, nextId: 1,
   };
   buildFloor(s, c, rng, def, 1);

@@ -41,7 +41,11 @@ export const CITIES: City[] = [
             { id: 'mesa_joyeria', label: 'Mesa de joyería', x: 4, y: 0, action: 'joyeria' },
             { id: 'mesa_alquimia', label: 'Mesa de alquimia', x: 8, y: 6, action: 'alquimia' },
           ],
-          npcSpots: { yago: { x: 2, y: 4 }, sabela: { x: 3, y: 8 }, oriol: { x: 6, y: 3 }, marcia: { x: 7, y: 8 } },
+          npcSpots: {
+            yago: { x: 2, y: 4 }, sabela: { x: 3, y: 8 }, oriol: { x: 6, y: 3 }, marcia: { x: 7, y: 8 },
+            // Mercenario a cargo de la tienda: detrás del mostrador.
+            brunilda: { x: 5, y: 7 }, ciro: { x: 5, y: 7 }, nayra: { x: 5, y: 7 }, gualterio: { x: 5, y: 7 },
+          },
           ambient: { 'mañana': 3, tarde: 4, noche: 1 },
           carts: true,
           animals: ['gato'],

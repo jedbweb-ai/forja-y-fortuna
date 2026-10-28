@@ -1,4 +1,5 @@
 import { BALANCE } from '../../config/balance';
+import { maxPartySize } from '../../core/progress/progress';
 import { availableMercenaries, dailyWages, hireMercenary } from '../../core/party/mercenaries';
 import { relationLevel } from '../../core/state';
 import { Panel } from '../components/Panel';
@@ -15,11 +16,12 @@ export function MercenaryPanel() {
   const s = useGame();
   const c = store.content;
   const list = availableMercenaries(c, s);
-  const full = s.party.length >= BALANCE.MAX_PARTY_SIZE;
+  const max = maxPartySize(c, s);
+  const full = s.party.length >= max;
   return (
     <Panel
       title="Mercenarios"
-      subtitle={`Grupo ${s.party.length}/${BALANCE.MAX_PARTY_SIZE} · Sueldos diarios: 🪙 ${dailyWages(s)} · Pelean solo con el equipo que les forjes`}
+      subtitle={`Grupo ${s.party.length}/${max} · Sueldos diarios: 🪙 ${dailyWages(s)} · Pelean solo con el equipo que les forjes`}
       wide
     >
       {full && <p className="bad-text">Tu grupo está completo. Despedí a alguien desde el panel de Grupo para contratar a otro.</p>}

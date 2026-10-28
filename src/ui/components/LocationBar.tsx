@@ -1,6 +1,8 @@
 import { cityLocation, npcsAt, restSlot, sleepUntilMorning } from '../../core/city';
 import { damagedItems } from '../../core/forge/repair';
 import { slotName } from '../../core/time';
+import { talentPoints } from '../../core/progress/progress';
+import type { SkillId } from '../../core/types';
 import { isAuctionDay } from '../../core/town/auction';
 import { store, useSnapshot } from '../hooks';
 
@@ -39,6 +41,7 @@ export function LocationBar() {
   const npcs = npcsAt(c, state, state.location);
   const night = slotName(state) === 'noche';
   const damaged = damagedItems(state).length;
+  const freePoints = (Object.keys(state.skills) as SkillId[]).reduce((a, k) => a + talentPoints(c, state, k).free, 0);
 
   return (
     <div className="locbar">
@@ -56,6 +59,8 @@ export function LocationBar() {
               </>
             )}
             <button className="btn" onClick={() => store.openPanel('alchemy')}>⚗️ Alquimia</button>
+            <button className="btn" onClick={() => store.openPanel('workshop')}>🏗️ Taller</button>
+            <button className="btn" onClick={() => store.openPanel('talents')}>📈 Talentos{freePoints > 0 ? ` (${freePoints})` : ''}</button>
             <button className="btn" onClick={() => store.openPanel('shop')}>{state.shop ? '🛎️ Tienda abierta' : '🛎️ Atender tienda'}</button>
             {damaged > 0 && <button className="btn" onClick={() => store.openPanel('repair')}>🛠️ Reparar ({damaged})</button>}
             <button className="btn" onClick={() => store.showWorld()}>🧭 Expedición</button>

@@ -152,7 +152,7 @@ export const MONSTERS_5: MonsterDef[] = [
 ];
 
 // Arenas de mazmorra (10×8). 'l' es lava: arde todo el combate y quema a quien empiece el turno encima.
-const PARTY = [{ x: 0, y: 3 }, { x: 0, y: 4 }, { x: 1, y: 2 }];
+const PARTY = [{ x: 0, y: 3 }, { x: 0, y: 4 }, { x: 1, y: 2 }, { x: 1, y: 5 }];
 export const ARENAS_5: ArenaDef[] = [
   {
     id: 'cripta_columnas', biome: 'cripta',

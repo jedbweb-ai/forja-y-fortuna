@@ -3,6 +3,8 @@ import { AuctionPanel } from './panels/AuctionPanel';
 import { ContactsPanel } from './panels/ContactsPanel';
 import { QuestsPanel } from './panels/QuestsPanel';
 import { ServantsPanel } from './panels/ServantsPanel';
+import { TalentsPanel } from './panels/TalentsPanel';
+import { WorkshopPanel } from './panels/WorkshopPanel';
 import { BookPanel } from './panels/BookPanel';
 import { DebugPanel } from './panels/DebugPanel';
 import { ExpeditionPanel } from './panels/ExpeditionPanel';
@@ -64,6 +66,8 @@ export function App() {
           {ui.panel === 'auction' && <AuctionPanel />}
           {ui.panel === 'servants' && <ServantsPanel />}
           {ui.panel === 'dungeon' && <DungeonPanel />}
+          {ui.panel === 'talents' && <TalentsPanel />}
+          {ui.panel === 'workshop' && <WorkshopPanel />}
           {ui.panel === 'debug' && ui.debug && <DebugPanel />}
           {ui.dialogue && <DialogueBox />}
           {ui.itemCard && (

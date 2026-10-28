@@ -3,7 +3,7 @@ import { EMPTY_SKILLS, emptyTownState } from '../core/state';
 import type { GameState } from '../core/types';
 
 /** Versión actual del formato de guardado. Subirla junto con una migración. */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /**
  * Formato del guardado. Es JSON plano para que el mismo archivo pueda subirse
@@ -76,6 +76,11 @@ export const MIGRATIONS: Record<number, Migration> = {
   3: (save) => ({ ...save, version: 4, state: { ...save.state, ...emptyTownState() } }),
   // Fase 5: mazmorras (progreso de cada una y tesoros únicos que ya salieron).
   4: (save) => ({ ...save, version: 5, state: { ...save.state, dungeons: { progress: {}, uniques: [] } } }),
+  // Fase 6: talentos, mejoras de la herrería, ayudante y muerte permanente (apagada).
+  5: (save) => {
+    const st = save.state as Record<string, unknown> & { settings?: Record<string, unknown> };
+    return { ...save, version: 6, state: { ...st, talents: {}, workshop: {}, assistant: null, settings: { ...(st.settings ?? {}), permadeath: false } } };
+  },
 };
 
 export function migrateSave(raw: unknown, migrations: Record<number, Migration> = MIGRATIONS, target = SAVE_VERSION): SaveFile {

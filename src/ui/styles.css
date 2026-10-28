@@ -459,3 +459,15 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 /* ───────────── Fase 5: mazmorras ───────────── */
 .dialogue.landing { border-color: var(--accent-2); }
 .dialogue-options small { align-self: center; }
+
+/* ───────────── Fase 6: talentos y taller ───────────── */
+.talent-layout { display: grid; grid-template-columns: 200px 1fr; gap: 14px; align-items: start; }
+.talent-skills { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; }
+.talent-layout h3 { margin-top: 0; }
+.badge-inline { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--accent); color: #2a140a; font-size: 0.75rem; font-weight: 800; display: grid; place-items: center; }
+.quest-card.talent-on { border-color: color-mix(in srgb, var(--accent-2) 60%, transparent); }
+@media (max-width: 760px) {
+  .talent-layout { grid-template-columns: 1fr; }
+  .talent-skills { position: static; flex-direction: row; overflow-x: auto; }
+  .talent-skills li { flex: none; }
+}

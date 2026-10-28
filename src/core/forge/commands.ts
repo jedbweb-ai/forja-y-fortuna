@@ -4,7 +4,8 @@ import { addMaterial, addXp, hasMaterial, nextUid, skillLevel } from '../state';
 import { advanceTime } from '../time';
 import { RARITIES, type GameEvent, type GameState, type ItemCategory, type ItemInstance, type Rarity, type SkillId } from '../types';
 import { computeDesign, isAllowed, quenchApplies } from './design';
-import { rollTraits, strike } from './forging';
+import { rollTraits, strike, type ForgeMods } from './forging';
+import { bonus } from '../progress/progress';
 import { buildItem, enchantSlotsFor, qualityLabel, rarityIndex } from './item';
 
 const SPECIALTY: Partial<Record<ItemCategory, SkillId>> = {
@@ -37,6 +38,11 @@ function checkWorkshop(s: GameState) {
   if (s.location !== 'herreria' || s.expedition) throw new GameError('Para trabajar tenés que estar en tu herrería.');
 }
 
+/** Bonos de talentos y mejoras para los golpes de la forja. */
+export function forgeMods(c: Content, s: GameState): ForgeMods {
+  return { defect: bonus(c, s, 'forjaDefecto'), perfect: bonus(c, s, 'forjaPerfecto'), trait: bonus(c, s, 'forjaRasgo') };
+}
+
 /** Habilidad que se usa para la etapa de golpes (herrería, joyería o runas). */
 function workSkill(c: Content, s: GameState): SkillId {
   const f = s.forge;
@@ -56,8 +62,9 @@ export function forgeBegin(s: GameState, { c }: Ctx, blueprintId: string, materi
     if (!hasMaterial(s, id, q)) throw new GameError(`Te falta ${c.materials[id].name} (necesitás ${q}).`);
   }
   for (const [id, q] of Object.entries(design.needs)) addMaterial(s, id, -q);
+  const startQuality = BALANCE.forge.startQuality + bonus(c, s, 'forjaCalidadInicial') + (bp.station === 'joyeria' ? bonus(c, s, 'joyaCalidad') : 0);
   s.forge = {
-    kind: 'pieza', blueprintId, materials: { ...materials }, stage: 'forging', hits: 0, quality: BALANCE.forge.startQuality,
+    kind: 'pieza', blueprintId, materials: { ...materials }, stage: 'forging', hits: 0, quality: startQuality,
     defects: 0, traits: [], finish: [], instability: design.instability,
   };
   return [];
@@ -71,7 +78,7 @@ export function runeBegin(s: GameState, { c }: Ctx, enchantmentId: string): Game
   for (const k of e.cost) if (!hasMaterial(s, k.material, k.qty)) throw new GameError(`Te falta ${c.materials[k.material].name} (necesitás ${k.qty}).`);
   for (const k of e.cost) addMaterial(s, k.material, -k.qty);
   s.forge = {
-    kind: 'runa', blueprintId: enchantmentId, materials: {}, stage: 'forging', hits: 0, quality: BALANCE.forge.startQuality,
+    kind: 'runa', blueprintId: enchantmentId, materials: {}, stage: 'forging', hits: 0, quality: BALANCE.forge.startQuality + bonus(c, s, 'runaCalidad'),
     defects: 0, traits: [], finish: [], instability: 0,
   };
   return [];
@@ -80,7 +87,7 @@ export function runeBegin(s: GameState, { c }: Ctx, enchantmentId: string): Game
 export function forgeStrike(s: GameState, { c, rng }: Ctx): GameEvent[] {
   const f = session(s);
   if (f.stage !== 'forging') throw new GameError('El forjado ya terminó.');
-  const { result, ruined } = strike(f, rng, skillLevel(s.skills[workSkill(c, s)]));
+  const { result, ruined } = strike(f, rng, skillLevel(s.skills[workSkill(c, s)]), forgeMods(c, s));
   const events: GameEvent[] = [{ type: 'forgeHit', result }];
   if (ruined) {
     const name = f.kind === 'runa' ? c.enchantments[f.blueprintId].name : c.blueprints[f.blueprintId].name;
@@ -122,7 +129,7 @@ export function forgeStop(s: GameState, { c, rng }: Ctx): GameEvent[] {
   }
   const bp = c.blueprints[f.blueprintId];
   const synergyTraits = computeDesign(c, f.blueprintId, f.materials).synergies.map((x) => x.effect.trait).filter((t): t is string => !!t);
-  f.traits = rollTraits(c, f, bp.category, rng, skillLevel(s.skills[workSkill(c, s)]), synergyTraits);
+  f.traits = rollTraits(c, f, bp.category, rng, skillLevel(s.skills[workSkill(c, s)]), synergyTraits, forgeMods(c, s));
   f.stage = quenchApplies(c, bp, f.materials) ? 'quench' : 'finish';
   return [];
 }
@@ -200,7 +207,7 @@ export function planEnchantments(c: Content, s: GameState, blueprintId: string, 
   return { needs, gold, runeQuality, runes };
 }
 
-export function forgeComplete(s: GameState, { c }: Ctx, picks: EnchantPick[]): GameEvent[] {
+export function forgeComplete(s: GameState, { c, rng }: Ctx, picks: EnchantPick[]): GameEvent[] {
   const f = session(s);
   if (f.stage !== 'enchant') throw new GameError('Todavía no terminaste el acabado.');
   const bp = c.blueprints[f.blueprintId];
@@ -218,6 +225,12 @@ export function forgeComplete(s: GameState, { c }: Ctx, picks: EnchantPick[]): G
   const build = buildItem(c, f, picks.map((p) => p.id), plan.runeQuality);
   const { rarityScore: _score, design: _design, ...rest } = build;
   const item = { ...rest, uid: nextUid(s, 'it'), exhibited: true, createdDay: s.day };
+  // Talentos de armería y flechería.
+  const atkPct = bonus(c, s, 'armaAtaque');
+  const defPct = bonus(c, s, 'armaduraDefensa');
+  if (atkPct && (item.category === 'arma' || item.category === 'distancia')) item.stats = { ...item.stats, atk: Math.round(item.stats.atk * (1 + atkPct / 100) * 10) / 10 };
+  if (defPct && (item.category === 'armadura' || item.category === 'escudo')) item.stats = { ...item.stats, def: Math.round(item.stats.def * (1 + defPct / 100) * 10) / 10 };
+  if (bp.batch) item.quantity = Math.round(item.quantity * (1 + bonus(c, s, 'loteExtra') / 100));
   s.items.push(item);
   s.forge = null;
   s.stats.itemsForged += 1;
@@ -233,6 +246,19 @@ export function forgeComplete(s: GameState, { c }: Ctx, picks: EnchantPick[]): G
   if (spec && spec !== main) addXp(s, spec, xp);
   if (picks.length) addXp(s, 'runas', 10 * picks.length);
   newSynergies.forEach((id) => events.push({ type: 'synergyDiscovered', id }));
+  // Intuición: a veces se te ocurre una combinación nueva (nunca los secretos únicos de las mazmorras).
+  if (rng.chance(bonus(c, s, 'forjaIntuicion'))) {
+    const locked = new Set([
+      ...Object.values(c.dungeons).flatMap((d) => d.uniques.filter((u) => u.kind === 'synergy').map((u) => u.ref)),
+      ...Object.values(c.riddles).map((r) => r.reward.synergy).filter(Boolean),
+    ]);
+    const pool = Object.values(c.synergies).filter((x) => !s.discoveredSynergies.includes(x.id) && !locked.has(x.id));
+    if (pool.length) {
+      const idea = rng.pick(pool);
+      s.discoveredSynergies.push(idea.id);
+      events.push({ type: 'synergyDiscovered', id: idea.id }, { type: 'toast', text: `Intuición: anotás en el libro «${idea.name}».`, tone: 'good' });
+    }
+  }
   events.push(...advanceTime(s, bp.slots));
   return events;
 }
