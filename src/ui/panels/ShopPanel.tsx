@@ -30,7 +30,7 @@ function ShopSetup() {
       {s.forge && <p className="bad-text">Tenés una pieza en el yunque: terminala antes de abrir.</p>}
       {!s.items.length && <p className="muted">No tenés nada para vender. ¡Andá a forjar!</p>}
       <ul className="item-rows">
-        {s.items.map((i) => (
+        {s.items.filter((i) => !i.equippedBy).map((i) => (
           <li key={i.uid} className={RARITY_CLASS[i.rarity]}>
             <label className="check">
               <input type="checkbox" checked={i.exhibited} onChange={() => store.run(toggleExhibit, i.uid)} />

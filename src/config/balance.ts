@@ -132,9 +132,9 @@ export const BALANCE = {
     baseSpd: 4,
     baseCrit: 0.05,
     /** Daño sin arma: fuerza × este valor. */
-    unarmedPerFuerza: 0.7,
-    meleePerFuerza: 0.8,
-    rangedPerAgilidad: 0.8,
+    unarmedPerFuerza: 0.6,
+    meleePerFuerza: 0.5,
+    rangedPerAgilidad: 0.5,
     armorDefFactor: 0.5,
     shieldDefFactor: 0.3,
     defPerResistencia: 0.5,
@@ -146,7 +146,7 @@ export const BALANCE = {
     /** Peso de armadura desde el cual se pierde una casilla de movimiento. */
     heavyArmorWeight: 8,
     /** Fuerza requerida por punto de peso del objeto. */
-    strengthPerWeight: 0.9,
+    strengthPerWeight: 0.8,
     /** Voluntad requerida por encantamiento. */
     willPerEnchantment: 3,
     unmetPenalty: 0.8,
@@ -198,6 +198,8 @@ export const BALANCE = {
   },
 
   combat: {
+    /** Parte del daño de la flecha que se suma al del arco. */
+    arrowAtkFactor: 0.5,
     heightDamagePerLevel: 0.1,
     heightDamageMin: -0.2,
     heightDamageMax: 0.3,

@@ -1,12 +1,18 @@
 import { goTo } from '../core/city';
+import { currentUnit } from '../core/combat/engine';
+import { runCommand, type Command } from '../core/commands';
 import { GameError, type Content, type Ctx } from '../core/content';
 import { chooseOption, continueNode, startTalk, type TalkResult } from '../core/dialogue';
 import { createRng } from '../core/rng';
 import { createInitialState } from '../core/state';
 import type { GameEvent, GameState, ItemInstance } from '../core/types';
+import { combatAiStep } from '../core/world/expedition';
+import type { CombatFx } from '../core/combat/types';
 import { makeSaveFile, type SaveRepository } from '../persistence/saveFile';
 
-export type PanelId = 'forge' | 'shop' | 'market' | 'inventory' | 'book' | 'settings' | 'debug';
+export type PanelId =
+  | 'forge' | 'shop' | 'market' | 'inventory' | 'book' | 'settings' | 'debug'
+  | 'party' | 'mercenaries' | 'repair' | 'expedition' | 'bag';
 
 export interface DialogueView {
   npcId: string;
@@ -23,7 +29,7 @@ export interface Toast {
 
 export interface UiState {
   screen: 'loading' | 'title' | 'game';
-  view: 'map' | 'location';
+  view: 'map' | 'location' | 'world';
   panel: PanelId | null;
   dialogue: DialogueView | null;
   itemCard: { item: ItemInstance; newSynergies: string[] } | null;
@@ -32,6 +38,12 @@ export interface UiState {
   hasSave: boolean;
   /** Diseño guardado que se carga al abrir la forja. */
   forgeDraft: { blueprintId: string; materials: Record<string, string> } | null;
+  /** Región elegida en el mapa del mundo (panel de expedición). */
+  regionId: string | null;
+  /** Modo de la UI de combate: mover, elegir objetivo de una acción, o nada. */
+  combat: { mode: 'move' | 'skill' | null; skillId?: string; target?: { x: number; y: number } };
+  /** Hay animaciones o turnos enemigos en curso: la UI de combate espera. */
+  busy: boolean;
 }
 
 export interface Snapshot {
@@ -39,8 +51,19 @@ export interface Snapshot {
   ui: UiState;
 }
 
-/** Firma de todos los comandos del juego: mutan un borrador del estado y devuelven eventos. */
-export type Command<A extends unknown[]> = (s: GameState, ctx: Ctx, ...args: A) => GameEvent[];
+export type { Command };
+
+/** Cuánto tardan en animarse los efectos de una acción de combate. */
+function fxDuration(fx: CombatFx[]): number {
+  let ms = 150;
+  for (const f of fx) {
+    if (f.kind === 'move') ms += f.path.length * 170;
+    else if (f.kind === 'hit' || f.kind === 'miss') ms += 450;
+    else if (f.kind === 'spawn') ms += 400;
+    else ms += 220;
+  }
+  return Math.min(ms, 2600);
+}
 
 const SAVE_SLOT = 'auto';
 const SAVE_DELAY_MS = 400;
@@ -59,7 +82,9 @@ export class GameStore {
   constructor(readonly content: Content, private repo: SaveRepository, debug = false) {
     this.snapshot = {
       state: null,
-      ui: { screen: 'loading', view: 'location', panel: null, dialogue: null, itemCard: null, toasts: [], debug, hasSave: false, forgeDraft: null },
+      ui: { screen: 'loading', view: 'location', panel: null, dialogue: null, itemCard: null, toasts: [], debug, hasSave: false, forgeDraft: null,
+        regionId: null, combat: { mode: null }, busy: false,
+      },
     };
   }
 
@@ -96,7 +121,7 @@ export class GameStore {
     const rng = createRng(draft.rngState);
     let events: GameEvent[];
     try {
-      events = cmd(draft, { c: this.content, rng }, ...args);
+      events = runCommand(draft, { c: this.content, rng } as Ctx, cmd, ...args);
     } catch (err) {
       if (err instanceof GameError) {
         this.toast(err.message, 'bad');
@@ -122,8 +147,39 @@ export class GameStore {
           this.setUi({ itemCard: { item: e.item, newSynergies: e.newSynergies } });
         }
       }
+      if (e.type === 'expeditionStarted' || e.type === 'expeditionEnded') this.setUi({ view: 'location', panel: null, dialogue: null });
+      if (e.type === 'combatStarted') {
+        this.setUi({ combat: { mode: null }, panel: null });
+        this.driveCombat(900);
+      }
+      if (e.type === 'combatFx') {
+        this.setUi({ combat: { mode: null } });
+        this.driveCombat(fxDuration(e.fx));
+      }
       this.eventListeners.forEach((fn) => fn(e));
     }
+  }
+
+  private combatTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Espera a que terminen las animaciones y, si le toca a un enemigo, juega su turno. */
+  private driveCombat(delay: number) {
+    if (this.combatTimer) clearTimeout(this.combatTimer);
+    this.setUi({ busy: true });
+    this.combatTimer = setTimeout(() => {
+      this.combatTimer = null;
+      const cs = this.snapshot.state?.expedition?.combat;
+      const u = cs && !cs.outcome ? currentUnit(cs) : undefined;
+      if (u && u.side === 'enemy') {
+        if (!this.run(combatAiStep)) this.setUi({ busy: false });
+      } else {
+        this.setUi({ busy: false });
+      }
+    }, delay);
+  }
+
+  showWorld() {
+    this.setUi({ view: 'world', panel: null, dialogue: null, regionId: null });
   }
 
   toast(text: string, tone: Toast['tone'] = 'info') {
@@ -212,8 +268,11 @@ export class GameStore {
 
   private startWith(state: GameState) {
     this.publish({ state });
-    this.setUi({ screen: 'game', view: 'location', panel: null, dialogue: null, itemCard: null });
+    this.setUi({ screen: 'game', view: 'location', panel: null, dialogue: null, itemCard: null, combat: { mode: null }, busy: false });
+    // Comando vacío: prepara el mercado del día si hace falta.
+    this.run(() => []);
     this.eventListeners.forEach((fn) => fn({ type: 'gameLoaded' }));
+    if (state.expedition?.combat && !state.expedition.combat.outcome) this.driveCombat(600);
   }
 
   async deleteSaveAndRestart() {

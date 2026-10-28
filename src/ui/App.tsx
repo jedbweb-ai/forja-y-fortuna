@@ -1,20 +1,27 @@
 import { BookPanel } from './panels/BookPanel';
 import { DebugPanel } from './panels/DebugPanel';
+import { ExpeditionPanel } from './panels/ExpeditionPanel';
 import { ForgePanel } from './panels/forge/ForgePanel';
 import { InventoryPanel } from './panels/InventoryPanel';
 import { MarketPanel } from './panels/MarketPanel';
+import { MercenaryPanel } from './panels/MercenaryPanel';
+import { PartyPanel } from './panels/PartyPanel';
+import { RepairPanel } from './panels/RepairPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 import { ShopPanel } from './panels/ShopPanel';
+import { CombatHud } from './components/CombatHud';
 import { DialogueBox } from './components/DialogueBox';
 import { Hud } from './components/Hud';
 import { ItemCard } from './components/ItemCard';
 import { LocationBar } from './components/LocationBar';
+import { BagPanel, RegionHud } from './components/RegionHud';
 import { TitleScreen } from './components/TitleScreen';
 import { Toasts } from './components/Toasts';
 import { store, useSnapshot } from './hooks';
 
 export function App() {
   const { ui, state } = useSnapshot();
+  const exp = state?.expedition;
   return (
     <>
       <div className="rotate-overlay">
@@ -25,14 +32,21 @@ export function App() {
       {ui.screen === 'title' && <TitleScreen hasSave={ui.hasSave} />}
       {ui.screen === 'game' && state && (
         <>
-          <Hud />
-          {!ui.panel && !ui.dialogue && <LocationBar />}
+          {!exp?.combat && <Hud />}
+          {!exp && !ui.panel && !ui.dialogue && <LocationBar />}
+          {exp && !exp.combat && !ui.panel && <RegionHud />}
+          {exp?.combat && <CombatHud />}
           {ui.panel === 'forge' && <ForgePanel />}
           {ui.panel === 'shop' && <ShopPanel />}
           {ui.panel === 'market' && <MarketPanel />}
           {ui.panel === 'inventory' && <InventoryPanel />}
           {ui.panel === 'book' && <BookPanel />}
           {ui.panel === 'settings' && <SettingsPanel />}
+          {ui.panel === 'party' && <PartyPanel />}
+          {ui.panel === 'mercenaries' && <MercenaryPanel />}
+          {ui.panel === 'repair' && <RepairPanel />}
+          {ui.panel === 'expedition' && <ExpeditionPanel />}
+          {ui.panel === 'bag' && <BagPanel />}
           {ui.panel === 'debug' && ui.debug && <DebugPanel />}
           {ui.dialogue && <DialogueBox />}
           {ui.itemCard && (

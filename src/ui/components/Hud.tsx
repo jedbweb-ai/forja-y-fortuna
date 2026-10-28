@@ -32,9 +32,11 @@ export function Hud() {
         <span className="chip gold" title="Oro">🪙 {Math.floor(state.gold)}</span>
         <span className="chip" title="Reputación en la ciudad">⭐ {state.reputation[currentCity()] ?? 0}</span>
         <span className="chip hide-sm" title="Nivel de Herrería">🔨 Nv {skillLevel(state.skills.herreria)}</span>
+        {state.expedition && <span className="chip warn" title="De expedición">🧭 Expedición</span>}
         {state.outing && <span className="chip warn" title={`Recorriendo la ciudad (${loc?.name}). La franja se gasta al volver al taller.`}>🚶 En la ciudad</span>}
       </div>
       <nav className="hud-actions">
+        <button className="btn-icon" onClick={() => store.openPanel('party')} aria-label="Grupo" title="Grupo y equipo">🛡️</button>
         <button className="btn-icon" onClick={() => store.openPanel('inventory')} aria-label="Inventario" title="Inventario">🎒</button>
         <button className="btn-icon" onClick={() => store.openPanel('book')} aria-label="Libro del herrero" title="Libro del herrero">📖</button>
         <button className="btn-icon" onClick={() => store.openPanel('settings')} aria-label="Ajustes" title="Ajustes">⚙️</button>

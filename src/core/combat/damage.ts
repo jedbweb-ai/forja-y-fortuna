@@ -21,7 +21,7 @@ export function ammoBonus(c: Content, s: GameState, u: CombatUnit) {
   const lot = u.ammoUid ? s.items.find((i) => i.uid === u.ammoUid && i.quantity > 0) : undefined;
   const combat: Record<string, number> = {};
   if (lot) itemCombatProps(c, lot, combat);
-  return { atk: lot ? lot.stats.atk : 0, affinities: lot?.affinities ?? {}, combat, available: !!lot };
+  return { atk: lot ? lot.stats.atk * CB.arrowAtkFactor : 0, affinities: lot?.affinities ?? {}, combat, available: !!lot };
 }
 
 /** Elemento dominante del ataque: el de la acción, o la afinidad más alta del arma. */

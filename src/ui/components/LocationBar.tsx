@@ -1,4 +1,5 @@
 import { cityLocation, npcsAt, restSlot, sleepUntilMorning } from '../../core/city';
+import { damagedItems } from '../../core/forge/repair';
 import { slotName } from '../../core/time';
 import { store, useSnapshot } from '../hooks';
 
@@ -8,12 +9,27 @@ export function LocationBar() {
   if (!state) return null;
   const c = store.content;
 
+  if (ui.view === 'world') {
+    return (
+      <div className="locbar">
+        <span className="locbar-title">Mapa del mundo</span>
+        <div className="locbar-actions">
+          <span className="small muted">Tocá una región para preparar la expedición.</span>
+          <button className="btn" onClick={() => store.setUi({ view: 'location' })}>🏘️ Volver a Valdebrasa</button>
+        </div>
+      </div>
+    );
+  }
+
   if (ui.view === 'map') {
     const here = cityLocation(c, state.location);
     return (
       <div className="locbar">
         <span className="locbar-title">Tocá un edificio para ir.</span>
-        <button className="btn" onClick={() => store.setUi({ view: 'location' })}>Volver a {here?.name}</button>
+        <div className="locbar-actions">
+          <button className="btn" onClick={() => store.showWorld()}>🧭 Mapa del mundo</button>
+          <button className="btn" onClick={() => store.setUi({ view: 'location' })}>Volver a {here?.name}</button>
+        </div>
       </div>
     );
   }
@@ -21,6 +37,7 @@ export function LocationBar() {
   const loc = cityLocation(c, state.location)!;
   const npcs = npcsAt(c, state, state.location);
   const night = slotName(state) === 'noche';
+  const damaged = damagedItems(state).length;
 
   return (
     <div className="locbar">
@@ -30,12 +47,15 @@ export function LocationBar() {
           <>
             <button className="btn primary" onClick={() => store.openPanel('forge')}>{state.forge ? '🔨 Seguir forjando' : '🔨 Forjar'}</button>
             <button className="btn" onClick={() => store.openPanel('shop')}>{state.shop ? '🛎️ Tienda abierta' : '🛎️ Atender tienda'}</button>
+            {damaged > 0 && <button className="btn" onClick={() => store.openPanel('repair')}>🛠️ Reparar ({damaged})</button>}
+            <button className="btn" onClick={() => store.showWorld()}>🧭 Expedición</button>
             <button className="btn" onClick={() => store.run(night ? sleepUntilMorning : restSlot)}>{night ? '🛏️ Dormir' : '⏳ Descansar'}</button>
           </>
         )}
         {loc.id === 'mercado' && <button className="btn primary" onClick={() => store.openPanel('market')}>🧺 Puesto de materiales</button>}
+        {loc.id === 'taberna' && <button className="btn primary" onClick={() => store.openPanel('mercenaries')}>🍺 Mercenarios</button>}
         {npcs.map((id) => (
-          <button key={id} className="btn" onClick={() => store.talkTo(id)}>💬 {c.npcs[id].name}</button>
+          <button key={id} className="btn" onClick={() => store.talkTo(id)}>💬 {c.npcs[id].name.split(' ')[0]}</button>
         ))}
         <button className="btn" onClick={() => store.showMap()}>🗺️ Ciudad</button>
       </div>

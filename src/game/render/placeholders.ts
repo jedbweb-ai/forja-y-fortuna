@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
 import type { Content } from '../../core/content';
+import { generateWorldPlaceholders } from './worldPlaceholders';
 
 // Gráficos placeholder generados por código. Cada textura se registra con una clave
 // estable ("char.herrero", "prop.anvil"...). Para pasar a sprites reales alcanza con
 // cargar imágenes con las mismas claves en BootScene: la lógica y las escenas no cambian.
 
-type G = Phaser.GameObjects.Graphics;
+export type G = Phaser.GameObjects.Graphics;
 
 export interface CharLook {
   skin: number;
@@ -23,21 +24,21 @@ const SKINS = [0xf6d2b0, 0xe8b48a, 0xc98f5e, 0x9a6440, 0xf3c6a5];
 const HAIRS = [0x2b1d14, 0x6b3a1e, 0xd8a03a, 0xb03a2e, 0x3d4a8a, 0xe8e2d0, 0x1e1e1e, 0x8a4fb0];
 const CLOTHES = [0x3d6e8f, 0x8f3d4e, 0x4f8a3d, 0xc28a2e, 0x6d4f9a, 0x2e7a72, 0xa6573a, 0x5a5f6b];
 
-function poly(g: G, pts: number[], color: number, alpha = 1) {
+export function poly(g: G, pts: number[], color: number, alpha = 1) {
   const v: Phaser.Math.Vector2[] = [];
   for (let i = 0; i < pts.length; i += 2) v.push(new Phaser.Math.Vector2(pts[i], pts[i + 1]));
   g.fillStyle(color, alpha);
   g.fillPoints(v, true);
 }
 
-function shade(color: number, f: number): number {
+export function shade(color: number, f: number): number {
   const r = Math.min(255, Math.round(((color >> 16) & 255) * f));
   const gr = Math.min(255, Math.round(((color >> 8) & 255) * f));
   const b = Math.min(255, Math.round((color & 255) * f));
   return (r << 16) | (gr << 8) | b;
 }
 
-function px(g: G, x: number, y: number, w: number, h: number, color: number) {
+export function px(g: G, x: number, y: number, w: number, h: number, color: number) {
   g.fillStyle(color, 1);
   g.fillRect(x, y, w, h);
 }
@@ -92,9 +93,6 @@ function charTextures(scene: Phaser.Scene, key: string, look: CharLook) {
   scene.anims.create({ key: `${key}.walk`, frames: [{ key }, { key: `${key}_b` }], frameRate: 6, repeat: -1 });
 }
 
-function hexToNum(hex: string) {
-  return parseInt(hex.replace('#', ''), 16);
-}
 
 function tile(scene: Phaser.Scene, key: string, base: number, detail: (g: G, v: number) => void) {
   for (let v = 0; v < 2; v++) {
@@ -108,14 +106,14 @@ function tile(scene: Phaser.Scene, key: string, base: number, detail: (g: G, v: 
 }
 
 /** Bloque isométrico: base centrada en (cx, by), ancho w, alto de cara `hgt`. */
-function block(g: G, cx: number, by: number, w: number, hgt: number, color: number) {
+export function block(g: G, cx: number, by: number, w: number, hgt: number, color: number) {
   const h = w / 2;
   poly(g, [cx - w / 2, by - hgt, cx, by - hgt + h / 2, cx, by + h / 2, cx - w / 2, by], shade(color, 0.8));
   poly(g, [cx + w / 2, by - hgt, cx, by - hgt + h / 2, cx, by + h / 2, cx + w / 2, by], shade(color, 0.62));
   poly(g, [cx - w / 2, by - hgt, cx, by - hgt - h / 2, cx + w / 2, by - hgt, cx, by - hgt + h / 2], color);
 }
 
-function prop(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: G) => void) {
+export function prop(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: G) => void) {
   const g = scene.make.graphics({}, false);
   draw(g);
   g.generateTexture(key, w, h);
@@ -248,9 +246,10 @@ export function generatePlaceholders(scene: Phaser.Scene, content: Content) {
     g.fillStyle(0xffffff, 1); g.fillRoundedRect(0, 0, 20, 12, 4); poly(g, [6, 11, 10, 11, 6, 16], 0xffffff);
     px(g, 5, 5, 2, 2, 0x444444); px(g, 9, 5, 2, 2, 0x444444); px(g, 13, 5, 2, 2, 0x444444);
   });
+  generateWorldPlaceholders(scene);
+
   prop(scene, 'fx.alert', 12, 18, (g) => {
     g.fillStyle(0xffd04d, 1); g.fillRoundedRect(0, 0, 12, 14, 3); px(g, 5, 2, 2, 7, 0x1a1220); px(g, 5, 10, 2, 2, 0x1a1220);
   });
 }
 
-export { hexToNum };

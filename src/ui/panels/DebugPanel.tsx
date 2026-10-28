@@ -2,13 +2,13 @@ import { useState } from 'react';
 import type { SkillId } from '../../core/types';
 import { relationLevel, skillLevel } from '../../core/state';
 import {
-  dbgAdvance, dbgGold, dbgLevelUp, dbgMaterials, dbgRelation, dbgReputation, dbgResetTalks, dbgRevealSynergies,
+  dbgAdvance, dbgCombat, dbgGold, dbgHealParty, dbgHire, dbgKit, dbgLevelUp, dbgMaterials, dbgRelation, dbgReputation, dbgResetTalks, dbgRevealSynergies,
 } from '../../debug/commands';
 import { setDebugPersisted } from '../../bridge/store';
 import { Panel } from '../components/Panel';
 import { store, useGame } from '../hooks';
 
-const SKILLS: SkillId[] = ['herreria', 'armeria', 'flecheria', 'comercio', 'runas'];
+const SKILLS: SkillId[] = ['herreria', 'armeria', 'flecheria', 'comercio', 'runas', 'combate', 'mineria', 'tala', 'desuello'];
 
 export function DebugPanel() {
   const s = useGame();
@@ -68,8 +68,19 @@ export function DebugPanel() {
           <div className="row">
             <button className="btn" onClick={() => store.run(dbgRevealSynergies)}>Revelar sinergias</button>
           </div>
-          <h4>Pendiente para fases siguientes</h4>
-          <p className="muted small">Disparar eventos de ciudad y generar combates de prueba se suman cuando existan esos sistemas (Fases 2 y 4).</p>
+          <h4>Combates de prueba</h4>
+          <div className="row">
+            <button className="btn" onClick={() => { if (store.run(dbgCombat, 'gelines')) store.closePanel(); }}>Gelines</button>
+            <button className="btn" onClick={() => { if (store.run(dbgCombat, 'goblins')) store.closePanel(); }}>Goblins</button>
+            <button className="btn" onClick={() => { if (store.run(dbgCombat, 'bestias')) store.closePanel(); }}>Bestias</button>
+            <button className="btn" onClick={() => { if (store.run(dbgCombat, 'jefe')) store.closePanel(); }}>Jefe</button>
+          </div>
+          <div className="row">
+            <button className="btn" onClick={() => store.run(dbgKit)}>Kit de prueba</button>
+            <button className="btn" onClick={() => store.run(dbgHealParty)}>Curar grupo / energía</button>
+            {Object.keys(c.mercenaries).map((id) => <button key={id} className="btn" onClick={() => store.run(dbgHire, id)}>+ {c.mercenaries[id].name.split(' ')[0]}</button>)}
+          </div>
+          <p className="muted small">Los eventos de ciudad llegan en la Fase 4.</p>
           <button className="btn danger" onClick={() => { setDebugPersisted(false); store.closePanel(); }}>Desactivar debug</button>
         </div>
       </section>

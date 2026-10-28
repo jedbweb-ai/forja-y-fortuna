@@ -1,3 +1,5 @@
+import { planTurn } from '../core/combat/ai';
+import * as expeditionCommands from '../core/world/expedition';
 import { CONTENT } from '../data';
 import { validateContent } from '../data/validate';
 import { IndexedDbRepository } from '../persistence/indexedDbRepository';
@@ -16,6 +18,14 @@ const errors = validateContent(CONTENT);
 if (errors.length) console.error('Errores en el contenido del juego:\n' + errors.join('\n'));
 
 export const store = new GameStore(CONTENT, new IndexedDbRepository(), debugEnabled());
+
+// En modo debug, el store y los comandos de expedición quedan a mano en la consola (window.fyf / fyfCmd) para probar.
+if (debugEnabled()) {
+  const w = window as unknown as { fyf: GameStore; fyfCmd: typeof expeditionCommands; fyfPlan: typeof planTurn };
+  w.fyf = store;
+  w.fyfCmd = expeditionCommands;
+  w.fyfPlan = planTurn;
+}
 
 export function setDebugPersisted(on: boolean) {
   try {

@@ -180,6 +180,22 @@ function engage(c: Content, s: GameState, rng: Rng, group: MonsterGroup): GameEv
   return [...events, { type: 'toast', text: group.boss ? `¡${c.monsters[group.monsters[0]].name} te sale al cruce!` : `¡Combate! ${names}`, tone: 'bad' }, { type: 'combatStarted' }];
 }
 
+/** Modo debug: pelea ya contra estos monstruos (si no hay expedición, arma una sin gastar tiempo). */
+export function debugEngage(s: GameState, { c, rng }: Ctx, monsters: string[], boss = false): GameEvent[] {
+  if (s.expedition?.combat) throw new GameError('Ya hay un combate.');
+  if (!s.expedition) {
+    const { day, slot } = s;
+    startExpedition(s, { c, rng }, 'linde_brezal');
+    s.day = day;
+    s.slot = slot;
+  }
+  const e = expedition(s);
+  const g = makeGroup(c, e, { x: e.pos.x + 1, y: e.pos.y }, boss ? 2 : 0, monsters, { boss });
+  e.groups.push(g);
+  e.energy = Math.max(e.energy, EX.combatEnergy);
+  return engage(c, s, rng, g);
+}
+
 /** Grupo que entra en contacto con el jugador en esta posición (adyacente), si hay. */
 function contact(e: ExpeditionState, p: Pt): MonsterGroup | undefined {
   return e.groups.find((g) => !(g.calm && g.calm > 0) && (adjacent(g, p) || (g.x === p.x && g.y === p.y)));
