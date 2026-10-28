@@ -10,8 +10,8 @@ export const BALANCE = {
     materials: {
       hierro: 7, cobre: 4, pino: 5, fresno: 2, cuero_curtido: 3, cuerda_lino: 2, plumas_ganso: 3,
     } as Record<string, number>,
-    blueprints: ['daga', 'espada_larga', 'maza', 'arco_corto', 'flechas', 'escudo_mediano', 'peto', 'pico'],
-    enchantments: ['runa_brasa', 'runa_vigor', 'runa_colmillo'],
+    blueprints: ['daga', 'espada_larga', 'maza', 'arco_corto', 'flechas', 'escudo_mediano', 'peto', 'pico', 'hacha_tala', 'cuchillo_desuello'],
+    enchantments: ['runa_brasa', 'runa_vigor', 'runa_colmillo', 'runa_totem', 'runa_nucleo'],
   },
 
   time: {
@@ -93,10 +93,6 @@ export const BALANCE = {
     openingRatio: [0.6, 0.8] as [number, number],
   },
 
-  market: {
-    sellRatio: 0.45,
-  },
-
   skills: {
     /** Nivel = 1 + floor(sqrt(xp / xpFactor)). */
     xpFactor: 30,
@@ -113,6 +109,132 @@ export const BALANCE = {
   reputation: {
     min: -50,
     max: 200,
+  },
+
+  // ───────────── Fase 2 ─────────────
+
+  herrero: {
+    name: 'Vos',
+    attributes: { fuerza: 6, agilidad: 5, resistencia: 6, voluntad: 4 },
+    growth: { fuerza: 0.8, agilidad: 0.5, resistencia: 0.8, voluntad: 0.4 },
+    look: { body: 0x8a5a3a, hair: 0x3a2418, accent: 0xc0392b },
+  },
+
+  character: {
+    baseHp: 20,
+    hpPerResistencia: 4,
+    hpPerLevel: 3,
+    /** Experiencia para pasar del nivel n al n+1: xpPerLevel * n. */
+    xpPerLevel: 50,
+    maxLevel: 30,
+    baseMove: 3,
+    baseJump: 1,
+    baseSpd: 4,
+    baseCrit: 0.05,
+    /** Daño sin arma: fuerza × este valor. */
+    unarmedPerFuerza: 0.7,
+    meleePerFuerza: 0.8,
+    rangedPerAgilidad: 0.8,
+    armorDefFactor: 0.5,
+    shieldDefFactor: 0.3,
+    defPerResistencia: 0.5,
+    spdPerAgilidad: 0.6,
+    weaponSpdFactor: 0.4,
+    weightSpdPenalty: 0.15,
+    evasionPerAgilidad: 0.01,
+    critPerAgilidad: 0.005,
+    /** Peso de armadura desde el cual se pierde una casilla de movimiento. */
+    heavyArmorWeight: 8,
+    /** Fuerza requerida por punto de peso del objeto. */
+    strengthPerWeight: 0.9,
+    /** Voluntad requerida por encantamiento. */
+    willPerEnchantment: 3,
+    unmetPenalty: 0.8,
+    brokenPenalty: 0.5,
+  },
+
+  mercenaries: {
+    /** Relación que se pierde por cada día sin cobrar. */
+    unpaidRelation: -8,
+    paidRelation: 1,
+    /** Días sin cobrar hasta que se va. */
+    unpaidDaysToLeave: 2,
+    leaveRelation: -50,
+    porteadorCapacity: 15,
+    exploradorEnergy: 10,
+  },
+
+  injury: {
+    days: 2,
+  },
+
+  expedition: {
+    baseEnergy: 20,
+    /** Cada tantos puntos de energía gastada pasa una franja. */
+    energyPerSlot: 10,
+    /** Casillas que se recorren por punto de energía. */
+    tilesPerEnergy: 2,
+    gatherEnergy: 2,
+    combatEnergy: 3,
+    baseCapacity: 20,
+    capacityPerFuerza: 1,
+    /** Fracción de lugares que tienen recurso en cada salida. */
+    nodeFill: 0.65,
+    nodeUses: [1, 3] as [number, number],
+    nightBudgetMult: 1.3,
+    nightExtraGroups: 2,
+    challengeBudgetMult: 1.7,
+    challengeChance: 0.5,
+    aggroRange: 3,
+    defeatLoss: 0.5,
+    fleeLoss: 0.25,
+  },
+
+  tools: {
+    /** Potencia mínima de la herramienta para cada nivel de recurso (1, 2, 3). */
+    tierPower: [0, 14, 22],
+    wearPerUse: 1,
+    gatherBonusPerLevel: 0.1,
+  },
+
+  combat: {
+    heightDamagePerLevel: 0.1,
+    heightDamageMin: -0.2,
+    heightDamageMax: 0.3,
+    sideBonus: 0.15,
+    backBonus: 0.35,
+    defFactor: 0.35,
+    elementPerPoint: 1.5,
+    critMult: 1.5,
+    variance: [0.9, 1.1] as [number, number],
+    baseHit: 0.92,
+    sideHit: 0.04,
+    backHit: 0.08,
+    tallGrassEvasion: 0.15,
+    minHit: 0.25,
+    maxHit: 0.99,
+    coverMult: 0.6,
+    /** Alcance extra a distancia por cada 2 niveles de altura de ventaja. */
+    rangePerHeight: 0.5,
+    fallDamagePerLevel: 6,
+    collisionDamage: 5,
+    waterMoveCost: 2,
+    traitStatusChance: 0.35,
+    dotPower: { sangrado: 3, quemadura: 4, veneno: 0.05 } as Record<string, number>,
+    xpPerThreat: 6,
+    wearPerCombat: 2,
+    fleeBase: 0.45,
+    fleePerSpd: 0.04,
+    fleeBoss: 0.2,
+  },
+
+  market: {
+    sellRatio: 0.45,
+    /** Las partes de monstruo salen más caras para incentivar salir a cazarlas. */
+    monsterPriceMult: 1.6,
+    monsterStock: [0, 6] as [number, number],
+    priceJitter: [0.85, 1.2] as [number, number],
+    eventsPerDay: [1, 2] as [number, number],
   },
 } as const;
 

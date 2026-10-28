@@ -1,7 +1,9 @@
+import { createHerrero } from '../core/party/progression';
+import { EMPTY_SKILLS } from '../core/state';
 import type { GameState } from '../core/types';
 
 /** Versión actual del formato de guardado. Subirla junto con una migración. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 /**
  * Formato del guardado. Es JSON plano para que el mismo archivo pueda subirse
@@ -21,7 +23,25 @@ export type Migration = (save: { version: number; state: Record<string, unknown>
 
 /** Migraciones registradas, indexadas por versión de origen. */
 export const MIGRATIONS: Record<number, Migration> = {
-  // 1: (save) => ({ ...save, version: 2, state: { ...save.state, nuevoCampo: valor } }),
+  // Fase 2: personajes, grupo, expediciones, mercado diario y herramientas nuevas.
+  1: (save) => {
+    const st = save.state as Record<string, unknown> & { skills?: Record<string, number>; knownBlueprints?: string[]; knownEnchantments?: string[] };
+    const add = (list: string[] | undefined, ids: string[]) => [...new Set([...(list ?? []), ...ids])];
+    return {
+      ...save,
+      version: 2,
+      state: {
+        ...st,
+        skills: { ...EMPTY_SKILLS, ...(st.skills ?? {}) },
+        characters: { herrero: createHerrero() },
+        party: ['herrero'],
+        expedition: null,
+        market: null,
+        knownBlueprints: add(st.knownBlueprints, ['hacha_tala', 'cuchillo_desuello']),
+        knownEnchantments: add(st.knownEnchantments, ['runa_totem', 'runa_nucleo']),
+      },
+    };
+  },
 };
 
 export function migrateSave(raw: unknown, migrations: Record<number, Migration> = MIGRATIONS, target = SAVE_VERSION): SaveFile {

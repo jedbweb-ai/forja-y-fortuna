@@ -49,6 +49,8 @@ export const CITIES: City[] = [
           'cobre', 'bronce', 'hierro', 'acero', 'plata', 'brasalita', 'pino', 'fresno', 'roble', 'sauceluna',
           'cuero_curtido', 'cuero_endurecido', 'piel_jabali', 'cuerda_lino', 'tripa_trenzada', 'plumas_ganso',
           'cuarzo_igneo', 'cuarzo_glacial', 'gel_slime', 'colmillo_lobo', 'ascua_salamandrilla', 'piedra_runica',
+          'cuero_lobo', 'gel_acido', 'gel_escarcha', 'chatarra_goblin', 'colmillo_goblin', 'totem_tallado', 'colmillo_jabali',
+          'seda_arana', 'glandula_veneno', 'garra_oso',
         ],
         scene: {
           cols: 14, rows: 12, floor: 'tile.stone', roadRow: 11,
@@ -100,7 +102,10 @@ export const CITIES: City[] = [
           spawn: { x: 5, y: 8 },
           doors: [{ x: 6, y: 9 }],
           hotspots: [],
-          npcSpots: { rulfa: { x: 3, y: 2 }, ruperto: { x: 9, y: 4 }, ilse: { x: 1, y: 6 } },
+          npcSpots: {
+            rulfa: { x: 3, y: 2 }, ruperto: { x: 9, y: 4 }, ilse: { x: 1, y: 6 },
+            brunilda: { x: 6, y: 3 }, ciro: { x: 10, y: 6 }, nayra: { x: 2, y: 8 }, gualterio: { x: 9, y: 8 },
+          },
           ambient: { 'mañana': 2, tarde: 5, noche: 9 },
           carts: false,
           animals: ['gato'],

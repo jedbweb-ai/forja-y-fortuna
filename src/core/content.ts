@@ -1,7 +1,10 @@
+import type { ArenaDef, CombatSkill, MonsterDef } from './combat/types';
+import type { MercenaryDef, WeaponKind } from './party/types';
+import type { Rng } from './rng';
 import type {
   Blueprint, City, CustomerType, Dialogue, Enchantment, FinishOption, Material, Npc, QuenchMedium, Synergy, Trait,
 } from './types';
-import type { Rng } from './rng';
+import type { MarketEventDef, RegionDef } from './world/types';
 
 /** Todo el contenido del juego, indexado por id. El core lo recibe por parámetro. */
 export interface Content {
@@ -17,6 +20,14 @@ export interface Content {
   npcs: Record<string, Npc>;
   dialogues: Record<string, Dialogue>;
   cities: Record<string, City>;
+  mercenaries: Record<string, MercenaryDef>;
+  skills: Record<string, CombatSkill>;
+  /** Acciones que da cada tipo de arma, y el escudo. */
+  weaponSkills: Record<WeaponKind | 'escudo', string[]>;
+  monsters: Record<string, MonsterDef>;
+  arenas: Record<string, ArenaDef>;
+  regions: Record<string, RegionDef>;
+  marketEvents: Record<string, MarketEventDef>;
 }
 
 export function indexById<T extends { id: string }>(list: T[]): Record<string, T> {

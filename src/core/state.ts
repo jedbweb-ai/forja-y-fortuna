@@ -1,6 +1,11 @@
 import { BALANCE } from '../config/balance';
 import type { Content } from './content';
+import { createHerrero } from './party/progression';
 import { RELATION_LEVELS, type GameState, type RelationLevel, type SkillId } from './types';
+
+export const EMPTY_SKILLS: Record<SkillId, number> = {
+  herreria: 0, armeria: 0, flecheria: 0, comercio: 0, runas: 0, combate: 0, mineria: 0, tala: 0, desuello: 0,
+};
 
 export function createInitialState(c: Content, seed = Date.now() >>> 0): GameState {
   const npcs: GameState['npcs'] = {};
@@ -19,11 +24,15 @@ export function createInitialState(c: Content, seed = Date.now() >>> 0): GameSta
     designs: [],
     knownBlueprints: [...BALANCE.start.blueprints],
     knownEnchantments: [...BALANCE.start.enchantments],
-    skills: { herreria: 0, armeria: 0, flecheria: 0, comercio: 0, runas: 0 },
+    skills: { ...EMPTY_SKILLS },
     npcs,
     flags: {},
     forge: null,
     shop: null,
+    characters: { herrero: createHerrero() },
+    party: ['herrero'],
+    expedition: null,
+    market: null,
     stats: { itemsForged: 0, itemsRuined: 0, goldEarned: 0, itemsSold: 0 },
     settings: { skipItemCard: false, fullscreenOnStart: true },
     nextUid: 1,

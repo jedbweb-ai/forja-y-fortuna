@@ -53,12 +53,13 @@ function shop(s: GameState): ShopSession {
 }
 
 export function exhibitedItems(s: GameState): ItemInstance[] {
-  return s.items.filter((i) => i.exhibited && i.quantity > 0);
+  return s.items.filter((i) => i.exhibited && i.quantity > 0 && !i.equippedBy);
 }
 
 export function toggleExhibit(s: GameState, _ctx: Ctx, uid: string): GameEvent[] {
   const item = s.items.find((i) => i.uid === uid);
   if (!item) throw new GameError('Ese objeto no existe.');
+  if (item.equippedBy) throw new GameError('Ese objeto está equipado.');
   if (!item.exhibited && exhibitedItems(s).length >= S.displaySlots) throw new GameError(`Solo tenés ${S.displaySlots} lugares de exhibición.`);
   item.exhibited = !item.exhibited;
   return [];

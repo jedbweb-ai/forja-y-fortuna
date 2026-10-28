@@ -80,6 +80,39 @@ export function validateContent(c: Content): string[] {
     }
   }
 
+  // ── Fase 2 ──
+  const skill = (id: string, where: string) => { if (!c.skills[id]) errors.push(`${where}: acción inexistente "${id}"`); };
+  for (const [kind, ids] of Object.entries(c.weaponSkills)) ids.forEach((id) => skill(id, `armas.${kind}`));
+  for (const m of Object.values(c.monsters)) {
+    m.skills.forEach((id) => skill(id, `monstruo ${m.id}`));
+    m.loot.forEach((l) => mat(l.material, `monstruo ${m.id}`));
+    m.halfHp?.summon.forEach((id) => { if (!c.monsters[id]) errors.push(`monstruo ${m.id}: invoca "${id}" inexistente`); });
+  }
+  for (const a of Object.values(c.arenas)) {
+    const cols = a.terrain[0]?.length ?? 0;
+    if (a.terrain.some((r) => r.length !== cols) || a.heights.length !== a.terrain.length || a.heights.some((r) => r.length !== cols)) {
+      errors.push(`arena ${a.id}: filas de distinto largo`);
+    }
+    for (const p of [...a.partySpawns, ...a.enemySpawns]) {
+      if (a.terrain[p.y]?.[p.x] === undefined || a.terrain[p.y][p.x] === '#') errors.push(`arena ${a.id}: aparición en (${p.x},${p.y}) bloqueada`);
+    }
+    if (a.enemySpawns.length < 7) errors.push(`arena ${a.id}: necesita 7 lugares de enemigos`);
+  }
+  for (const r of Object.values(c.regions).filter((x) => x.available)) {
+    const cols = r.terrain[0]?.length ?? 0;
+    for (const [name, grid] of [['terrain', r.terrain], ['heights', r.heights], ['zones', r.zones]] as const) {
+      if (grid.length !== r.terrain.length || grid.some((row) => row.length !== cols)) errors.push(`región ${r.id}: ${name} con medidas distintas`);
+    }
+    if (!r.terrain.some((row) => row.includes('E'))) errors.push(`región ${r.id}: sin entrada (E)`);
+    for (const z of r.zoneDefs) {
+      [...z.vetas, ...z.arboles].forEach((o) => mat(o.material, `región ${r.id}.${z.id}`));
+      for (const fam of Object.keys(z.families)) if (!Object.values(c.monsters).some((m) => m.family === fam)) errors.push(`región ${r.id}.${z.id}: familia "${fam}" sin monstruos`);
+    }
+    r.boss?.monsters.forEach((id) => { if (!c.monsters[id]) errors.push(`región ${r.id}: jefe "${id}" inexistente`); });
+  }
+  for (const m of Object.values(c.mercenaries)) if (!c.npcs[m.id]) errors.push(`mercenario ${m.id}: falta su NPC`);
+  for (const ev of Object.values(c.marketEvents)) ev.materials?.forEach((id) => mat(id, `noticia ${ev.id}`));
+
   Object.keys(BALANCE.start.materials).forEach((m) => mat(m, 'balance.start.materials'));
   BALANCE.start.blueprints.forEach((b) => { if (!c.blueprints[b]) errors.push(`balance.start.blueprints: "${b}"`); });
   BALANCE.start.enchantments.forEach((e) => { if (!c.enchantments[e]) errors.push(`balance.start.enchantments: "${e}"`); });

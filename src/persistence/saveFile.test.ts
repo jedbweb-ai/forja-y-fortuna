@@ -21,6 +21,20 @@ describe('guardado', () => {
     expect(out.state).toEqual({ gold: 3, campoNuevo: 'hola', otro: 5 });
   });
 
+  it('migra un guardado de la Fase 1 (v1) a la v2', () => {
+    const v1 = makeSaveFile(createInitialState(CONTENT, 1)) as unknown as { version: number; state: Record<string, unknown> };
+    v1.version = 1;
+    for (const k of ['characters', 'party', 'expedition', 'market']) delete v1.state[k];
+    v1.state.skills = { herreria: 40, armeria: 0, flecheria: 0, comercio: 5, runas: 0 };
+    const out = migrateSave(JSON.parse(JSON.stringify(v1)));
+    expect(out.version).toBe(2);
+    expect(out.state.party).toEqual(['herrero']);
+    expect(out.state.characters.herrero.hp).toBeGreaterThan(0);
+    expect(out.state.skills.herreria).toBe(40);
+    expect(out.state.skills.mineria).toBe(0);
+    expect(out.state.knownBlueprints).toContain('hacha_tala');
+  });
+
   it('rechaza saves inválidos o de versiones futuras', () => {
     expect(() => migrateSave(null)).toThrow();
     expect(() => migrateSave({ version: SAVE_VERSION + 1, state: {} })).toThrow();

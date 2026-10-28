@@ -54,4 +54,13 @@ export const TRAITS: Trait[] = [
   { id: 'azote_no_muertos', name: 'Azote de no-muertos', tier: 2, categories: ALL_GEAR, synergyOnly: true, effect: { valuePct: 20 }, combat: { vsUndeadPct: 50 }, description: '+50% de daño contra no-muertos.' },
   { id: 'acolchado', name: 'Acolchado', tier: 1, categories: GUARD, synergyOnly: true, effect: { statPct: { def: 6 } }, combat: { bluntResistPct: 20 }, description: 'Absorbe golpes contundentes.' },
   { id: 'silbante', name: 'Silbante', tier: 2, categories: AMMO, synergyOnly: true, effect: { statPct: { spd: 15 } }, combat: { firstStrike: 1 }, description: 'Silba en el aire: el enemigo duda.' },
+
+  // ── Fase 2: rasgos de partes de monstruo ──
+  { id: 'envenenada', name: 'Envenenada', tier: 2, categories: [...MELEE, ...RANGED, ...AMMO], synergyOnly: true, effect: { valuePct: 15, affinity: { veneno: 1 } }, combat: { poison: 3 }, description: 'Envenena al herir: daño por turno.' },
+  { id: 'inmovilizante', name: 'Inmovilizante', tier: 2, categories: [...RANGED, ...AMMO], synergyOnly: true, effect: { valuePct: 15 }, combat: { immobilizePct: 25 }, description: '25% de chance de pegar al enemigo al piso un turno.' },
+  { id: 'desgarro', name: 'Desgarro', tier: 2, categories: MELEE, synergyOnly: true, effect: { valuePct: 15 }, combat: { bleed: 4, critPct: 5 }, description: 'Heridas profundas que sangran y críticos +5%.' },
+  { id: 'corrosiva', name: 'Corrosiva', tier: 2, categories: [...MELEE, ...AMMO], synergyOnly: true, effect: { valuePct: 12, statPct: { dur: -10 } }, combat: { armorPiercePct: 25 }, description: 'Ignora el 25% de la defensa, pero se gasta más.' },
+  { id: 'furia_jefe', name: 'Furia de Dientepartido', tier: 3, categories: MELEE, synergyOnly: true, effect: { valuePct: 40, statPct: { atk: 10 } }, combat: { doubleHitPct: 15, critPct: 10 }, description: 'Golpe doble 15% y crítico +10%. La rabia de un jefe goblin.' },
+  { id: 'sombra_lunar', name: 'Sombra lunar', tier: 2, categories: GUARD, synergyOnly: true, effect: { valuePct: 20 }, combat: { evasionPct: 10 }, description: 'Evasión +10%: cuesta acertarle a quien la lleva.' },
+  { id: 'vitalidad', name: 'Vitalidad gelatinosa', tier: 2, categories: [...GUARD, ...MELEE], synergyOnly: true, effect: { valuePct: 15 }, combat: { hpBonus: 15 }, description: 'Vida máxima +15 en combate.' },
 ];

@@ -11,7 +11,8 @@ export function cityLocation(c: Content, id: string): CityLocation | undefined {
 /** NPCs con nombre presentes en un lugar según su rutina y la franja actual. */
 export function npcsAt(c: Content, s: GameState, locationId: string): string[] {
   const slot = slotName(s);
-  return Object.values(c.npcs).filter((n) => n.routine[slot] === locationId).map((n) => n.id);
+  // Los mercenarios contratados andan con vos, no en su lugar habitual.
+  return Object.values(c.npcs).filter((n) => n.routine[slot] === locationId && !s.party.includes(n.id)).map((n) => n.id);
 }
 
 /**
@@ -22,6 +23,7 @@ export function goTo(s: GameState, { c }: Ctx, locationId: string): GameEvent[] 
   const loc = cityLocation(c, locationId);
   if (!loc) throw new GameError('Ese lugar no existe.');
   if (!loc.available) throw new GameError(`${loc.name}: todavía cerrado.`);
+  if (s.expedition) throw new GameError('Estás de expedición.');
   if (s.location === locationId) return [];
   if (s.forge) throw new GameError('Tenés una pieza a medio hacer en el yunque.');
   if (s.shop) throw new GameError('Primero cerrá la tienda.');

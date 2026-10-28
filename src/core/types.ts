@@ -1,4 +1,7 @@
 // Tipos compartidos del núcleo del juego. Sin dependencias visuales.
+import type { CombatFx } from './combat/types';
+import type { Character, WeaponKind } from './party/types';
+import type { ExpeditionState, MarketState } from './world/types';
 
 export const AFFINITIES = ['fuego', 'hielo', 'rayo', 'agua', 'tierra', 'viento', 'sagrado', 'oscuro', 'veneno'] as const;
 export type Affinity = (typeof AFFINITIES)[number];
@@ -75,6 +78,10 @@ export interface Blueprint {
   engrave: boolean;
   /** Tags que hereda el objeto (cortante, contundente, perforante...). */
   tags: string[];
+  /** Tipo de arma en combate (define sus acciones). */
+  weaponKind?: WeaponKind;
+  /** Ocupa las dos manos: no se puede usar con escudo. */
+  twoHanded?: boolean;
   description: string;
 }
 
@@ -347,6 +354,8 @@ export interface ItemInstance {
   exhibited: boolean;
   createdDay: number;
   color: string;
+  /** Personaje que lo tiene equipado (no se puede vender ni exhibir). */
+  equippedBy?: string;
 }
 
 export interface SavedDesign {
@@ -407,7 +416,9 @@ export interface NpcState {
   seenDialogues: string[];
 }
 
-export type SkillId = 'herreria' | 'armeria' | 'flecheria' | 'comercio' | 'runas';
+export type SkillId =
+  | 'herreria' | 'armeria' | 'flecheria' | 'comercio' | 'runas'
+  | 'combate' | 'mineria' | 'tala' | 'desuello';
 
 export interface GameSettings {
   skipItemCard: boolean;
@@ -434,6 +445,12 @@ export interface GameState {
   flags: Record<string, boolean | number | string>;
   forge: ForgeSession | null;
   shop: ShopSession | null;
+  /** Todos los personajes conocidos (herrero y mercenarios contratados alguna vez). */
+  characters: Record<string, Character>;
+  /** Grupo actual: el herrero primero. Máximo BALANCE.MAX_PARTY_SIZE. */
+  party: string[];
+  expedition: ExpeditionState | null;
+  market: MarketState | null;
   stats: { itemsForged: number; itemsRuined: number; goldEarned: number; itemsSold: number };
   settings: GameSettings;
   nextUid: number;
@@ -449,4 +466,11 @@ export type GameEvent =
   | { type: 'locationChanged'; location: string }
   | { type: 'shopClosed'; earned: number; sold: number }
   | { type: 'synergyDiscovered'; id: string }
-  | { type: 'gameLoaded' };
+  | { type: 'gameLoaded' }
+  | { type: 'expeditionStarted' }
+  | { type: 'expeditionEnded'; outcome: 'return' | 'defeat' }
+  | { type: 'expMoved'; path: { x: number; y: number }[] }
+  | { type: 'gathered'; nodeId: string; material: string; qty: number }
+  | { type: 'combatStarted' }
+  | { type: 'combatFx'; fx: CombatFx[] }
+  | { type: 'combatEnded'; outcome: 'victory' | 'defeat' | 'fled' };

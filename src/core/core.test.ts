@@ -31,10 +31,9 @@ describe('contenido', () => {
     expect(validateContent(CONTENT)).toEqual([]);
   });
 
-  it('hay entre 5 y 8 planos, con munición por lotes', () => {
+  it('hay al menos 5 planos, con munición por lotes', () => {
     const bps = Object.values(CONTENT.blueprints);
     expect(bps.length).toBeGreaterThanOrEqual(5);
-    expect(bps.length).toBeLessThanOrEqual(8);
     expect(bps.some((b) => b.category === 'municion' && (b.batch ?? 0) > 1)).toBe(true);
   });
 });

@@ -48,10 +48,13 @@ export function buildItem(c: Content, session: ForgeSession, enchantments: strin
   const dMult = Math.max(0.2, 1 - (session.defects * F.defectStatPct) / 100);
   for (const k of ['atk', 'def', 'dur'] as const) stats[k] *= qMult * dMult;
 
-  const allTraits = [...new Set([...design.synergies.map((s) => s.effect.trait).filter((t): t is string => !!t), ...session.traits])];
-  const traitDefs = allTraits.map((t) => c.traits[t]).filter(Boolean);
   const quench = session.quench ? c.quench[session.quench] : undefined;
   const enchDefs = enchantments.map((e) => c.enchantments[e]).filter(Boolean);
+  // Los rasgos salen de sinergias, del temple (líquidos especiales) y del forjado.
+  const grantedTraits = [...design.synergies.map((s) => s.effect.trait), quench?.effect.trait]
+    .filter((t): t is string => !!t && !!c.traits[t]?.categories.includes(bp.category));
+  const allTraits = [...new Set([...grantedTraits, ...session.traits])];
+  const traitDefs = allTraits.map((t) => c.traits[t]).filter(Boolean);
 
   const effects: (Effect | undefined)[] = [
     ...traitDefs.map((t) => t.effect), quench?.effect, ...finishes.map((f) => f.effect), ...enchDefs.map((e) => e.effect),

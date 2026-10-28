@@ -27,6 +27,21 @@ export const QUENCH_MEDIA: QuenchMedium[] = [
     effect: { statPct: { atk: 5 }, affinity: { fuego: 1 } },
     description: 'Aceite con ascua disuelta. Endurece y refuerza el fuego.',
   },
+  {
+    id: 'escarcha', name: 'Baño de escarcha', cost: { material: 'gel_escarcha', qty: 1 }, hardness: 1,
+    effect: { statPct: { atk: 3 }, affinity: { hielo: 1 }, trait: 'escarcha' },
+    description: 'Gel de escarcha en el temple: la hoja ralentiza a quien toca.',
+  },
+  {
+    id: 'acido', name: 'Mordiente ácido', cost: { material: 'gel_acido', qty: 1 }, hardness: 2,
+    effect: { trait: 'corrosiva' },
+    description: 'Gel ácido en el temple: el filo come armaduras, pero se gasta más.',
+  },
+  {
+    id: 'veneno', name: 'Temple venenoso', cost: { material: 'glandula_veneno', qty: 1 }, hardness: 0,
+    effect: { affinity: { veneno: 1 }, trait: 'envenenada' },
+    description: 'Glándula de araña disuelta en aceite: el filo envenena.',
+  },
 ];
 
 // ── Etapa 4: acabado ──
@@ -70,5 +85,19 @@ export const ENCHANTMENTS: Enchantment[] = [
     cost: [{ material: 'piedra_runica', qty: 1 }, { material: 'colmillo_lobo', qty: 1 }],
     effect: { statPct: { atk: 8 } }, combat: { critPct: 5 },
     description: 'El instinto del lobo: ataque +8% y crítico +5%.',
+  },
+  {
+    id: 'runa_totem', name: 'Runa del Tótem', source: 'runa', kind: 'pasiva',
+    categories: ['escudo', 'armadura'],
+    cost: [{ material: 'piedra_runica', qty: 1 }, { material: 'totem_tallado', qty: 1 }],
+    effect: { statPct: { def: 10 }, affinity: { tierra: 1 } }, combat: { flatReduction: 1 },
+    description: 'Una runa menor goblin: defensa +10% y reduce el daño recibido en 1.',
+  },
+  {
+    id: 'runa_nucleo', name: 'Runa del Núcleo', source: 'runa', kind: 'pasiva',
+    categories: ['arma', 'escudo', 'armadura'],
+    cost: [{ material: 'piedra_runica', qty: 1 }, { material: 'nucleo_gelin', qty: 1 }],
+    effect: { statPct: { dur: 20 }, affinity: { agua: 1 } }, combat: { hpBonus: 10 },
+    description: 'El núcleo de un gelín rey grabado en piedra: vida máxima +10 en combate.',
   },
 ];
