@@ -145,4 +145,62 @@ export function generateDungeonPlaceholders(scene: Phaser.Scene) {
     px(g, 8, 9, 2, 2, D); px(g, 13, 9, 2, 2, D);
     px(g, 2, s ? 6 : 8, 3, 3, W); px(g, 18, s ? 8 : 6, 3, 3, W);
   });
+
+  // ── Ruinas y tierras del dragón ──
+  diamondTile(scene, 'tile.ash', 0x4a4440, (g) => {
+    g.fillStyle(0x6a605a, 0.8);
+    for (let i = 0; i < 8; i++) g.fillRect(14 + ((i * 11) % 34), 8 + ((i * 5) % 16), 4, 2);
+    g.fillStyle(0xe8582a, 0.7); g.fillRect(38, 12, 3, 2); g.fillRect(22, 20, 2, 2);
+  });
+  prop(scene, 'prop.basalt', 40, 56, (g) => {
+    poly(g, [6, 54, 8, 14, 20, 6, 32, 14, 34, 54], 0x3a3434); poly(g, [20, 6, 32, 14, 34, 54, 22, 54], 0x2a2424);
+    g.fillStyle(0xd9542b, 0.6).fillRect(14, 22, 3, 20);
+  });
+  // Diablillo: chiquito, con alas, cuernos y cola.
+  twoFrames(scene, 'mon.diablillo', 24, 26, (g, s) => {
+    poly(g, [1, s ? 6 : 9, 7, 12, 4, 16], L, 0.8); poly(g, [23, s ? 6 : 9, 17, 12, 20, 16], L, 0.8);
+    g.fillStyle(L, 1).fillEllipse(12, 15, 12, 12);
+    px(g, 7, 3, 10, 8, W); poly(g, [7, 4, 6, 0, 9, 3], D); poly(g, [17, 4, 18, 0, 15, 3], D);
+    px(g, 9, 6, 2, 2, 0xffd04d); px(g, 13, 6, 2, 2, 0xffd04d);
+    px(g, s ? 8 : 9, 21, 3, 5, shade(L, 0.6)); px(g, s ? 14 : 13, 21, 3, 5, shade(L, 0.6));
+    px(g, 18, 18, 5, 2, L); px(g, 22, 15, 2, 4, L);
+  });
+  // Demonio: grande, cuernos curvos y hombros anchos.
+  twoFrames(scene, 'mon.demonio', 32, 38, (g, s) => {
+    px(g, s ? 8 : 9, 30, 6, 8, shade(L, 0.6)); px(g, s ? 18 : 17, 30, 6, 8, shade(L, 0.6));
+    g.fillStyle(L, 1).fillEllipse(16, 22, 26, 18);
+    px(g, 10, 6, 12, 11, W);
+    poly(g, [10, 8, 4, 2, 6, 0, 12, 6], D); poly(g, [22, 8, 28, 2, 26, 0, 20, 6], D);
+    px(g, 12, 10, 3, 2, 0xff5a2a); px(g, 18, 10, 3, 2, 0xff5a2a); px(g, 13, 14, 6, 1, D);
+    px(g, 1, 16, 5, 13, L); px(g, 26, 16, 5, 13, L); px(g, 0, 28, 6, 3, D); px(g, 26, 28, 6, 3, D);
+  }, 3);
+  // Kobold: reptil chico con lanza.
+  twoFrames(scene, 'mon.kobold', 24, 28, (g, s) => {
+    px(g, s ? 7 : 8, 22, 3, 6, shade(L, 0.6)); px(g, s ? 13 : 12, 22, 3, 6, shade(L, 0.6));
+    g.fillStyle(L, 1).fillEllipse(11, 17, 11, 12);
+    px(g, 6, 5, 9, 7, W); px(g, 14, 8, 4, 3, W); px(g, 9, 7, 2, 2, D);
+    poly(g, [6, 5, 4, 1, 9, 4], L);
+    px(g, 3, 15, 4, 2, L); px(g, 0, 18, 6, 2, L);
+    px(g, 20, 2, 2, 22, 0x6b4220); poly(g, [19, 3, 21, 0, 23, 3], 0xc8c8d0);
+  });
+  // Wyvern: alas grandes, cuello largo y cola con aguijón.
+  twoFrames(scene, 'mon.wyvern', 40, 34, (g, s) => {
+    poly(g, [16, 16, 2, s ? 2 : 8, 4, s ? 14 : 18, 14, 20], L, 0.85);
+    poly(g, [24, 16, 38, s ? 2 : 8, 36, s ? 14 : 18, 26, 20], L, 0.85);
+    g.fillStyle(L, 1).fillEllipse(20, 20, 14, 12);
+    px(g, 17, 6, 5, 10, L); px(g, 15, 2, 9, 6, W); px(g, 17, 4, 2, 2, D); poly(g, [24, 4, 28, 5, 24, 7], W);
+    px(g, 24, 24, 8, 2, L); px(g, 31, 22, 2, 4, L); poly(g, [33, 21, 37, 23, 33, 25], D);
+    px(g, s ? 15 : 16, 26, 3, 6, shade(L, 0.6)); px(g, s ? 22 : 21, 26, 3, 6, shade(L, 0.6));
+  }, 4);
+  // Dragón: cuerpo enorme, alas plegadas y cuernos.
+  twoFrames(scene, 'mon.dragon', 48, 44, (g, s) => {
+    poly(g, [14, 20, 2, s ? 4 : 8, 6, 24], shade(L, 0.85)); poly(g, [34, 20, 46, s ? 4 : 8, 42, 24], shade(L, 0.85));
+    g.fillStyle(L, 1).fillEllipse(24, 28, 30, 20);
+    px(g, 19, 10, 9, 12, L); px(g, 16, 3, 15, 10, W);
+    poly(g, [17, 4, 13, 0, 19, 3], D); poly(g, [29, 4, 33, 0, 27, 3], D);
+    px(g, 19, 6, 3, 2, 0xffd04d); px(g, 26, 6, 3, 2, 0xffd04d); px(g, 20, 11, 8, 1, D);
+    px(g, 36, 32, 10, 3, L); poly(g, [45, 30, 48, 33, 45, 36], D);
+    px(g, s ? 13 : 14, 36, 6, 8, shade(L, 0.6)); px(g, s ? 28 : 27, 36, 6, 8, shade(L, 0.6));
+    for (let i = 0; i < 4; i++) px(g, 16 + i * 5, 22, 2, 2, W);
+  }, 3);
 }

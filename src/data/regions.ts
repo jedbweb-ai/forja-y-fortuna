@@ -140,12 +140,4 @@ export const REGIONS: RegionDef[] = [
     world: { x: 0, y: 0 }, terrain: ['TTTTT', 'TE=.T', 'TTTTT'], heights: ['00000', '00000', '00000'], zones: ['11111', '11111', '11111'],
     zoneDefs: [{ id: 'camino', name: 'Camino', danger: 2, biome: 'pradera', budget: [6, 10], groups: [0, 0], families: { bestias: 1 }, vetas: [], arboles: [] }],
   },
-  // Regiones que se abren en fases siguientes (se ven en el mapa del mundo con su peligro).
-  ...([
-    ['ruinas_vigia', 'Ruinas del Vigía', 6, 1040, 470],
-    ['tierras_dragon', 'Tierras del Dragón', 9, 1160, 90],
-  ] as const).map(([id, name, danger, x, y]): RegionDef => ({
-    id, name, danger, description: 'Todavía no se puede llegar.', available: false, travelSlots: 2,
-    world: { x, y }, terrain: [], heights: [], zones: [], zoneDefs: [],
-  })),
 ];

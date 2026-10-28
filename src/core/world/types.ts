@@ -21,6 +21,8 @@ export interface ZoneDef {
   /** Presupuesto de amenaza de los grupos (de día). */
   budget: [number, number];
   groups: [number, number];
+  /** Nivel mínimo de los monstruos que salen (en las zonas profundas no aparecen los más débiles de la familia). */
+  minTier?: number;
   /** Peso de cada familia de monstruos en la zona. */
   families: Record<string, number>;
   vetas: NodeOption[];
@@ -64,7 +66,13 @@ export interface RegionDef {
   zoneDefs: ZoneDef[];
   /** Suelo de cada zona en el mapa de exploración (si no, el del valle). */
   zoneTiles?: string[];
+  /** Qué se dibuja en las casillas de roca ('R') del mapa de exploración (si no, rocas). */
+  wallProp?: string;
+  /** Arena donde se pelea contra el jefe (si no, la del campamento). */
+  bossArena?: string;
   boss?: { monsters: string[]; zone: number };
+  /** Regiones de nivel alto: se ven en el mapa pero se abren con reputación en la ciudad de la herrería o al vencer a un jefe. */
+  unlock?: { reputationMin?: number; bossOf?: string; hint: string };
 }
 
 // ───────────────────────── Estado de expedición ─────────────────────────

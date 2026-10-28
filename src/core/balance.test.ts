@@ -2,81 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { CONTENT as c } from '../data';
 import { acceptQuest } from './town/quests';
 import { goTo, restSlot, sleepUntilMorning } from './city';
-import { aiTurn } from './combat/ai';
 import { runCommand } from './commands';
 import { hireMercenary } from './party/mercenaries';
 import { currentCity } from './state';
-import { beginTurn, buildCombat } from './combat/engine';
-import { equipItem } from './party/equipment';
-import { createMercenary, gainXp, xpToNext } from './party/progression';
 import { createRng } from './rng';
+import { ADVANCED, commonMaterials, EARLY, MID, simFight as fight } from './simulation';
 import { makeItem, setup } from './testUtils';
 import { generateGroup, groupThreat } from './world/encounters';
 import { dangerFor } from './world/expedition';
 import type { ZoneDef } from './world/types';
-
-// Simulación de balance: el grupo y los monstruos pelean solos con la IA.
-// Es pesimista (la IA del grupo no usa pociones ni esquiva golpes anunciados), así que mide tendencias, no números exactos.
-
-interface Stage { tier: number; quality: number; levels: Record<string, number> }
-
-const EARLY: Stage = { tier: 1, quality: 50, levels: { herrero: 1, brunilda: 3, ciro: 2 } };
-const MID: Stage = { tier: 2, quality: 70, levels: { herrero: 7, brunilda: 8, ciro: 7 } };
-const GEAR: Record<string, string[]> = {
-  herrero: ['espada_larga', 'peto', 'escudo_mediano'],
-  brunilda: ['maza', 'peto', 'escudo_mediano'],
-  ciro: ['arco_corto', 'peto'],
-};
-
-/** Materiales comunes del nivel pedido para cada parte del plano (null si alguna parte no tiene). */
-function commonMaterials(blueprintId: string, tier: number): Record<string, string> | null {
-  const out: Record<string, string> = {};
-  for (const part of c.blueprints[blueprintId].parts) {
-    const opts = Object.values(c.materials)
-      .filter((m) => (part.types.includes(m.type) || part.extra?.includes(m.id)) && m.price < 100 && m.tier <= tier && m.tier >= tier - 1)
-      .sort((a, b) => b.tier - a.tier || a.price - b.price);
-    const pick = opts[Math.floor(opts.length / 3)]?.id;
-    if (!pick) return null;
-    out[part.slot] = pick;
-  }
-  return out;
-}
-
-function party(stage: Stage, seed: number) {
-  const { s, ctx } = setup(seed);
-  const members = Object.keys(stage.levels);
-  s.party = members;
-  for (const id of members) {
-    if (id !== 'herrero') s.characters[id] = createMercenary(c.mercenaries[id]);
-    const ch = s.characters[id];
-    let xp = 0;
-    for (let l = ch.level; l < stage.levels[id]; l++) xp += xpToNext(l);
-    gainXp(c, ch, xp);
-    for (const bp of GEAR[id]) equipItem(s, ctx, id, makeItem(s, bp, commonMaterials(bp, stage.tier)!, stage.quality).uid);
-  }
-  makeItem(s, 'flechas', commonMaterials('flechas', stage.tier)!, stage.quality).quantity = 99;
-  return { s, members };
-}
-
-function fight(stage: Stage, monsters: string[], biome: string, seed: number) {
-  const { s, members } = party(stage, seed);
-  const rng = createRng(seed * 7 + 1);
-  s.expedition = {
-    regionId: 'linde_brezal', pos: { x: 0, y: 0 }, energy: 99, maxEnergy: 99, spent: 0, bag: {}, capacity: 99, nodes: [], groups: [],
-    members, combat: null, report: null, nightSpawned: false, nextId: 1, home: 'herreria',
-  };
-  const arenas = Object.values(c.arenas).filter((a) => a.biome === biome);
-  const cs = buildCombat(c, s, { id: 'g', x: 0, y: 0, zone: 0, monsters, threat: 0, aggressive: false }, rng.pick(arenas).id, members);
-  s.expedition.combat = cs;
-  beginTurn(c, s, rng);
-  for (let guard = 0; !cs.outcome && cs.round < 40 && guard < 2000; guard++) {
-    const u = cs.units.find((x) => x.id === cs.order[cs.turnIndex]);
-    if (u?.side === 'party') cs.autoUnit = u.id;
-    aiTurn(c, s, rng);
-  }
-  const ours = cs.units.filter((u) => u.side === 'party');
-  return { win: cs.outcome === 'victory', hp: ours.reduce((a, u) => a + Math.max(0, u.hp), 0) / ours.reduce((a, u) => a + u.maxHp, 0), s, members };
-}
 
 const ZONES: ZoneDef[] = [
   ...Object.values(c.regions).filter((r) => r.available && !r.hidden).flatMap((r) => r.zoneDefs),
@@ -126,6 +60,30 @@ describe('balance (simulación)', () => {
       });
       expect(hp[hp.length - 1], r.id).toBeLessThan(hp[0]);
     }
+  });
+
+  it('las Tierras del Dragón piden un grupo avanzado, y sus jefes son un desafío también para él', () => {
+    const caldera = c.regions.tierras_dragon.zoneDefs[2];
+    const run = (stage: typeof MID, monsters: (i: number) => string[], arena: string) => {
+      let wins = 0;
+      let hp = 0;
+      for (let i = 0; i < 8; i++) {
+        const f = fight(stage, monsters(i), arena, 700 + i);
+        wins += f.win ? 1 : 0;
+        hp += f.hp;
+      }
+      return { wins: wins / 8, hp: hp / 8 };
+    };
+    const group = (i: number) => generateGroup(c, caldera, 'tarde', createRng(800 + i)).monsters;
+    const mid = run(MID, group, caldera.biome);
+    expect(mid.wins).toBeLessThanOrEqual(0.5);
+    expect(mid.hp).toBeLessThan(0.3);
+    expect(run(ADVANCED, group, caldera.biome).wins).toBeGreaterThan(0.8);
+    const malgor = run(ADVANCED, () => c.regions.ruinas_vigia.boss!.monsters, 'ruinas_grieta');
+    expect(malgor.wins).toBeGreaterThan(0.6);
+    expect(malgor.hp).toBeLessThan(0.75);
+    const cendralia = run(ADVANCED, () => c.regions.tierras_dragon.boss!.monsters, 'volcan_caldera');
+    expect(cendralia.hp).toBeLessThan(0.5);
   });
 });
 

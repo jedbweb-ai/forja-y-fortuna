@@ -76,7 +76,7 @@ export const BLUEPRINTS: Blueprint[] = [
   {
     id: 'peto', name: 'Peto', category: 'armadura', station: 'yunque', slots: 2,
     parts: [
-      { slot: 'placas', label: 'Placas', types: ['metal', 'cuero'], weight: 0.7, qty: 3 },
+      { slot: 'placas', label: 'Placas', types: ['metal', 'cuero'], extra: ['hueso_gigante'], weight: 0.7, qty: 3 },
       { slot: 'forro', label: 'Forro', types: ['cuero', 'fibra', 'monstruo'], weight: 0.3, qty: 1 },
     ],
     base: { def: 8, dur: 12 },

@@ -6,7 +6,10 @@ import { expeditionCapacity, expeditionEnergy, readyMembers, startExpedition } f
 import { Panel } from '../components/Panel';
 import { store, useGame, useSnapshot } from '../hooks';
 
-const FAMILY_LABEL: Record<string, string> = { gelines: 'Gelines', goblins: 'Goblins', bestias: 'Bestias' };
+const FAMILY_LABEL: Record<string, string> = {
+  gelines: 'Gelines', goblins: 'Goblins', bestias: 'Bestias', no_muertos: 'No muertos', constructos: 'Constructos',
+  gigantes: 'Gigantes', elementales: 'Elementales', demonios: 'Demonios', draconidos: 'Dracónidos',
+};
 
 export function ExpeditionPanel() {
   const s = useGame();
@@ -27,7 +30,7 @@ export function ExpeditionPanel() {
   return (
     <Panel
       title={r.name}
-      subtitle={`${'★'.repeat(r.danger)} · Viaje: ${r.travelSlots} franja de ida y ${r.travelSlots} de vuelta · ~${days} día(s)`}
+      subtitle={`${'★'.repeat(r.danger)} · Viaje: ${r.travelSlots} franja${r.travelSlots > 1 ? 's' : ''} de ida y ${r.travelSlots} de vuelta · ~${days} día(s)`}
       onClose={() => store.setUi({ panel: null, regionId: null })}
       footer={
         <button className="btn primary big" onClick={() => store.run(startExpedition, r.id)}>
@@ -47,7 +50,7 @@ export function ExpeditionPanel() {
           </article>
         ))}
       </div>
-      {r.boss && <p className="small">👑 En las colinas vive <b>{c.monsters[r.boss.monsters[0]].name}</b> con su banda. Es un desafío para un grupo bien equipado.</p>}
+      {r.boss && <p className="small">👑 En {r.zoneDefs[r.boss.zone - 1]?.name ?? 'lo más hondo'} espera <b>{c.monsters[r.boss.monsters[0]].name}</b>. Es un desafío para un grupo bien equipado.</p>}
 
       <h4>Preparación</h4>
       <ul className="tag-list">

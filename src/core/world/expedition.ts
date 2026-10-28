@@ -19,7 +19,7 @@ import {
   checkLanding, discoverEntrance, dungeonDef, exhausted, expMap, grantUnique, onBossDefeated, recordLeave, revealAround, trapAt, triggerTrap,
 } from '../dungeon/dungeon';
 import { generateGroup, groupThreat } from './encounters';
-import { adjacent, findTiles, regionPath, zoneAt, type Pt } from './region';
+import { adjacent, bossFlag, findTiles, regionOpen, regionPath, zoneAt, type Pt } from './region';
 import type { ExpeditionState, MonsterGroup, RegionDef } from './types';
 
 const EX = BALANCE.expedition;
@@ -131,6 +131,7 @@ export function makeGroup(c: Content, e: ExpeditionState, p: Pt, zone: number, m
 export function startExpedition(s: GameState, { c, rng }: Ctx, regionId: string): GameEvent[] {
   const r = c.regions[regionId];
   if (!r || !r.available) throw new GameError('Todavía no se puede llegar ahí.');
+  if (!regionOpen(s, r)) throw new GameError(`${r.name}: ${r.unlock!.hint}`);
   if (s.expedition) throw new GameError('Ya estás de expedición.');
   if (s.forge) throw new GameError('Tenés una pieza a medio hacer en el yunque.');
   if (s.shop) throw new GameError('Primero cerrá la tienda.');
@@ -210,7 +211,7 @@ function engage(c: Content, s: GameState, rng: Rng, group: MonsterGroup): GameEv
   const e = expedition(s);
   const r = region(c, s);
   const dungeon = dungeonDef(c, s);
-  const biome = group.boss ? (dungeon ? dungeon.bossArena : 'campamento') : r.zoneDefs[group.zone]?.biome ?? 'pradera';
+  const biome = group.boss ? (dungeon ? dungeon.bossArena : r.bossArena ?? 'campamento') : r.zoneDefs[group.zone]?.biome ?? 'pradera';
   const arenas = Object.values(c.arenas).filter((a) => a.biome === biome || a.id === biome);
   const arena = rng.pick(arenas.length ? arenas : Object.values(c.arenas));
   const events = spendEnergy(c, s, rng, EX.combatEnergy);
@@ -473,6 +474,7 @@ function settle(c: Content, s: GameState, rng: Rng): GameEvent[] {
   e.report = resolveCombat(c, s, rng);
   const events: GameEvent[] = [];
   if (cs.outcome === 'victory' && group?.boss && e.dungeon) events.push(...onBossDefeated(s, c, rng, group));
+  if (cs.outcome === 'victory' && group?.boss && !e.dungeon) events.push(...regionBossDefeated(s, c, e.regionId));
   events.push(...permadeath(s, c));
   if (cs.outcome === 'fled') {
     e.fled = true;
@@ -485,6 +487,15 @@ function settle(c: Content, s: GameState, rng: Rng): GameEvent[] {
   }
   if (cs.outcome !== 'fled') servantsAfterCombat(s, e.members, cs.outcome === 'victory');
   return [{ type: 'combatEnded', outcome: cs.outcome }, ...events];
+}
+
+/** Vencer al jefe de una región queda anotado, y puede abrir el camino a otra. */
+function regionBossDefeated(s: GameState, c: Content, regionId: string): GameEvent[] {
+  const before = Object.values(c.regions).filter((r) => regionOpen(s, r));
+  s.flags[bossFlag(regionId)] = true;
+  return Object.values(c.regions)
+    .filter((r) => regionOpen(s, r) && !before.includes(r))
+    .map((r) => ({ type: 'toast', text: `Se abre el camino a ${r.name}.`, tone: 'good' }) as GameEvent);
 }
 
 /** Con la opción activada, los compañeros que cayeron en una mazmorra muy peligrosa no vuelven. */

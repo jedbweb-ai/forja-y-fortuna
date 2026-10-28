@@ -1,5 +1,5 @@
 import { indexById, type Content } from '../core/content';
-import type { Material } from '../core/types';
+import type { Blueprint, Material } from '../core/types';
 import { ABILITY_SKILLS } from './abilities';
 import { ARENAS } from './arenas';
 import { TALENTS, UPGRADES } from './progress';
@@ -34,10 +34,26 @@ import { DIALOGUES_4, NPCS_4 } from './npcs4';
 import { POTIONS } from './potions';
 import { QUESTS } from './quests';
 import { REGIONS } from './regions';
+import { ARENAS_7, MATERIALS_7, MONSTERS_7, QUENCH_7, QUESTS_7, REGIONS_7, SKILLS_7, SLOT_EXTRAS_7, SYNERGIES_7 } from './content7';
 import { SERVANT_DIALOGUES, SERVANT_NPCS, SERVANTS } from './servants';
 import { SYNERGIES } from './synergies';
 import { TRAITS } from './traits';
 import { TRAITS_3 } from './traits3';
+
+/** Suma materiales nuevos a las partes de planos existentes ("plano.parte" → materiales). */
+function withSlotExtras(list: Blueprint[], extras: Record<string, string[]>): Blueprint[] {
+  for (const key of Object.keys(extras)) {
+    const [bp, slot] = key.split('.');
+    if (!list.some((b) => b.id === bp && b.parts.some((p) => p.slot === slot))) throw new Error(`Parte inexistente: ${key}`);
+  }
+  return list.map((b) => ({
+    ...b,
+    parts: b.parts.map((p) => {
+      const add = extras[`${b.id}.${p.slot}`];
+      return add ? { ...p, extra: [...(p.extra ?? []), ...add] } : p;
+    }),
+  }));
+}
 
 /** Suma las propiedades alquímicas a los materiales que ya existían. */
 function withAlchemy(list: Material[]): Material[] {
@@ -45,11 +61,11 @@ function withAlchemy(list: Material[]): Material[] {
 }
 
 export const CONTENT: Content = {
-  materials: indexById(withAlchemy([...MATERIALS, ...MATERIALS_3, ...MATERIALS_5, ...MATERIALS_6B, ...MATERIALS_6C])),
-  blueprints: indexById([...BLUEPRINTS, ...BLUEPRINTS_3, ...BLUEPRINTS_4, ...BLUEPRINTS_5]),
-  synergies: indexById([...SYNERGIES, ...SYNERGIES_5, ...SYNERGIES_6B, ...SYNERGIES_6C]),
+  materials: indexById(withAlchemy([...MATERIALS, ...MATERIALS_3, ...MATERIALS_5, ...MATERIALS_6B, ...MATERIALS_6C, ...MATERIALS_7])),
+  blueprints: indexById(withSlotExtras([...BLUEPRINTS, ...BLUEPRINTS_3, ...BLUEPRINTS_4, ...BLUEPRINTS_5], SLOT_EXTRAS_7)),
+  synergies: indexById([...SYNERGIES, ...SYNERGIES_5, ...SYNERGIES_6B, ...SYNERGIES_6C, ...SYNERGIES_7]),
   traits: indexById([...TRAITS, ...TRAITS_3]),
-  quench: indexById([...QUENCH_MEDIA, ...QUENCH_MEDIA_3, ...QUENCH_5, ...QUENCH_6C]),
+  quench: indexById([...QUENCH_MEDIA, ...QUENCH_MEDIA_3, ...QUENCH_5, ...QUENCH_6C, ...QUENCH_7]),
   finishes: indexById([...FINISHES, ...FINISHES_3]),
   enchantments: indexById([...ENCHANTMENTS, ...ENCHANTMENTS_3, ...ENCHANTMENTS_5]),
   customers: indexById([...CUSTOMER_TYPES, ...CUSTOMERS_6B]),
@@ -58,15 +74,15 @@ export const CONTENT: Content = {
   dialogues: indexById([...DIALOGUES, ...MERCENARY_DIALOGUES, ...DIALOGUES_3, ...DIALOGUES_4, ...SERVANT_DIALOGUES, ...DIALOGUES_6B, ...DIALOGUES_6C]),
   cities: indexById([...CITIES, ...CITIES_6]),
   mercenaries: indexById([...MERCENARIES, ...SERVANTS]),
-  skills: indexById([...COMBAT_SKILLS, ...ABILITY_SKILLS, ...SKILLS_5, ...SKILLS_6C]),
+  skills: indexById([...COMBAT_SKILLS, ...ABILITY_SKILLS, ...SKILLS_5, ...SKILLS_6C, ...SKILLS_7]),
   weaponSkills: WEAPON_SKILLS,
-  monsters: indexById([...MONSTERS, ...MONSTERS_5, ...MONSTERS_6C]),
-  arenas: indexById([...ARENAS, ...ARENAS_5, ...ARENAS_6C]),
-  regions: indexById([...REGIONS, ...REGIONS_6C]),
+  monsters: indexById([...MONSTERS, ...MONSTERS_5, ...MONSTERS_6C, ...MONSTERS_7]),
+  arenas: indexById([...ARENAS, ...ARENAS_5, ...ARENAS_6C, ...ARENAS_7]),
+  regions: indexById([...REGIONS, ...REGIONS_6C, ...REGIONS_7]),
   marketEvents: indexById(MARKET_EVENTS),
   grimoires: indexById([...GRIMOIRES, ...GRIMOIRES_5]),
   potions: indexById([...POTIONS, ...POTIONS_5, ...POTIONS_6C]),
-  quests: indexById([...QUESTS, ...QUESTS_6B, ...QUESTS_6C]),
+  quests: indexById([...QUESTS, ...QUESTS_6B, ...QUESTS_6C, ...QUESTS_7]),
   contracts: indexById([...CONTRACTS, ...CONTRACTS_6B]),
   cityEvents: indexById([...CITY_EVENTS, ...CITY_EVENTS_6B]),
   auctionLots: indexById(AUCTION_LOTS),

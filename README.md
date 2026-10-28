@@ -2,7 +2,7 @@
 
 Juego de gestión y RPG táctico: sos un herrero en un mundo de fantasía. El diseño completo está en [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (fuente de verdad).
 
-**Estado: Fase 6 (expansión y pulido) terminada. Las seis fases del documento de diseño están hechas.**
+**Estado: las seis fases del documento de diseño están hechas, más las regiones de nivel alto. Lo próximo es el arte definitivo.**
 
 ## Cómo correrlo
 
@@ -163,7 +163,33 @@ src/
 - Correcciones: la flecha del turno en combate quedaba flotando lejos de la unidad después de moverse. El aviso de derrota hablaba de "huida".
 - Más atajos: Espacio y F en el yunque. Enter, A y N en la tienda. Enter para empezar, seguir y terminar una pieza, y para continuar en la pantalla de título.
 
+## Regiones de nivel alto
+
+- **Ruinas del Vigía (★6)**: lo que queda de la torre, arriba de su cripta.
+  - Tres zonas: patio derrumbado, galerías rotas y la Grieta.
+  - Su jefe es **Malgor, señor de la Grieta**, que anuncia una lluvia de azufre en círculo.
+  - Se abre con reputación renombrada (70) en Valdebrasa.
+- **Tierras del Dragón (★9)**: tres zonas, los llanos de ceniza, los nidos de wyvern y la Caldera.
+  - Su jefa es **Cendralia**, que anuncia su aliento de fuego en cono y en la segunda fase barre con la cola.
+  - Se abre al vencer a Malgor.
+  - En el mapa, cada región cerrada muestra qué le falta. Las condiciones están en los datos (`unlock` de cada región).
+- Dos familias nuevas que estaban en el documento:
+  - **Demonios**: diablillo, demonio cornudo, sombra abisal y señor demoníaco.
+  - **Dracónidos**: kobold, kobold chamán, wyvern, draco joven y dragona.
+- Materiales y combinaciones nuevos:
+  - Garras, cuernos y sangre infernal, que también sirve de temple.
+  - Escamas, colmillos y cuero de wyvern.
+  - Dos trofeos de jefe con combinaciones secretas.
+  - Las combinaciones incluyen dos del documento: hierro con garras de demonio da daño oscuro y sangrado, y la escama de dragón resiste el fuego y dura mucho.
+- Encargos nuevos del gremio y del tablón para las dos regiones.
+- Las zonas pueden pedir un nivel mínimo de monstruo (`minTier`), así en las zonas profundas no salen los más débiles de la familia. Cada región tiene su propia arena para el jefe.
+- **Balance** medido con la simulación (`src/core/simulation.ts`):
+  - Un grupo de nivel medio no aguanta la Caldera.
+  - Uno avanzado, de 4 integrantes y con materiales de nivel 3, la cruza, pero sufre contra los dos jefes.
+- Correcciones:
+  - La combinación "Placas de gigante" era imposible, porque el hueso de gigante no entraba en el peto. Ahora el validador revisa que cada combinación se pueda lograr.
+  - El panel de expedición decía "en las colinas" para cualquier jefe, mostraba nombres internos de familias ("no_muertos") y escribía "2 franja".
+
 ## Pendiente para próximas fases
-Las seis fases del documento están completas. Ideas abiertas para más adelante, sin decidir:
-- Abrir las regiones que figuran en el mapa pero todavía no se pueden visitar (Ruinas del Vigía y Tierras del Dragón), con contenido de nivel alto. Hoy un grupo avanzado no encuentra desafíos.
-- El arte definitivo en lugar de los gráficos placeholder, cuando esté definido.
+- **Arte definitivo** con una herramienta de imágenes por IA, en lugar de los gráficos provisorios.
+- Tutorial (más adelante, a decidir).

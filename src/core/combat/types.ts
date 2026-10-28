@@ -119,7 +119,7 @@ export interface MonsterDef {
 }
 
 /** 'jefe': arenas de jefe de mazmorra (se eligen por id, nunca al azar). */
-export type Biome = 'pradera' | 'bosque' | 'colinas' | 'campamento' | 'cripta' | 'cueva' | 'jefe' | 'montana' | 'pantano';
+export type Biome = 'pradera' | 'bosque' | 'colinas' | 'campamento' | 'cripta' | 'cueva' | 'jefe' | 'montana' | 'pantano' | 'ruinas' | 'volcan';
 
 /** Arena chica de combate. `terrain`: '.' suelo, ',' hierba alta, 'w' agua baja, '#' bloqueo. */
 export interface ArenaDef {

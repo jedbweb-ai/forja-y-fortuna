@@ -1,3 +1,5 @@
+import { homeCity } from '../state';
+import type { GameState } from '../types';
 import type { RegionDef } from './types';
 
 export interface Pt {
@@ -7,6 +9,19 @@ export interface Pt {
 
 const WALKABLE = new Set(['.', ',', '=', 'm', 'B', 'E', 'S', 'P']);
 export const DIRS: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+
+/** Marca que se guarda al vencer al jefe de una región. */
+export const bossFlag = (regionId: string) => `jefe_${regionId}`;
+
+/** ¿Se puede salir de expedición a esta región? */
+export function regionOpen(s: GameState, r: RegionDef): boolean {
+  if (!r.available) return false;
+  const u = r.unlock;
+  if (!u) return true;
+  if (u.reputationMin !== undefined && (s.reputation[homeCity()] ?? 0) < u.reputationMin) return false;
+  if (u.bossOf && !s.flags[bossFlag(u.bossOf)]) return false;
+  return true;
+}
 
 export function regionSize(r: RegionDef) {
   return { cols: r.terrain[0]?.length ?? 0, rows: r.terrain.length };

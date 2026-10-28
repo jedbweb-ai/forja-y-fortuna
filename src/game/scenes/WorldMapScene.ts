@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { currentCity } from '../../core/state';
 import { dungeonUnlocked } from '../../core/dungeon/dungeon';
+import { regionOpen } from '../../core/world/region';
 import type { GameStore } from '../../bridge/GameStore';
 
 const W = 1280;
@@ -55,31 +56,38 @@ export class WorldMapScene extends Phaser.Scene {
       });
     }
 
-    for (const region of Object.values(this.store.content.regions).filter((r) => !r.hidden)) {
+    const content = this.store.content;
+    for (const region of Object.values(content.regions).filter((r) => !r.hidden)) {
       const { x, y } = region.world;
+      const open = !!state && regionOpen(state, region);
+      const u = region.unlock;
+      // Qué falta para abrirla, en corto.
+      const locked = !region.available ? 'próximamente'
+        : !open && u ? (u.bossOf ? `vencé a ${content.monsters[content.regions[u.bossOf].boss!.monsters[0]].name.split(',')[0]}` : `reputación ${u.reputationMin}`)
+        : '';
       // Camino punteado desde la ciudad
       const path = this.add.graphics();
-      path.lineStyle(3, region.available ? 0x7a4e26 : 0xa89a7a, 1);
+      path.lineStyle(3, open ? 0x7a4e26 : 0xa89a7a, 1);
       const steps = 14;
       for (let i = 0; i < steps; i += 2) {
         const a = i / steps;
         const b = (i + 1) / steps;
         path.lineBetween(HOME.x + (x - HOME.x) * a, HOME.y + (y - HOME.y) * a, HOME.x + (x - HOME.x) * b, HOME.y + (y - HOME.y) * b);
       }
-      const marker = this.add.circle(x, y, 18, region.available ? 0xc0392b : 0x8a8270).setStrokeStyle(4, 0x3a2418);
-      if (region.available) this.tweens.add({ targets: marker, scale: 1.15, yoyo: true, repeat: -1, duration: 700 });
-      this.add.text(x, y + 24, `${region.name}\n${'★'.repeat(Math.min(region.danger, 9))}${region.available ? '' : '\n(próximamente)'}`, {
-        fontFamily: 'system-ui, sans-serif', fontSize: '18px', color: region.available ? '#3a2418' : '#7a6e5a', align: 'center',
-        fontStyle: region.available ? 'bold' : 'normal',
+      const marker = this.add.circle(x, y, 18, open ? 0xc0392b : 0x8a8270).setStrokeStyle(4, 0x3a2418);
+      if (open) this.tweens.add({ targets: marker, scale: 1.15, yoyo: true, repeat: -1, duration: 700 });
+      this.add.text(x, y + 24, `${region.name}\n${'★'.repeat(Math.min(region.danger, 9))}${locked ? `\n(${locked})` : ''}`, {
+        fontFamily: 'system-ui, sans-serif', fontSize: '18px', color: open ? '#3a2418' : '#7a6e5a', align: 'center',
+        fontStyle: open ? 'bold' : 'normal',
       }).setOrigin(0.5, 0).setResolution(2);
       const zone = this.add.zone(x, y + 20, 170, 110).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => {
-        if (region.available) this.store.setUi({ panel: 'expedition', regionId: region.id });
-        else this.store.toast(`${region.name}: todavía no se puede llegar.`);
+        if (open) this.store.setUi({ panel: 'expedition', regionId: region.id });
+        else this.store.toast(`${region.name}: ${u && region.available ? u.hint : 'todavía no se puede llegar.'}`);
       });
     }
 
-    const s = this.store.getSnapshot().state;
+    const s = state;
     for (const d of Object.values(this.store.content.dungeons)) {
       const open = !!s && dungeonUnlocked(s, d);
       // Una entrada escondida que no se encontró todavía no aparece en el mapa.

@@ -23,7 +23,12 @@ export function validateContent(c: Content): string[] {
       case 'materials': cond.all.forEach((m) => mat(m, where)); break;
       case 'anyMaterial': cond.any.forEach((m) => mat(m, where)); break;
       case 'materialInSlot':
-        [cond.material].flat().forEach((m) => mat(m, where));
+        [cond.material].flat().forEach((m) => {
+          mat(m, where);
+          // Tiene que existir algún plano donde ese material entre en esa parte; si no, la combinación es imposible.
+          const fits = Object.values(c.blueprints).some((b) => b.parts.some((p) => p.slot === cond.slot && (p.types.includes(c.materials[m]?.type) || p.extra?.includes(m))));
+          if (c.materials[m] && !fits) errors.push(`${where}: "${m}" no entra en ninguna parte "${cond.slot}"`);
+        });
         if (!slotsOf.has(cond.slot)) errors.push(`${where}: parte inexistente "${cond.slot}"`);
         break;
       case 'blueprint': cond.in.forEach((b) => { if (!c.blueprints[b]) errors.push(`${where}: plano inexistente "${b}"`); }); break;
@@ -101,6 +106,8 @@ export function validateContent(c: Content): string[] {
     if (a.partySpawns.length < BALANCE.MAX_PARTY_SIZE + 1) errors.push(`arena ${a.id}: necesita ${BALANCE.MAX_PARTY_SIZE + 1} lugares para el grupo`);
   }
   for (const r of Object.values(c.regions).filter((x) => x.available)) {
+    if (r.bossArena && !c.arenas[r.bossArena]) errors.push(`región ${r.id}: arena de jefe inexistente "${r.bossArena}"`);
+    if (r.unlock?.bossOf && !c.regions[r.unlock.bossOf]?.boss) errors.push(`región ${r.id}: se abre con el jefe de "${r.unlock.bossOf}", que no tiene jefe`);
     const cols = r.terrain[0]?.length ?? 0;
     for (const [name, grid] of [['terrain', r.terrain], ['heights', r.heights], ['zones', r.zones]] as const) {
       if (grid.length !== r.terrain.length || grid.some((row) => row.length !== cols)) errors.push(`región ${r.id}: ${name} con medidas distintas`);

@@ -224,7 +224,7 @@ export class RegionScene extends Phaser.Scene {
         const d = standDepth(x, y, 5);
         if (ch === ',') this.add.image(p.x, p.y + 6, 'deco.tallgrass').setOrigin(0.5, 1).setDepth(d);
         if (ch === 'T') this.add.image(p.x, p.y + 12, 'prop.tree').setOrigin(0.5, 1).setScale(0.75).setDepth(d);
-        if (ch === 'R') this.add.image(p.x, p.y + 10, 'prop.rock').setOrigin(0.5, 1).setDepth(d);
+        if (ch === 'R') this.add.image(p.x, p.y + 10, r.wallProp ?? 'prop.rock').setOrigin(0.5, 1).setDepth(d);
         if (ch === 'v') this.add.image(p.x, p.y + 10, 'prop.vein').setOrigin(0.5, 1).setDepth(d);
         if (ch === 'h') this.add.image(p.x, p.y + 8, 'prop.herbs').setOrigin(0.5, 1).setDepth(d);
         if (ch === 'g') this.add.image(p.x, p.y + 10, 'prop.gemrock').setOrigin(0.5, 1).setDepth(d);

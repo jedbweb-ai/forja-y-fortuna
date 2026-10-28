@@ -19,7 +19,9 @@ export function familyMonsters(c: Content, family: string, slot: TimeSlot): Mons
  */
 export function generateGroup(c: Content, zone: ZoneDef, slot: TimeSlot, rng: Rng, budgetMult = 1): { monsters: string[]; threat: number } {
   const family = rng.weighted(Object.entries(zone.families));
-  const pool = familyMonsters(c, family, slot);
+  const all = familyMonsters(c, family, slot);
+  const strong = all.filter((m) => m.tier >= (zone.minTier ?? 0));
+  const pool = strong.length ? strong : all;
   const night = slot === 'noche' ? BALANCE.expedition.nightBudgetMult : 1;
   const budget = Math.round(rng.int(zone.budget[0], zone.budget[1]) * night * budgetMult);
   const monsters: MonsterDef[] = [];
