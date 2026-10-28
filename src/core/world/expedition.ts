@@ -450,7 +450,7 @@ function defeatHome(s: GameState, rng: Rng): GameEvent[] {
   return [
     ...escapes,
     ...events,
-    { type: 'toast', text: `Despertás de vuelta en la ciudad. Perdiste ${lostCount} materiales en la huida.`, tone: 'bad' },
+    { type: 'toast', text: `Despertás de vuelta en la ciudad${lostCount ? ` y te faltan ${lostCount} materiales de la bolsa` : ''}.`, tone: 'bad' },
     { type: 'expeditionEnded', outcome: 'defeat' },
     { type: 'locationChanged', location: s.location },
   ];

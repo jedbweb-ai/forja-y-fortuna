@@ -102,7 +102,7 @@ export function DesignStep({ station }: { station: 'yunque' | 'joyeria' }) {
 
       <div className="preview">
         <div className="row tight">
-          <button className="btn primary grow" disabled={missing.length > 0} onClick={begin}>
+          <button className="btn primary grow" data-key="enter" disabled={missing.length > 0} onClick={begin}>
             {station === 'joyeria' ? '💍 Engarzar' : '🔨 Forjar'} · {bp.slots} franja{bp.slots > 1 ? 's' : ''}
           </button>
           <button className="btn" onClick={save} title="Guardar esta combinación en el libro" aria-label="Guardar diseño">★</button>

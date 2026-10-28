@@ -22,7 +22,7 @@ function ShopSetup() {
       title={s.location === 'herreria' ? 'Tu tienda' : 'Puesto ambulante'}
       subtitle={`Exhibición ${shown}/${displaySlots(store.content, s)} · Esperás unos ${customerCount(s)} clientes esta ${slotName(s)}`}
       footer={
-        <button className="btn primary big" disabled={!!s.forge} onClick={() => store.run(openShop)}>
+        <button className="btn primary big" data-key="enter" disabled={!!s.forge} onClick={() => store.run(openShop)}>
           🛎️ Abrir la tienda · consume la franja
         </button>
       }
@@ -71,7 +71,7 @@ function ShopSessionView() {
       footer={
         sh.status !== 'negotiating' && (
           <div className="row">
-            {!done && remaining > 0 && <button className="btn primary big" onClick={() => store.run(nextCustomer)}>Siguiente cliente ({remaining})</button>}
+            {!done && remaining > 0 && <button className="btn primary big" data-key="enter" onClick={() => store.run(nextCustomer)}>Siguiente cliente ({remaining})</button>}
             <button className={`btn big ${done || remaining === 0 ? 'primary' : ''}`} onClick={() => { if (store.run(closeShop)) store.closePanel(); }}>
               Cerrar la tienda
             </button>
@@ -105,10 +105,10 @@ function ShopSessionView() {
                 <button className="btn" onClick={() => setPrice(Math.round(suggested * 1.25))}>+25% sobre valor</button>
               </div>
               <div className="row">
-                <button className="btn primary big" onClick={() => store.run(askPrice, price)}>Pedir 🪙 {price}</button>
-                {n.rounds > 0 && <button className="btn big good" onClick={() => store.run(acceptOffer)}>Aceptar 🪙 {n.lastOffer}</button>}
-                {n.rounds === 0 && <button className="btn big good" onClick={() => store.run(askPrice, n.opening)}>Aceptar 🪙 {n.opening}</button>}
-                <button className="btn" onClick={() => store.run(declineCustomer)}>No vender</button>
+                <button className="btn primary big" data-key="enter" onClick={() => store.run(askPrice, price)}>Pedir 🪙 {price}</button>
+                {n.rounds > 0 && <button className="btn big good" data-key="a" onClick={() => store.run(acceptOffer)}>Aceptar 🪙 {n.lastOffer}</button>}
+                {n.rounds === 0 && <button className="btn big good" data-key="a" onClick={() => store.run(askPrice, n.opening)}>Aceptar 🪙 {n.opening}</button>}
+                <button className="btn" data-key="n" onClick={() => store.run(declineCustomer)}>No vender</button>
               </div>
             </div>
           )}

@@ -51,7 +51,9 @@ export class CombatScene extends Phaser.Scene {
   private terrainLayer!: Phaser.GameObjects.Graphics;
   private flames = new Map<string, Phaser.GameObjects.Image>();
   private grass = new Map<string, Phaser.GameObjects.Image>();
-  private marker!: Phaser.GameObjects.Image;
+  /** Flecha del turno: el contenedor sigue a la unidad y la flecha rebota adentro. */
+  private marker!: Phaser.GameObjects.Container;
+  private markerArrow!: Phaser.GameObjects.Image;
   private queue: CombatFx[] = [];
   private animating = false;
   private unsubs: (() => void)[] = [];
@@ -99,8 +101,9 @@ export class CombatScene extends Phaser.Scene {
 
     this.terrainLayer = this.add.graphics().setDepth(-5100);
     this.highlight = this.add.graphics().setDepth(-5000);
-    this.marker = this.add.image(0, 0, 'fx.arrow').setDepth(9500);
-    this.tweens.add({ targets: this.marker, y: '-=6', yoyo: true, repeat: -1, duration: 400 });
+    this.markerArrow = this.add.image(0, 0, 'fx.arrow');
+    this.marker = this.add.container(0, 0, [this.markerArrow]).setDepth(9500);
+    this.tweens.add({ targets: this.markerArrow, y: -6, yoyo: true, repeat: -1, duration: 400 });
 
     const s = this.store.state;
     const light = SLOT_LIGHT[slotName(s)];
@@ -193,7 +196,8 @@ export class CombatScene extends Phaser.Scene {
     if (cur) {
       const p = this.unitPos(cur);
       const v = this.units.get(cur.id)!;
-      this.marker.setVisible(true).setPosition(p.x, p.y - v.sprite.displayHeight - 30).setTint(cur.side === 'party' ? 0xffd04d : 0xff6b5a);
+      this.marker.setVisible(true).setPosition(p.x, p.y - v.sprite.displayHeight - 30);
+      this.markerArrow.setTint(cur.side === 'party' ? 0xffd04d : 0xff6b5a);
     } else {
       this.marker.setVisible(false);
     }

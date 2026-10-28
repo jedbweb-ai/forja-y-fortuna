@@ -91,8 +91,8 @@ export function ForgingStep() {
           </small>
         </div>
         <div className="row">
-          <button className="btn primary huge" onClick={() => store.run(forgeStrike)}>{rune ? '✒️ Trazo' : '🔨 ¡Golpe!'} <small>#{f.hits + 1}</small></button>
-          <button className="btn big" disabled={f.hits === 0} onClick={() => store.run(forgeStop)}>✋ Frenar</button>
+          <button className="btn primary huge" data-key="espacio" onClick={() => store.run(forgeStrike)}>{rune ? '✒️ Trazo' : '🔨 ¡Golpe!'} <small>#{f.hits + 1}</small></button>
+          <button className="btn big" data-key="f" disabled={f.hits === 0} onClick={() => store.run(forgeStop)}>✋ Frenar</button>
         </div>
       </div>
       <PreviewBox session={f} />
@@ -159,7 +159,7 @@ export function FinishStep() {
         {bp.engrave && group('engraving', 'Grabado', engraving, setEngraving)}
       </div>
       <div className="side">
-        <button className="btn primary big" disabled={s.gold < gold} onClick={() => store.run(forgeFinish, { grip, polish, engraving })}>
+        <button className="btn primary big" data-key="enter" disabled={s.gold < gold} onClick={() => store.run(forgeFinish, { grip, polish, engraving })}>
           Continuar {gold ? `· 🪙 ${gold}` : ''}
         </button>
         <PreviewBox session={sim} />
@@ -258,6 +258,7 @@ export function EnchantStep() {
       <div className="side">
         <button
           className="btn primary big"
+          data-key="enter"
           onClick={() => {
             // Al terminar, la forja queda lista con la misma receta para repetirla.
             const recipe = { blueprintId: f.blueprintId, materials: { ...f.materials } };

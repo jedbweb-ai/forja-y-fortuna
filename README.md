@@ -156,6 +156,13 @@ src/
   - En combate: M para mover, 1-9 para las acciones y T para terminar el turno.
   - 1-9 en los diálogos, Enter para confirmar o continuar y Esc para cerrar o cancelar.
 
+## Prueba general antes del arte
+
+- **Partida simulada** en `src/core/playthrough.test.ts`: un jugador automático juega 60 días con los mismos comandos que la interfaz. Forja, vende regateando, contrata, sale de expedición, pelea, cumple encargos y compra talentos y mejoras. Falla si aparece un error interno. Con `FYF_LOG=1 npx vitest run src/core/playthrough.test.ts --reporter=verbose` muestra cómo avanzó la partida. En una corrida típica, la reputación pasa de 0 a unos 60, el herrero llega a nivel 7 y se arma un grupo de 3.
+- **Para probar en el celular**: `npm run build` y después `npm run preview -- --host`. Se abre la dirección "Network" que muestra la consola, desde un teléfono en la misma red Wi‑Fi. Instalarlo como app y jugar sin conexión requiere HTTPS, así que eso se prueba cuando esté publicado.
+- Correcciones: la flecha del turno en combate quedaba flotando lejos de la unidad después de moverse. El aviso de derrota hablaba de "huida".
+- Más atajos: Espacio y F en el yunque. Enter, A y N en la tienda. Enter para empezar, seguir y terminar una pieza, y para continuar en la pantalla de título.
+
 ## Pendiente para próximas fases
 Las seis fases del documento están completas. Ideas abiertas para más adelante, sin decidir:
 - Abrir las regiones que figuran en el mapa pero todavía no se pueden visitar (Ruinas del Vigía y Tierras del Dragón), con contenido de nivel alto. Hoy un grupo avanzado no encuentra desafíos.
