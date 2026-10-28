@@ -1,0 +1,11 @@
+import type { Toast } from '../../bridge/GameStore';
+
+export function Toasts({ toasts }: { toasts: Toast[] }) {
+  return (
+    <div className="toasts" aria-live="polite">
+      {toasts.map((t) => (
+        <div key={t.id} className={`toast ${t.tone}`}>{t.text}</div>
+      ))}
+    </div>
+  );
+}
