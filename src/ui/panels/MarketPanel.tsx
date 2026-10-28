@@ -21,7 +21,8 @@ export function MarketPanel() {
   const refuse = refusesTrade(c, s, s.location);
   const mult = tradeMult(c, s, s.location);
   const events = activeEvents(c, s);
-  const canSellHere = s.location === 'mercado';
+  const here = cityLocation(c, s.location);
+  const canSellHere = here?.kind === 'mercado' || here?.kind === 'muelle';
 
   return (
     <Panel title={s.location === 'mercado' ? 'Puesto de Ilse' : cityLocation(c, s.location)?.name ?? 'Tienda'} subtitle={`🪙 ${Math.floor(s.gold)} disponibles`} wide>
@@ -35,7 +36,7 @@ export function MarketPanel() {
           {refuse ?? `${c.npcs[owner].name} · relación ${npcLevel(s, owner)}${mult !== 1 ? ` · precios ${mult < 1 ? '−' : '+'}${Math.round(Math.abs(1 - mult) * 100)}%` : ''}`}
         </p>
       )}
-      {tab === 'buy' && s.market && s.location === 'mercado' && (
+      {tab === 'buy' && s.market && canSellHere && (
         <div className="news">
           <b>📰 Noticias del día {s.market.day}</b>
           {s.market.news.map((n) => <p key={n} className="small">{n}</p>)}

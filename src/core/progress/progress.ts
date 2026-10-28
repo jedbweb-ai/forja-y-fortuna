@@ -1,6 +1,6 @@
 import { BALANCE } from '../../config/balance';
 import { GameError, type Content, type Ctx } from '../content';
-import { addMaterial, currentCity, hasMaterial, relationLevel, skillLevel } from '../state';
+import { addMaterial, hasMaterial, homeCity, relationLevel, skillLevel } from '../state';
 import { RELATION_LEVELS, type GameEvent, type GameState, type SkillId } from '../types';
 import type { BonusKey } from './types';
 
@@ -56,7 +56,7 @@ export function upgradeBlock(c: Content, s: GameState, id: string): string | nul
   if (!def) return 'Esa mejora no existe.';
   const next = def.levels[upgradeLevel(s, id)];
   if (!next) return 'Ya está al máximo.';
-  if (next.reputationMin !== undefined && (s.reputation[currentCity()] ?? 0) < next.reputationMin) return `Pide reputación ${next.reputationMin} en la ciudad.`;
+  if (next.reputationMin !== undefined && (s.reputation[homeCity()] ?? 0) < next.reputationMin) return `Pide reputación ${next.reputationMin} en la ciudad.`;
   if (s.gold < next.cost.gold) return `Cuesta ${next.cost.gold} de oro.`;
   const missing = next.cost.materials.find((m) => !hasMaterial(s, m.id, m.qty));
   if (missing) return `Te falta ${missing.qty}× ${c.materials[missing.id].name}.`;

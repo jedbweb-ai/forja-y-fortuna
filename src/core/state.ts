@@ -27,7 +27,7 @@ export function emptyTownState(): Pick<GameState, 'quests' | 'contracts' | 'dema
   return {
     quests: { offers: [], active: [], done: [], failed: [], lastRefresh: 0 },
     contracts: { offers: [], active: [], done: [], lostToRival: [], lastRefresh: 0 },
-    demand: {},
+    demand: { [BALANCE.start.city]: {} },
     cityEvents: { active: [], recent: [], rumors: [] },
     auction: { day: BALANCE.auction.firstDay, lots: [], consigned: [], session: null, seenUnique: [], attended: 0 },
     servantMarket: { offer: [], lastRefresh: 0 },
@@ -39,6 +39,7 @@ export function createInitialState(c: Content, seed = Date.now() >>> 0): GameSta
   for (const id of Object.keys(c.npcs)) npcs[id] = newNpcState(c, id);
   return {
     rngState: seed,
+    city: BALANCE.start.city,
     day: 1,
     slot: 0,
     outing: false,
@@ -111,7 +112,13 @@ export function reputationLevel(value: number): string {
   return name;
 }
 
-export function currentCity(): string {
+/** Ciudad donde está el herrero. */
+export function currentCity(s: Pick<GameState, 'city'>): string {
+  return s.city ?? BALANCE.start.city;
+}
+
+/** La ciudad de la herrería. */
+export function homeCity(): string {
   return BALANCE.start.city;
 }
 

@@ -217,6 +217,8 @@ export interface CustomerType {
   bulk?: [number, number];
   /** Cuánto valoran los encantamientos (0..1). */
   enchantLove?: number;
+  /** Si se define, solo aparece en estas ciudades. */
+  cities?: string[];
   lines: { greet: string[]; noItem: string[]; happy: string[]; angry: string[] };
 }
 
@@ -313,7 +315,9 @@ export type RelationLevel = (typeof RELATION_LEVELS)[number];
 
 export type LocationKind =
   | 'herreria' | 'mercado' | 'taberna' | 'alquimista' | 'curtidor' | 'maderero'
-  | 'joyero' | 'libreria' | 'gremio' | 'tablon' | 'subastas' | 'esclavos';
+  | 'joyero' | 'libreria' | 'gremio' | 'tablon' | 'subastas' | 'esclavos'
+  /** Otras ciudades: posada (descansar y dormir) y muelle (mercado de lo que llega por barco). */
+  | 'posada' | 'muelle';
 
 export interface ScenePropDef {
   key: string;
@@ -328,7 +332,7 @@ export interface HotspotDef {
   x: number;
   y: number;
   action: 'forge' | 'shop' | 'market' | 'npc' | 'inventory' | 'book' | 'runas' | 'joyeria' | 'alquimia' | 'libreria'
-    | 'gremio' | 'tablon' | 'subastas' | 'esclavos';
+    | 'gremio' | 'tablon' | 'subastas' | 'esclavos' | 'posada';
   npc?: string;
 }
 
@@ -366,10 +370,31 @@ export interface CityLocation {
   description: string;
 }
 
+/** Camino entre dos ciudades: cuánto tarda y qué puede salir al cruce. */
+export interface RouteDef {
+  to: string;
+  slots: number;
+  /** Chance de un encuentro en el camino. */
+  chance: number;
+  families: Record<string, number>;
+  budget: [number, number];
+}
+
 export interface City {
   id: string;
   name: string;
   description: string;
+  /** Posición en el mapa del mundo. */
+  world: { x: number; y: number };
+  /** Lugar donde se llega al entrar a la ciudad. */
+  arrival: string;
+  /** Estilo del mapa ilustrado. */
+  ground: 'valle' | 'puerto' | 'fortaleza';
+  routes: RouteDef[];
+  /** Demanda propia por categoría (1 = normal). */
+  demand?: Partial<Record<ItemCategory, number>>;
+  /** Cuánto aparece cada tipo de cliente en el puesto de esta ciudad. */
+  customers?: Record<string, number>;
   locations: CityLocation[];
 }
 
@@ -488,6 +513,8 @@ export interface GameSettings {
 
 export interface GameState {
   rngState: number;
+  /** Ciudad donde está el herrero (la herrería queda en la primera). */
+  city: string;
   day: number;
   slot: number; // índice en SLOTS
   /** El herrero salió a recorrer la ciudad durante la franja actual. */
@@ -522,7 +549,8 @@ export interface GameState {
   // ── Fase 4 ──
   quests: QuestsState;
   contracts: ContractsState;
-  demand: DemandState;
+  /** Demanda por ciudad. */
+  demand: Record<string, DemandState>;
   cityEvents: CityEventsState;
   auction: AuctionState;
   servantMarket: ServantMarketState;

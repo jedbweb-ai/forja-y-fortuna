@@ -1,11 +1,11 @@
 import { BALANCE } from '../../config/balance';
 import type { Content } from '../content';
-import { clamp } from '../state';
+import { clamp, currentCity } from '../state';
 import type { GameState, ItemCategory } from '../types';
 import { activeEvents } from './cityEvents';
 
-// Demanda por categoría: vender mucho de lo mismo baja el precio; se recupera día a día
-// hacia lo que piden los eventos de la ciudad (un torneo sube armas, una plaga sube flechas...).
+// Demanda por categoría y por ciudad: vender mucho de lo mismo baja el precio; se recupera día a día
+// hacia lo que pide cada ciudad (la frontera pide armaduras, el puerto arrojadizos) y sus eventos.
 
 const D = BALANCE.demand;
 
@@ -16,25 +16,31 @@ export const ITEM_CATEGORIES: ItemCategory[] = [
 /** Categorías que se venden por lote: cada unidad baja menos la demanda. */
 const BATCH: ItemCategory[] = ['municion', 'arrojadizo', 'pocion'];
 
-export function demandOf(s: GameState, cat: ItemCategory): number {
-  return s.demand?.[cat] ?? 1;
+export function demandOf(s: GameState, cat: ItemCategory, city = currentCity(s)): number {
+  return s.demand?.[city]?.[cat] ?? 1;
 }
 
-export function registerSale(s: GameState, cat: ItemCategory, qty: number) {
+export function registerSale(s: GameState, cat: ItemCategory, qty: number, city = currentCity(s)) {
   const drop = BATCH.includes(cat) ? D.dropPerBatchUnit * qty : D.dropPerSale * qty;
-  s.demand[cat] = round(clamp(demandOf(s, cat) - drop, D.min, D.max));
+  const d = (s.demand[city] ??= {});
+  d[cat] = round(clamp(demandOf(s, cat, city) - drop, D.min, D.max));
 }
 
-export function demandTarget(c: Content, s: GameState, cat: ItemCategory): number {
-  return activeEvents(c, s).reduce((m, e) => m * (e.demand?.[cat] ?? 1), 1);
+/** Hacia dónde tiende la demanda: lo propio de la ciudad por lo que piden sus eventos. */
+export function demandTarget(c: Content, s: GameState, cat: ItemCategory, city = currentCity(s)): number {
+  const base = c.cities[city]?.demand?.[cat] ?? 1;
+  return activeEvents(c, s, city).reduce((m, e) => m * (e.demand?.[cat] ?? 1), base);
 }
 
 export function dailyDemand(s: GameState, c: Content) {
-  for (const cat of ITEM_CATEGORIES) {
-    const d = demandOf(s, cat);
-    const next = round(clamp(d + (demandTarget(c, s, cat) - d) * D.recovery, D.min, D.max));
-    if (Math.abs(next - 1) < 0.005) delete s.demand[cat];
-    else s.demand[cat] = next;
+  for (const city of Object.keys(c.cities)) {
+    const d = (s.demand[city] ??= {});
+    for (const cat of ITEM_CATEGORIES) {
+      const cur = demandOf(s, cat, city);
+      const next = round(clamp(cur + (demandTarget(c, s, cat, city) - cur) * D.recovery, D.min, D.max));
+      if (Math.abs(next - 1) < 0.005) delete d[cat];
+      else d[cat] = next;
+    }
   }
 }
 

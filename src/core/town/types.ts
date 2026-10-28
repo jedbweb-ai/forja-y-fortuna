@@ -62,6 +62,8 @@ export type QuestBoard = 'gremio' | 'tablon' | 'npc';
 
 export interface QuestDef {
   id: string;
+  /** Ciudad donde se ofrece (sin definir: Valdebrasa). */
+  city?: string;
   title: string;
   board: QuestBoard;
   /** NPC que lo pide (relación que sube o baja). En el gremio puede ser el maestro. */
@@ -82,6 +84,7 @@ export interface QuestDef {
 
 export interface QuestOffer {
   id: string;
+  city: string;
   board: Exclude<QuestBoard, 'npc'>;
   /** Hasta qué día se puede aceptar. */
   until: number;
@@ -109,6 +112,8 @@ export interface QuestsState {
 
 export interface ContractDef {
   id: string;
+  /** Ciudad donde se firma (sin definir: Valdebrasa). */
+  city?: string;
   title: string;
   /** NPC mercader que firma el contrato. */
   merchant: string;
@@ -136,7 +141,7 @@ export interface ActiveContract {
 }
 
 export interface ContractsState {
-  offers: { id: string; until: number }[];
+  offers: { id: string; until: number; city: string }[];
   active: ActiveContract[];
   done: string[];
   /** Contratos que se llevó Ruperto (noticia del tablón). */
@@ -159,6 +164,8 @@ export interface CityEventChoice {
 
 export interface CityEventDef {
   id: string;
+  /** Ciudad donde pasa (sin definir: Valdebrasa). */
+  city?: string;
   name: string;
   /** Texto del aviso en el tablón. */
   text: string;
@@ -180,6 +187,7 @@ export interface CityEventDef {
 
 export interface ActiveCityEvent {
   id: string;
+  city: string;
   start: number;
   until: number;
   /** Índice de la opción elegida, si la había. */

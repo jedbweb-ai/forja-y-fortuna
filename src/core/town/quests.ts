@@ -2,7 +2,8 @@ import { BALANCE } from '../../config/balance';
 import { GameError, type Content, type Ctx } from '../content';
 import { checkAll } from '../dialogue';
 import type { Rng } from '../rng';
-import { addMaterial, currentCity, nextUid } from '../state';
+import { addMaterial, currentCity, homeCity, nextUid } from '../state';
+import { cityLocation } from '../city';
 import type { GameEvent, GameState } from '../types';
 import { applyPenalty, applyReward, describeReward, takeUnits, unitsAvailable } from './craft';
 import type { ActiveQuest, QuestDef } from './types';
@@ -19,7 +20,7 @@ export function questGiverName(c: Content, q: QuestDef): string {
 function eligible(s: GameState, q: QuestDef): boolean {
   if (s.quests.active.some((a) => a.id === q.id)) return false;
   if (!q.repeatable && s.quests.done.includes(q.id)) return false;
-  if ((q.minReputation ?? -Infinity) > (s.reputation[currentCity()] ?? 0)) return false;
+  if ((q.minReputation ?? -Infinity) > (s.reputation[q.city ?? homeCity()] ?? 0)) return false;
   return checkAll(s, q.conditions);
 }
 
@@ -29,13 +30,16 @@ export function refreshQuestOffers(s: GameState, c: Content, rng: Rng) {
   qs.offers = qs.offers.filter((o) => o.until >= s.day && !qs.active.some((a) => a.id === o.id));
   if (qs.lastRefresh && s.day < qs.lastRefresh + Q.refreshDays) return;
   qs.lastRefresh = s.day;
-  for (const board of ['gremio', 'tablon'] as const) {
-    const have = qs.offers.filter((o) => o.board === board);
-    const pool = Object.values(c.quests).filter((q) => q.board === board && eligible(s, q) && !qs.offers.some((o) => o.id === q.id));
-    for (let i = have.length; i < Q.offersPerBoard && pool.length; i++) {
-      const q = rng.weighted(pool.map((x) => [x, x.weight ?? 1] as const));
-      pool.splice(pool.indexOf(q), 1);
-      qs.offers.push({ id: q.id, board, until: s.day + Q.offerDays - 1 });
+  for (const city of Object.values(c.cities)) {
+    for (const board of ['gremio', 'tablon'] as const) {
+      if (!city.locations.some((l) => l.kind === board && l.available)) continue;
+      const have = qs.offers.filter((o) => o.board === board && o.city === city.id);
+      const pool = Object.values(c.quests).filter((q) => q.board === board && (q.city ?? homeCity()) === city.id && eligible(s, q) && !qs.offers.some((o) => o.id === q.id));
+      for (let i = have.length; i < Q.offersPerBoard && pool.length; i++) {
+        const q = rng.weighted(pool.map((x) => [x, x.weight ?? 1] as const));
+        pool.splice(pool.indexOf(q), 1);
+        qs.offers.push({ id: q.id, board, city: city.id, until: s.day + Q.offerDays - 1 });
+      }
     }
   }
 }
@@ -54,7 +58,8 @@ export function startQuest(s: GameState, c: Content, id: string): GameEvent[] {
 export function acceptQuest(s: GameState, { c }: Ctx, id: string): GameEvent[] {
   const offer = s.quests.offers.find((o) => o.id === id);
   if (!offer) throw new GameError('Ese aviso ya no está.');
-  if (s.location !== offer.board) throw new GameError(offer.board === 'gremio' ? 'Se acepta en el gremio.' : 'Se acepta en el tablón.');
+  const here = cityLocation(c, s.location);
+  if (here?.kind !== offer.board || currentCity(s) !== offer.city) throw new GameError(`Se acepta en ${offer.board === 'gremio' ? 'el gremio' : 'el tablón'} de ${c.cities[offer.city].name}.`);
   return startQuest(s, c, id);
 }
 
@@ -81,7 +86,7 @@ export function deliverQuest(s: GameState, { c }: Ctx, uid: string): GameEvent[]
   if (o.kind === 'materials') addMaterial(s, o.material, -o.qty);
   s.quests.active = s.quests.active.filter((a) => a.uid !== uid);
   s.quests.done.push(q.id);
-  const events = applyReward(s, c, q.reward, q.giver);
+  const events = applyReward(s, c, q.reward, q.giver, q.city ?? homeCity());
   events.unshift({ type: 'toast', text: `✔ ${q.title}: ${describeReward(c, q.reward)}`, tone: 'good' });
   return events;
 }
@@ -92,7 +97,7 @@ export function abandonQuest(s: GameState, { c }: Ctx, uid: string): GameEvent[]
   const q = c.quests[aq.id];
   s.quests.active = s.quests.active.filter((a) => a.uid !== uid);
   s.quests.failed.push(q.id);
-  applyPenalty(s, q.penalty, q.giver);
+  applyPenalty(s, q.penalty, q.giver, q.city ?? homeCity());
   return [{ type: 'toast', text: `Abandonaste «${q.title}». ${questGiverName(c, q)} no queda contento.`, tone: 'bad' }];
 }
 
@@ -104,7 +109,7 @@ export function dailyQuests(s: GameState, c: Content): GameEvent[] {
     const q = c.quests[aq.id];
     s.quests.active = s.quests.active.filter((a) => a.uid !== aq.uid);
     s.quests.failed.push(q.id);
-    applyPenalty(s, q.penalty, q.giver);
+    applyPenalty(s, q.penalty, q.giver, q.city ?? homeCity());
     events.push({ type: 'toast', text: `Se venció el encargo «${q.title}».`, tone: 'bad' });
   }
   return events;

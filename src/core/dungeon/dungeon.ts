@@ -4,7 +4,7 @@ import { GameError, type Content, type Ctx } from '../content';
 import { acquireGrimoire } from '../magic/grimoires';
 import { maxHp } from '../party/progression';
 import type { Rng } from '../rng';
-import { currentCity } from '../state';
+import { homeCity } from '../state';
 import { advanceTime } from '../time';
 import type { GameEvent, GameState } from '../types';
 import { generateGroup } from '../world/encounters';
@@ -30,7 +30,7 @@ export function dungeonProgress(s: GameState, id: string): DungeonProgress {
 
 export function dungeonUnlocked(s: GameState, def: DungeonDef): boolean {
   if (def.unlock.flag && !s.flags[def.unlock.flag]) return false;
-  if (def.unlock.reputationMin !== undefined && (s.reputation[currentCity()] ?? 0) < def.unlock.reputationMin) return false;
+  if (def.unlock.reputationMin !== undefined && (s.reputation[homeCity()] ?? 0) < def.unlock.reputationMin) return false;
   return true;
 }
 
@@ -148,7 +148,7 @@ export function startDungeon(s: GameState, { c, rng }: Ctx, id: string): GameEve
   const energy = expeditionEnergy(s, members, c);
   s.expedition = {
     regionId: def.id, pos: { x: 0, y: 0 }, energy, maxEnergy: energy, spent: 0, bag: {}, capacity: expeditionCapacity(s, members, c),
-    nodes: [], groups: [], members, combat: null, report: null, nightSpawned: true, nextId: 1,
+    nodes: [], groups: [], members, combat: null, report: null, nightSpawned: true, nextId: 1, home: s.location,
   };
   buildFloor(s, c, rng, def, 1);
   s.outing = false;

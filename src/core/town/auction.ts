@@ -3,7 +3,7 @@ import { GameError, type Content, type Ctx } from '../content';
 import { buildItem } from '../forge/item';
 import { acquireGrimoire, hasGrimoire } from '../magic/grimoires';
 import type { Rng } from '../rng';
-import { addMaterial, changeReputation, currentCity, nextUid } from '../state';
+import { addMaterial, changeReputation, homeCity, nextUid } from '../state';
 import { advanceTime } from '../time';
 import type { GameEvent, GameState, ItemInstance } from '../types';
 import type { AuctionBidder, AuctionLot, AuctionLotDef, AuctionSession, BidderDef, BidderStyle } from './types';
@@ -224,7 +224,7 @@ function resolveLot(s: GameState, c: Content, rng: Rng): GameEvent[] {
     s.gold += net;
     s.stats.goldEarned += net;
     s.stats.itemsSold += lot.consigned.item.quantity;
-    changeReputation(s, currentCity(), A.reputationPerSale);
+    changeReputation(s, homeCity(), A.reputationPerSale);
     sess.log.push(`Vendiste ${lot.name}: cobrás ${net} (la casa se queda con el ${Math.round(A.commission * 100)}%).`);
     sess.results.push({ name: lot.name, winner: c.bidders[sess.leader].name, price: sess.price, mine: 'venta' });
   } else {
@@ -351,7 +351,7 @@ export function dailyAuction(s: GameState, c: Content, rng: Rng): GameEvent[] {
         s.gold += net;
         s.stats.goldEarned += net;
         s.stats.itemsSold += x.item.quantity;
-        changeReputation(s, currentCity(), A.reputationPerSale);
+        changeReputation(s, homeCity(), A.reputationPerSale);
       } else {
         s.items.push(x.item);
       }

@@ -11,6 +11,8 @@ import { BLUEPRINTS } from './blueprints';
 import { BLUEPRINTS_3 } from './blueprints3';
 import { BLUEPRINTS_4 } from './blueprints4';
 import { CITIES } from './cities';
+import { CITIES_6 } from './cities6';
+import { CITY_EVENTS_6B, CONTRACTS_6B, CUSTOMERS_6B, DIALOGUES_6B, MATERIALS_6B, NPCS_6B, QUESTS_6B, SYNERGIES_6B } from './content6b';
 import { CITY_EVENTS } from './cityEvents';
 import { COMBAT_SKILLS, WEAPON_SKILLS } from './combatSkills';
 import { CONTRACTS } from './contracts';
@@ -40,18 +42,18 @@ function withAlchemy(list: Material[]): Material[] {
 }
 
 export const CONTENT: Content = {
-  materials: indexById(withAlchemy([...MATERIALS, ...MATERIALS_3, ...MATERIALS_5])),
+  materials: indexById(withAlchemy([...MATERIALS, ...MATERIALS_3, ...MATERIALS_5, ...MATERIALS_6B])),
   blueprints: indexById([...BLUEPRINTS, ...BLUEPRINTS_3, ...BLUEPRINTS_4, ...BLUEPRINTS_5]),
-  synergies: indexById([...SYNERGIES, ...SYNERGIES_5]),
+  synergies: indexById([...SYNERGIES, ...SYNERGIES_5, ...SYNERGIES_6B]),
   traits: indexById([...TRAITS, ...TRAITS_3]),
   quench: indexById([...QUENCH_MEDIA, ...QUENCH_MEDIA_3, ...QUENCH_5]),
   finishes: indexById([...FINISHES, ...FINISHES_3]),
   enchantments: indexById([...ENCHANTMENTS, ...ENCHANTMENTS_3, ...ENCHANTMENTS_5]),
-  customers: indexById(CUSTOMER_TYPES),
+  customers: indexById([...CUSTOMER_TYPES, ...CUSTOMERS_6B]),
   customerNames: CUSTOMER_NAMES,
-  npcs: indexById([...NPCS, ...MERCENARY_NPCS, ...NPCS_3, ...NPCS_4, ...SERVANT_NPCS]),
-  dialogues: indexById([...DIALOGUES, ...MERCENARY_DIALOGUES, ...DIALOGUES_3, ...DIALOGUES_4, ...SERVANT_DIALOGUES]),
-  cities: indexById(CITIES),
+  npcs: indexById([...NPCS, ...MERCENARY_NPCS, ...NPCS_3, ...NPCS_4, ...SERVANT_NPCS, ...NPCS_6B]),
+  dialogues: indexById([...DIALOGUES, ...MERCENARY_DIALOGUES, ...DIALOGUES_3, ...DIALOGUES_4, ...SERVANT_DIALOGUES, ...DIALOGUES_6B]),
+  cities: indexById([...CITIES, ...CITIES_6]),
   mercenaries: indexById([...MERCENARIES, ...SERVANTS]),
   skills: indexById([...COMBAT_SKILLS, ...ABILITY_SKILLS, ...SKILLS_5]),
   weaponSkills: WEAPON_SKILLS,
@@ -61,9 +63,9 @@ export const CONTENT: Content = {
   marketEvents: indexById(MARKET_EVENTS),
   grimoires: indexById([...GRIMOIRES, ...GRIMOIRES_5]),
   potions: indexById([...POTIONS, ...POTIONS_5]),
-  quests: indexById(QUESTS),
-  contracts: indexById(CONTRACTS),
-  cityEvents: indexById(CITY_EVENTS),
+  quests: indexById([...QUESTS, ...QUESTS_6B]),
+  contracts: indexById([...CONTRACTS, ...CONTRACTS_6B]),
+  cityEvents: indexById([...CITY_EVENTS, ...CITY_EVENTS_6B]),
   auctionLots: indexById(AUCTION_LOTS),
   bidders: indexById(BIDDERS),
   dungeons: indexById(DUNGEONS),

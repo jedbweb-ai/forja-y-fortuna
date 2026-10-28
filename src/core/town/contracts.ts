@@ -1,7 +1,8 @@
 import { BALANCE } from '../../config/balance';
 import { GameError, type Content, type Ctx } from '../content';
 import type { Rng } from '../rng';
-import { changeRelation, changeReputation, currentCity, nextUid } from '../state';
+import { changeRelation, changeReputation, currentCity, homeCity, nextUid } from '../state';
+import { cityLocation } from '../city';
 import type { GameEvent, GameState } from '../types';
 import { applyPenalty, takeUnits, unitsAvailable } from './craft';
 import type { ActiveContract, ContractDef } from './types';
@@ -31,18 +32,21 @@ export function refreshContractOffers(s: GameState, c: Content, rng: Rng): GameE
   ks.offers = ks.offers.filter((o) => o.until >= s.day);
   if (ks.lastRefresh && s.day < ks.lastRefresh + K.refreshDays) return [];
   ks.lastRefresh = s.day;
-  const rep = s.reputation[currentCity()] ?? 0;
-  const pool = Object.values(c.contracts).filter((d) => (d.minReputation ?? -Infinity) <= rep
-    && !ks.active.some((a) => a.id === d.id) && !ks.offers.some((o) => o.id === d.id));
-  for (let i = ks.offers.length; i < K.offers && pool.length; i++) {
-    const d = rng.weighted(pool.map((x) => [x, x.weight ?? 1] as const));
-    pool.splice(pool.indexOf(d), 1);
-    ks.offers.push({ id: d.id, until: s.day + K.offerDays - 1 });
+  for (const city of Object.keys(c.cities)) {
+    const rep = s.reputation[city] ?? 0;
+    const pool = Object.values(c.contracts).filter((d) => (d.city ?? homeCity()) === city && (d.minReputation ?? -Infinity) <= rep
+      && !ks.active.some((a) => a.id === d.id) && !ks.offers.some((o) => o.id === d.id));
+    for (let i = ks.offers.filter((o) => o.city === city).length; i < K.offers && pool.length; i++) {
+      const d = rng.weighted(pool.map((x) => [x, x.weight ?? 1] as const));
+      pool.splice(pool.indexOf(d), 1);
+      ks.offers.push({ id: d.id, city, until: s.day + K.offerDays - 1 });
+    }
   }
   // El herrero rival, si te tiene bronca, se adelanta y se queda con uno.
   const rival = s.npcs[K.rivalNpc]?.relation ?? 0;
-  if (ks.offers.length && rival <= K.rivalMaxRelation && rng.chance(K.rivalStealChance)) {
-    const lost = rng.pick(ks.offers);
+  const homeOffers = ks.offers.filter((o) => o.city === homeCity());
+  if (homeOffers.length && rival <= K.rivalMaxRelation && rng.chance(K.rivalStealChance)) {
+    const lost = rng.pick(homeOffers);
     ks.offers = ks.offers.filter((o) => o !== lost);
     ks.lostToRival = [lost.id, ...ks.lostToRival].slice(0, 5);
     return [{ type: 'toast', text: `Ruperto se quedó con el contrato «${c.contracts[lost.id].title}» antes que vos.`, tone: 'bad' }];
@@ -52,8 +56,9 @@ export function refreshContractOffers(s: GameState, c: Content, rng: Rng): GameE
 
 export function acceptContract(s: GameState, { c }: Ctx, id: string): GameEvent[] {
   const def = c.contracts[id];
-  if (!def || !s.contracts.offers.some((o) => o.id === id)) throw new GameError('Ese contrato ya no está.');
-  if (s.location !== 'gremio') throw new GameError('Los contratos se firman en el gremio.');
+  const offer = s.contracts.offers.find((o) => o.id === id);
+  if (!def || !offer) throw new GameError('Ese contrato ya no está.');
+  if (cityLocation(c, s.location)?.kind !== 'gremio' || currentCity(s) !== offer.city) throw new GameError(`Este contrato se firma en ${c.cities[offer.city].name}.`);
   if (s.contracts.active.length >= K.maxActive) throw new GameError(`Ya tenés ${K.maxActive} contratos en curso.`);
   s.contracts.active.push({ uid: nextUid(s, 'k'), id, start: s.day, delivered: 0, met: 0 });
   s.contracts.offers = s.contracts.offers.filter((o) => o.id !== id);
@@ -83,7 +88,7 @@ export function deliverContract(s: GameState, { c }: Ctx, uid: string): GameEven
       s.gold += def.bonus.gold;
       s.stats.goldEarned += def.bonus.gold;
     }
-    if (def.bonus.reputation) changeReputation(s, currentCity(), def.bonus.reputation);
+    if (def.bonus.reputation) changeReputation(s, def.city ?? homeCity(), def.bonus.reputation);
     if (def.bonus.relation) changeRelation(s, def.merchant, def.bonus.relation);
     events.push({ type: 'toast', text: `Contrato cumplido: ${def.title}. Premio ${def.bonus.gold ?? 0} de oro.`, tone: 'good' });
   }
@@ -102,7 +107,7 @@ export function dailyContracts(s: GameState, c: Content): GameEvent[] {
       continue;
     }
     s.contracts.active = s.contracts.active.filter((a) => a.uid !== ac.uid);
-    applyPenalty(s, def.penalty, def.merchant);
+    applyPenalty(s, def.penalty, def.merchant, def.city ?? homeCity());
     events.push({ type: 'toast', text: `Rompiste el contrato «${def.title}»: no llegaste con la entrega.`, tone: 'bad' });
   }
   return events;

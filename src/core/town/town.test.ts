@@ -121,7 +121,7 @@ describe('encargos', () => {
 describe('contratos', () => {
   it('se cobra por entrega y, si una entrega vence sin cumplir, se rompe', () => {
     const { s, ctx } = setup();
-    s.contracts.offers = [{ id: 'k_picos', until: 99 }];
+    s.contracts.offers = [{ id: 'k_picos', until: 99, city: 'valdebrasa' }];
     s.location = 'gremio';
     acceptContract(s, ctx, 'k_picos');
     const uid = s.contracts.active[0].uid;

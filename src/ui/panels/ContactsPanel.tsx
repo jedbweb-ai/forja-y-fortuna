@@ -23,11 +23,11 @@ export function ContactsPanel() {
   const c = store.content;
   const known = knownNpcs(c, s);
   const [sel, setSel] = useState<string | null>(ui.contactNpc ?? known[0] ?? null);
-  const rep = s.reputation[currentCity()] ?? 0;
+  const rep = s.reputation[currentCity(s)] ?? 0;
   const npc = sel ? c.npcs[sel] : null;
 
   return (
-    <Panel title="Contactos" subtitle={`⭐ Reputación en Valdebrasa: ${rep} (${reputationLevel(rep)}) · un regalo y una charla por persona por día`} wide>
+    <Panel title="Contactos" subtitle={`⭐ Reputación en ${c.cities[currentCity(s)].name}: ${rep} (${reputationLevel(rep)}) · un regalo y una charla por persona por día`} wide>
       {!known.length && <p className="muted">Todavía no conocés a nadie. Recorré la ciudad y charlá con la gente.</p>}
       <div className="contacts">
         <ul className="contact-list">

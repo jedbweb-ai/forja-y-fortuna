@@ -4,6 +4,7 @@ import { ContactsPanel } from './panels/ContactsPanel';
 import { QuestsPanel } from './panels/QuestsPanel';
 import { ServantsPanel } from './panels/ServantsPanel';
 import { TalentsPanel } from './panels/TalentsPanel';
+import { TravelPanel } from './panels/TravelPanel';
 import { WorkshopPanel } from './panels/WorkshopPanel';
 import { BookPanel } from './panels/BookPanel';
 import { DebugPanel } from './panels/DebugPanel';
@@ -68,6 +69,7 @@ export function App() {
           {ui.panel === 'dungeon' && <DungeonPanel />}
           {ui.panel === 'talents' && <TalentsPanel />}
           {ui.panel === 'workshop' && <WorkshopPanel />}
+          {ui.panel === 'travel' && <TravelPanel />}
           {ui.panel === 'debug' && ui.debug && <DebugPanel />}
           {ui.dialogue && <DialogueBox />}
           {ui.itemCard && (

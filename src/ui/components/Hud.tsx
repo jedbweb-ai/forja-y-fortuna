@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { setDebugPersisted } from '../../bridge/store';
 import { cityLocation } from '../../core/city';
-import { currentCity, reputationLevel, skillLevel } from '../../core/state';
+import { currentCity, homeCity, reputationLevel, skillLevel } from '../../core/state';
 import { slotName } from '../../core/time';
 import { SLOT_ICON } from '../format';
 import { store, useSnapshot } from '../hooks';
@@ -30,9 +30,10 @@ export function Hud() {
       <div className="hud-stats">
         <span className="chip" title="Día y franja">Día {state.day} · {SLOT_ICON[slot]} {slot}</span>
         <span className="chip gold" title="Oro">🪙 {Math.floor(state.gold)}</span>
-        <span className="chip" title={`Reputación en la ciudad: ${reputationLevel(state.reputation[currentCity()] ?? 0)}`}>⭐ {state.reputation[currentCity()] ?? 0}</span>
+        <span className="chip" title={`Reputación en la ciudad: ${reputationLevel(state.reputation[currentCity(state)] ?? 0)}`}>⭐ {state.reputation[currentCity(state)] ?? 0}</span>
         <span className="chip hide-sm" title="Nivel de Herrería">🔨 Nv {skillLevel(state.skills.herreria)}</span>
         {state.expedition && <span className="chip warn" title="De expedición">🧭 Expedición</span>}
+        {currentCity(state) !== homeCity() && <span className="chip warn" title="Estás de viaje">🧳 {store.content.cities[currentCity(state)].name}</span>}
         {state.outing && <span className="chip warn" title={`Recorriendo la ciudad (${loc?.name}). La franja se gasta al volver al taller.`}>🚶 En la ciudad</span>}
       </div>
       <nav className="hud-actions">

@@ -7,6 +7,11 @@ export const CITIES: City[] = [
     id: 'valdebrasa',
     name: 'Valdebrasa',
     description: 'Pueblo de forjas viejas al pie de las colinas. Huele a carbón y a pan.',
+    world: { x: 470, y: 400 }, arrival: 'herreria', ground: 'valle',
+    routes: [
+      { to: 'puertoseco', slots: 3, chance: 0.3, families: { bestias: 2, gelines: 1 }, budget: [6, 9] },
+      { to: 'fuerte_ceniza', slots: 3, chance: 0.4, families: { goblins: 2, bestias: 1 }, budget: [8, 12] },
+    ],
     locations: [
       {
         id: 'herreria', name: 'Tu herrería', kind: 'herreria', available: true,

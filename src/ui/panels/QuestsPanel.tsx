@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react';
+import { currentCity, homeCity } from '../../core/state';
+import { cityLocation } from '../../core/city';
 import { BALANCE } from '../../config/balance';
 import { checkAll } from '../../core/dialogue';
 import { isAuctionDay } from '../../core/town/auction';
@@ -30,15 +32,20 @@ function days(n: number) {
 /** Encargos y contratos. En el tablón muestra además los avisos de la ciudad; en el gremio, los contratos. */
 export function QuestsPanel() {
   const s = useGame();
-  const here = s.location;
+  const c = store.content;
+  const loc = cityLocation(c, s.location);
+  const home = currentCity(s) === homeCity();
+  // En las ciudades sin tablón, los avisos están en el gremio.
+  const here = loc?.kind === 'gremio' && !home ? 'gremio' : loc?.kind;
+  const news = loc?.kind === 'tablon' || (!home && loc?.kind === 'gremio');
   const tabs: { id: Tab; label: string }[] = [
-    ...(here === 'tablon' ? [{ id: 'news' as Tab, label: '📢 Avisos' }] : []),
+    ...(news ? [{ id: 'news' as Tab, label: '📢 Avisos' }] : []),
     ...(here === 'tablon' || here === 'gremio' ? [{ id: 'offers' as Tab, label: here === 'gremio' ? 'Encargos del gremio' : 'Encargos del tablón' }] : []),
     { id: 'contracts', label: `Contratos (${s.contracts.active.length})` },
     { id: 'journal', label: `Mis encargos (${s.quests.active.length})` },
   ];
   const [tab, setTab] = useState<Tab>(tabs[0].id);
-  const title = here === 'gremio' ? 'Gremio de aventureros' : here === 'tablon' ? 'Tablón de anuncios' : 'Encargos y contratos';
+  const title = loc && (here === 'gremio' || here === 'tablon') ? loc.name : 'Encargos y contratos';
 
   return (
     <Panel title={title} subtitle={`Encargos ${s.quests.active.length}/${BALANCE.quests.maxActive} · Contratos ${s.contracts.active.length}/${BALANCE.contracts.maxActive}`} wide>
@@ -69,7 +76,7 @@ function QuestCard({ q, children }: { q: QuestDef; children?: ReactNode }) {
 function Offers({ board }: { board: 'gremio' | 'tablon' }) {
   const s = useGame();
   const c = store.content;
-  const offers = s.quests.offers.filter((o) => o.board === board);
+  const offers = s.quests.offers.filter((o) => o.board === board && o.city === currentCity(s));
   return (
     <>
       <p className="muted small">Los avisos se renuevan cada {BALANCE.quests.refreshDays} días. Entregar a tiempo sube tu reputación; fallar o abandonar la baja.</p>
@@ -121,7 +128,7 @@ function Journal() {
 function Contracts() {
   const s = useGame();
   const c = store.content;
-  const atGuild = s.location === 'gremio';
+  const atGuild = cityLocation(c, s.location)?.kind === 'gremio';
   return (
     <>
       <p className="muted small">Volumen fijo, precio garantizado por unidad (no depende de la demanda). Se cobra al entregar; si llega una fecha y no entregaste lo que corresponde, el contrato se rompe.</p>
@@ -149,10 +156,10 @@ function Contracts() {
       </div>
       <h4>Ofertas</h4>
       {!atGuild && <p className="muted small">Los contratos nuevos se firman en el gremio.</p>}
-      {atGuild && !s.contracts.offers.length && <p className="muted">No hay contratos nuevos por ahora.</p>}
+      {atGuild && !s.contracts.offers.some((o) => o.city === currentCity(s)) && <p className="muted">No hay contratos nuevos por ahora.</p>}
       {atGuild && (
         <div className="quest-grid">
-          {s.contracts.offers.map((o) => {
+          {s.contracts.offers.filter((o) => o.city === currentCity(s)).map((o) => {
             const def = c.contracts[o.id];
             return (
               <article key={o.id} className="quest-card">
@@ -180,9 +187,11 @@ function News() {
   const s = useGame();
   const c = store.content;
   const au = s.auction;
+  const home = currentCity(s) === homeCity();
+  const events = s.cityEvents.active.filter((a) => (a.city ?? homeCity()) === currentCity(s));
   return (
     <div className="news-board">
-      <section>
+      <section hidden={!home}>
         <h4>🔨 Gran subasta</h4>
         {isAuctionDay(s)
           ? <p className="small good-text">¡Hoy es la subasta! Andá a la casa de subastas.</p>
@@ -191,8 +200,8 @@ function News() {
       </section>
       <section>
         <h4>📢 La ciudad</h4>
-        {!s.cityEvents.active.length && <p className="muted small">Días tranquilos en Valdebrasa.</p>}
-        {s.cityEvents.active.map((a) => {
+        {!events.length && <p className="muted small">Días tranquilos en {c.cities[currentCity(s)].name}.</p>}
+        {events.map((a) => {
           const ev = c.cityEvents[a.id];
           return (
             <article key={a.id} className="quest-card">

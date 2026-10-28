@@ -50,6 +50,8 @@ export interface ChestLoot {
  */
 export interface RegionDef {
   id: string;
+  /** No aparece en el mapa del mundo (el camino entre ciudades). */
+  hidden?: boolean;
   name: string;
   description: string;
   danger: number;
@@ -115,6 +117,10 @@ export interface ExpeditionState {
   fled?: boolean;
   /** Recorrida por una mazmorra (si la expedición es en una). */
   dungeon?: DungeonRun;
+  /** Lugar al que se vuelve al terminar (la herrería o la posada de otra ciudad). */
+  home?: string;
+  /** Encuentro en el camino entre ciudades: al terminar el combate se sigue viaje. */
+  travel?: { to: string; slotsLeft: number };
   nextId: number;
 }
 

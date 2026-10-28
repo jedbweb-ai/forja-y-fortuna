@@ -134,6 +134,12 @@ export const REGIONS: RegionDef[] = [
     ],
     boss: { monsters: ['grunaz', 'goblin_escudero', 'goblin_escudero', 'chaman_totem', 'goblin_hondero'], zone: 3 },
   },
+  // El camino entre ciudades: solo se usa para los encuentros del viaje.
+  {
+    id: 'camino', name: 'Camino', description: 'El camino entre ciudades.', danger: 2, available: false, hidden: true, travelSlots: 0,
+    world: { x: 0, y: 0 }, terrain: ['TTTTT', 'TE=.T', 'TTTTT'], heights: ['00000', '00000', '00000'], zones: ['11111', '11111', '11111'],
+    zoneDefs: [{ id: 'camino', name: 'Camino', danger: 2, biome: 'pradera', budget: [6, 10], groups: [0, 0], families: { bestias: 1 }, vetas: [], arboles: [] }],
+  },
   // Regiones que se abren en fases siguientes (se ven en el mapa del mundo con su peligro).
   ...([
     ['montanas_grises', 'Montañas Grises', 4, 980, 140],

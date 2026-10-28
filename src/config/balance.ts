@@ -399,6 +399,13 @@ export const BALANCE = {
     secretUniqueChance: 0.4,
   },
 
+  travel: {
+    /** Una noche en la posada de otra ciudad. */
+    innPrice: 8,
+    /** Si el grupo cae en el camino, los bandidos se llevan esta parte del oro. */
+    defeatGoldLoss: 0.15,
+  },
+
   assistant: {
     /** Relación mínima para dejar a un compañero a cargo de la tienda (los liberados siempre pueden). */
     minLevel: 'amigo',

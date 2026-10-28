@@ -25,7 +25,7 @@ export function checkCondition(s: GameState, cond: Condition): boolean {
     }
     case 'dayMin': return s.day >= cond.value;
     case 'itemsForgedMin': return s.stats.itemsForged >= cond.value;
-    case 'reputationMin': return (s.reputation[currentCity()] ?? 0) >= cond.value;
+    case 'reputationMin': return (s.reputation[currentCity(s)] ?? 0) >= cond.value;
     case 'questDone': {
       const done = s.quests.done.includes(cond.id);
       return cond.not ? !done : done;
@@ -58,7 +58,7 @@ export function applyEffect(s: GameState, c: Content, e: DialogueEffect): GameEv
       addMaterial(s, e.id, e.qty);
       return [{ type: 'toast', text: `Recibiste ${e.qty}× ${c.materials[e.id].name}.`, tone: 'good' }];
     case 'takeMaterial': addMaterial(s, e.id, -e.qty); return [];
-    case 'reputation': changeReputation(s, currentCity(), e.delta); return [];
+    case 'reputation': changeReputation(s, currentCity(s), e.delta); return [];
     case 'discoverSynergy':
       if (s.discoveredSynergies.includes(e.id)) return [];
       s.discoveredSynergies.push(e.id);

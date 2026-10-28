@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
+import { currentCity } from '../../core/state';
 import { dungeonUnlocked } from '../../core/dungeon/dungeon';
 import type { GameStore } from '../../bridge/GameStore';
 
 const W = 1280;
 const H = 720;
-const HOME = { x: 470, y: 400 };
 
 /** Mapa del mundo: Valdebrasa y las regiones, con su nivel de peligro. */
 export class WorldMapScene extends Phaser.Scene {
@@ -31,15 +31,31 @@ export class WorldMapScene extends Phaser.Scene {
 
     this.add.text(W / 2, 40, 'El Valle y más allá', { fontFamily: 'Georgia, serif', fontSize: '34px', color: '#5a3a24' }).setOrigin(0.5, 0).setResolution(2);
 
-    // Valdebrasa
-    g.fillStyle(0x7a3b2e, 1).fillRect(HOME.x - 22, HOME.y - 10, 44, 24);
-    g.fillStyle(0xc0563b, 1).fillTriangle(HOME.x - 28, HOME.y - 10, HOME.x, HOME.y - 34, HOME.x + 28, HOME.y - 10);
-    this.add.text(HOME.x, HOME.y + 22, 'Valdebrasa', { fontFamily: 'Georgia, serif', fontSize: '22px', color: '#3a2418', fontStyle: 'bold' })
-      .setOrigin(0.5, 0).setResolution(2);
-    const home = this.add.zone(HOME.x, HOME.y, 120, 90).setInteractive({ useHandCursor: true });
-    home.on('pointerdown', () => this.store.setUi({ view: 'location' }));
+    // Ciudades: la actual vuelve a su mapa; las otras abren el viaje.
+    const state = this.store.getSnapshot().state;
+    const here = state ? currentCity(state) : 'valdebrasa';
+    const HOME = this.store.content.cities[here].world;
+    for (const city of Object.values(this.store.content.cities)) {
+      const { x, y } = city.world;
+      const mine = city.id === here;
+      const route = this.store.content.cities[here].routes.find((r) => r.to === city.id);
+      if (route) {
+        const road = this.add.graphics();
+        road.lineStyle(5, 0x8a6a42, 0.8).lineBetween(HOME.x, HOME.y, x, y);
+      }
+      g.fillStyle(0x7a3b2e, 1).fillRect(x - 22, y - 10, 44, 24);
+      g.fillStyle(mine ? 0xc0563b : 0x5a6a8a, 1).fillTriangle(x - 28, y - 10, x, y - 34, x + 28, y - 10);
+      this.add.text(x, y + 22, mine ? `${city.name}\n(estás acá)` : route ? `${city.name}\n${route.slots} franjas` : city.name, {
+        fontFamily: 'Georgia, serif', fontSize: '22px', color: '#3a2418', fontStyle: 'bold', align: 'center',
+      }).setOrigin(0.5, 0).setResolution(2);
+      const zone = this.add.zone(x, y, 140, 100).setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => {
+        if (mine) this.store.setUi({ view: 'location' });
+        else this.store.setUi({ panel: 'travel', travelTo: city.id });
+      });
+    }
 
-    for (const region of Object.values(this.store.content.regions)) {
+    for (const region of Object.values(this.store.content.regions).filter((r) => !r.hidden)) {
       const { x, y } = region.world;
       // Camino punteado desde la ciudad
       const path = this.add.graphics();

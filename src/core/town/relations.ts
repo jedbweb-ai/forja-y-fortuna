@@ -3,7 +3,7 @@ import { cityLocation, npcsAt } from '../city';
 import { GameError, type Content, type Ctx } from '../content';
 import { acquireGrimoire } from '../magic/grimoires';
 import type { Rng } from '../rng';
-import { addMaterial, changeRelation, changeReputation, currentCity, relationLevel } from '../state';
+import { addMaterial, changeRelation, changeReputation, relationLevel } from '../state';
 import { RELATION_LEVELS, type GameEvent, type GameState, type GiftTaste, type Npc, type RelationLevel } from '../types';
 import type { RelationPerk } from './types';
 
@@ -210,7 +210,7 @@ export function dailyRelations(s: GameState, c: Content, rng: Rng): GameEvent[] 
       rumors.push({ npc: npc.id, text: rng.pick(npc.rumors) });
     }
     if (levelReached('hostil', lvl) && rng.chance(R.hostileRumorChance)) {
-      changeReputation(s, currentCity(), R.hostileRumorReputation);
+      changeReputation(s, npc.city, R.hostileRumorReputation);
       rumors.push({ npc: npc.id, text: `${npc.name} anda diciendo por ahí que tu trabajo es una estafa.` });
       events.push({ type: 'toast', text: `${npc.name.split(' ')[0]} habla mal de vos en la ciudad (${R.hostileRumorReputation} reputación).`, tone: 'bad' });
     }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { displaySlots } from '../../core/progress/progress';
 import {
-  acceptOffer, askPrice, closeShop, customerCount, declineCustomer, exhibitedItems, nextCustomer, openShop, suggestedPrice, toggleExhibit,
+  acceptOffer, askPrice, canOpenShop, closeShop, customerCount, declineCustomer, exhibitedItems, nextCustomer, openShop, suggestedPrice, toggleExhibit,
 } from '../../core/economy/shop';
 import { slotName } from '../../core/time';
 import { Panel } from '../components/Panel';
@@ -10,7 +10,7 @@ import { store, useGame } from '../hooks';
 
 export function ShopPanel() {
   const s = useGame();
-  if (s.location !== 'herreria') return <Panel title="Tienda"><p>La tienda se atiende desde tu herrería.</p></Panel>;
+  if (!canOpenShop(store.content, s)) return <Panel title="Tienda"><p>La tienda se atiende desde tu herrería o en un puesto ambulante en el mercado de otra ciudad.</p></Panel>;
   return s.shop ? <ShopSessionView /> : <ShopSetup />;
 }
 
@@ -19,7 +19,7 @@ function ShopSetup() {
   const shown = exhibitedItems(s).length;
   return (
     <Panel
-      title="Tu tienda"
+      title={s.location === 'herreria' ? 'Tu tienda' : 'Puesto ambulante'}
       subtitle={`Exhibición ${shown}/${displaySlots(store.content, s)} · Esperás unos ${customerCount(s)} clientes esta ${slotName(s)}`}
       footer={
         <button className="btn primary big" disabled={!!s.forge} onClick={() => store.run(openShop)}>

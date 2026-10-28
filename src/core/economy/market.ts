@@ -1,6 +1,7 @@
 import { BALANCE } from '../../config/balance';
 import { GameError, type Content, type Ctx } from '../content';
-import { addMaterial, currentCity } from '../state';
+import { addMaterial } from '../state';
+import { cityLocation } from '../city';
 import { demandOf, registerSale } from '../town/demand';
 import { exclusiveStock, refusesTrade } from '../town/relations';
 import type { GameEvent, GameState, ItemInstance } from '../types';
@@ -8,7 +9,7 @@ import { materialPrice, materialStock } from './monsterMarket';
 
 /** Lo que se vende en un lugar, más lo que el dueño solo te vende a vos por la relación. */
 export function marketStock(c: Content, s: GameState, locationId: string): string[] {
-  const base = c.cities[currentCity()].locations.find((l) => l.id === locationId)?.stock ?? [];
+  const base = cityLocation(c, locationId)?.stock ?? [];
   return [...new Set([...base, ...exclusiveStock(c, s, locationId)])];
 }
 
@@ -33,7 +34,8 @@ export function buyMaterial(s: GameState, { c }: Ctx, id: string, qty: number): 
 
 /** Venta rápida al por mayor en el mercado: barata pero inmediata. */
 export function quickSell(s: GameState, _ctx: Ctx, uid: string, qty: number): GameEvent[] {
-  if (s.location !== 'mercado') throw new GameError('La venta rápida se hace en el mercado.');
+  const here = cityLocation(_ctx.c, s.location)?.kind;
+  if (here !== 'mercado' && here !== 'muelle') throw new GameError('La venta rápida se hace en el mercado.');
   const item = s.items.find((i) => i.uid === uid);
   if (!item) throw new GameError('Ese objeto no existe.');
   if (item.equippedBy) throw new GameError('Primero sacáselo a quien lo tiene equipado.');

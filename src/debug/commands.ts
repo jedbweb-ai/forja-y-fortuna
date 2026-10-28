@@ -1,5 +1,5 @@
 import type { Ctx } from '../core/content';
-import { addMaterial, changeRelation, changeReputation, currentCity, nextUid, skillLevel, xpForLevel } from '../core/state';
+import { addMaterial, changeRelation, changeReputation, currentCity, homeCity, nextUid, skillLevel, xpForLevel } from '../core/state';
 import { buildItem } from '../core/forge/item';
 import { advanceTime } from '../core/time';
 import type { GameEvent, GameState, SkillId } from '../core/types';
@@ -41,7 +41,7 @@ export function dbgRelation(s: GameState, _ctx: Ctx, npc: string, delta: number)
 }
 
 export function dbgReputation(s: GameState, _ctx: Ctx, delta: number): GameEvent[] {
-  changeReputation(s, currentCity(), delta);
+  changeReputation(s, currentCity(s), delta);
   return [];
 }
 
@@ -177,7 +177,7 @@ export function dbgQuestProgress(s: GameState, { c }: Ctx): GameEvent[] {
 export function dbgUnlockDungeons(s: GameState, { c }: Ctx): GameEvent[] {
   for (const def of Object.values(c.dungeons)) {
     if (def.unlock.flag) s.flags[def.unlock.flag] = true;
-    if (def.unlock.reputationMin !== undefined) s.reputation[currentCity()] = Math.max(s.reputation[currentCity()] ?? 0, def.unlock.reputationMin);
+    if (def.unlock.reputationMin !== undefined) s.reputation[homeCity()] = Math.max(s.reputation[homeCity()] ?? 0, def.unlock.reputationMin);
   }
   return [{ type: 'toast', text: '[debug] Mazmorras abiertas' }];
 }

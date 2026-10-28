@@ -3,7 +3,7 @@ import { EMPTY_SKILLS, emptyTownState } from '../core/state';
 import type { GameState } from '../core/types';
 
 /** Versión actual del formato de guardado. Subirla junto con una migración. */
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 /**
  * Formato del guardado. Es JSON plano para que el mismo archivo pueda subirse
@@ -80,6 +80,18 @@ export const MIGRATIONS: Record<number, Migration> = {
   5: (save) => {
     const st = save.state as Record<string, unknown> & { settings?: Record<string, unknown> };
     return { ...save, version: 6, state: { ...st, talents: {}, workshop: {}, assistant: null, settings: { ...(st.settings ?? {}), permadeath: false } } };
+  },
+  // Fase 6B: varias ciudades. Todo lo anterior pasa a ser de Valdebrasa.
+  6: (save) => {
+    type Ev = { active?: { id: string; city?: string }[] };
+    const st = save.state as Record<string, unknown> & {
+      demand?: Record<string, number>; cityEvents?: Ev; quests?: { offers?: { city?: string }[] }; contracts?: { offers?: { city?: string }[] };
+    };
+    const home = 'valdebrasa';
+    st.cityEvents?.active?.forEach((a) => { a.city ??= home; });
+    st.quests?.offers?.forEach((o) => { o.city ??= home; });
+    st.contracts?.offers?.forEach((o) => { o.city ??= home; });
+    return { ...save, version: 7, state: { ...st, city: home, demand: { [home]: st.demand ?? {} } } };
   },
 };
 

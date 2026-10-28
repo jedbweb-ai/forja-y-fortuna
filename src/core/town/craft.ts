@@ -1,6 +1,6 @@
 import type { Content } from '../content';
 import { acquireGrimoire } from '../magic/grimoires';
-import { addMaterial, changeRelation, changeReputation, currentCity } from '../state';
+import { addMaterial, changeRelation, changeReputation, homeCity } from '../state';
 import { RARITIES, type GameEvent, type GameState, type ItemInstance } from '../types';
 import type { CraftSpec, QuestReward } from './types';
 
@@ -81,13 +81,13 @@ export function describeReward(c: Content, r: QuestReward): string {
   return parts.join(' · ');
 }
 
-export function applyReward(s: GameState, c: Content, r: QuestReward, giver?: string): GameEvent[] {
+export function applyReward(s: GameState, c: Content, r: QuestReward, giver?: string, city = homeCity()): GameEvent[] {
   const events: GameEvent[] = [];
   if (r.gold) {
     s.gold += r.gold;
     s.stats.goldEarned += r.gold;
   }
-  if (r.reputation) changeReputation(s, currentCity(), r.reputation);
+  if (r.reputation) changeReputation(s, city, r.reputation);
   if (r.relation && giver) changeRelation(s, giver, r.relation);
   r.materials?.forEach((m) => addMaterial(s, m.id, m.qty));
   if (r.blueprint && !s.knownBlueprints.includes(r.blueprint)) s.knownBlueprints.push(r.blueprint);
@@ -102,7 +102,7 @@ export function applyReward(s: GameState, c: Content, r: QuestReward, giver?: st
   return events;
 }
 
-export function applyPenalty(s: GameState, p: { reputation?: number; relation?: number }, giver?: string) {
-  if (p.reputation) changeReputation(s, currentCity(), -Math.abs(p.reputation));
+export function applyPenalty(s: GameState, p: { reputation?: number; relation?: number }, giver?: string, city = homeCity()) {
+  if (p.reputation) changeReputation(s, city, -Math.abs(p.reputation));
   if (p.relation && giver) changeRelation(s, giver, -Math.abs(p.relation));
 }

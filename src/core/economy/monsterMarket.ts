@@ -1,7 +1,6 @@
 import { BALANCE } from '../../config/balance';
 import type { Content } from '../content';
 import type { Rng } from '../rng';
-import { currentCity } from '../state';
 import { materialEventMult } from '../town/cityEvents';
 import { tradeMult } from '../town/relations';
 import type { GameState } from '../types';
@@ -17,10 +16,10 @@ export function isMonsterPart(c: Content, id: string): boolean {
   return !!m && (m.type === 'monstruo' || !!m.tags?.some((t) => MONSTER_FAMILY_TAGS.includes(t)));
 }
 
-/** Partes de monstruo que se venden en el mercado de la ciudad. */
+/** Partes de monstruo que se venden en los mercados de todas las ciudades. */
 export function marketMonsterParts(c: Content): string[] {
-  const loc = c.cities[currentCity()].locations.find((l) => l.kind === 'mercado');
-  return (loc?.stock ?? []).filter((id) => isMonsterPart(c, id));
+  const ids = Object.values(c.cities).flatMap((city) => city.locations).filter((l) => l.kind === 'mercado' || l.kind === 'muelle').flatMap((l) => l.stock ?? []);
+  return [...new Set(ids)].filter((id) => isMonsterPart(c, id));
 }
 
 function affects(c: Content, ev: MarketEventDef, id: string): boolean {

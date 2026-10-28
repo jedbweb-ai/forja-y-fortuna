@@ -2,7 +2,7 @@
 
 Juego de gestión y RPG táctico: sos un herrero en un mundo de fantasía. El diseño completo está en [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (fuente de verdad).
 
-**Estado: Fase 6 (expansión y pulido) en curso: 6A terminada.**
+**Estado: Fase 6 (expansión y pulido) en curso: 6A y 6B terminadas.**
 
 ## Cómo correrlo
 
@@ -125,5 +125,14 @@ src/
 - **Muerte permanente**: opción en Ajustes, apagada por defecto. Solo para compañeros y solo en mazmorras de 5 estrellas o más.
 - Las partidas anteriores se migran solas (versión 6 del guardado).
 
+## Decisiones de la Fase 6B (varias ciudades y viajes)
+
+- **Tres ciudades**: Valdebrasa (con tu herrería), **Puertoseco** (puerto: marineros, arrojadizos y herramientas, ébano, coral y perlas negras que llegan por barco) y **Fuerte Ceniza** (frontera: soldados, armaduras, escudos, flechas y acero negro).
+- **Viajes** desde el mapa del mundo: tardan franjas y a veces sale algo al cruce. Se pelea en el camino y después se sigue viaje; si el grupo cae, unos bandidos se llevan parte del oro.
+- **La herrería queda en Valdebrasa.** En las otras ciudades se compra, se vende rápido, se arma un **puesto ambulante** en el mercado (la misma tienda, con los clientes de esa ciudad), se aceptan encargos y contratos, y se duerme en la **posada** (la noche se paga).
+- Cada ciudad tiene su reputación, sus clientes (marineros, soldados), su **demanda**, sus NPC, encargos, contratos y eventos. Los lugares tienen ids únicos en todo el mundo, así que sumar una ciudad es agregar datos (, ).
+- Las expediciones y mazmorras vuelven a la ciudad desde donde saliste.
+- Las partidas anteriores se migran solas (versión 7 del guardado).
+
 ## Pendiente para próximas fases
-Lo que sigue de la Fase 6: 6B (Puertoseco, Fuerte Ceniza y viajes), 6C (Montañas Grises, Pantano de Niebla, gigantes, elementales y tiendas especializadas) y 6D (balance y pulido).
+Lo que sigue de la Fase 6: 6C (Montañas Grises, Pantano de Niebla, gigantes, elementales y tiendas especializadas) y 6D (balance y pulido).

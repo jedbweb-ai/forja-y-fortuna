@@ -76,7 +76,7 @@ export function validateContent(c: Content): string[] {
     for (const [slot, locId] of Object.entries(npc.routine)) {
       const city = c.cities[npc.city];
       const loc = city?.locations.find((l) => l.id === locId);
-      if (!loc) errors.push(`NPC ${npc.id}: rutina ${slot} en lugar inexistente "${locId}"`);
+      if (!loc) errors.push(`NPC ${npc.id}: rutina ${slot} en lugar inexistente "${locId}" de ${npc.city}`);
       else if (!loc.scene?.npcSpots[npc.id]) errors.push(`NPC ${npc.id}: falta npcSpot en "${locId}"`);
     }
   }
@@ -300,6 +300,28 @@ export function validateContent(c: Content): string[] {
   for (const sk of Object.values(c.skills)) if (sk.telegraph && sk.target !== 'tile') errors.push(`acción ${sk.id}: un golpe anunciado tiene que apuntar a una casilla`);
 
   // ── Fase 6 ──
+  const locIds = new Map<string, string>();
+  for (const city of Object.values(c.cities)) {
+    for (const l of city.locations) {
+      if (locIds.has(l.id)) errors.push(`lugar ${l.id}: id repetido en ${locIds.get(l.id)} y ${city.id}`);
+      locIds.set(l.id, city.id);
+    }
+    if (!city.locations.some((l) => l.id === city.arrival)) errors.push(`ciudad ${city.id}: lugar de llegada inexistente "${city.arrival}"`);
+    for (const r of city.routes) {
+      if (!c.cities[r.to]) errors.push(`ciudad ${city.id}: camino a ciudad inexistente "${r.to}"`);
+      else if (!c.cities[r.to].routes.some((x) => x.to === city.id)) errors.push(`ciudad ${city.id}: el camino a ${r.to} no tiene vuelta`);
+      for (const fam of Object.keys(r.families)) if (!Object.values(c.monsters).some((m) => m.family === fam && !m.boss)) errors.push(`camino ${city.id}→${r.to}: familia "${fam}" sin monstruos`);
+    }
+    Object.keys(city.customers ?? {}).forEach((t) => { if (!c.customers[t]) errors.push(`ciudad ${city.id}: cliente inexistente "${t}"`); });
+  }
+  for (const t of Object.values(c.customers)) t.cities?.forEach((x) => { if (!c.cities[x]) errors.push(`cliente ${t.id}: ciudad inexistente "${x}"`); });
+  for (const q of Object.values(c.quests)) if (q.city && !c.cities[q.city]) errors.push(`encargo ${q.id}: ciudad inexistente "${q.city}"`);
+  for (const k of Object.values(c.contracts)) {
+    const city = c.cities[k.city ?? 'valdebrasa'];
+    if (!city) errors.push(`contrato ${k.id}: ciudad inexistente "${k.city}"`);
+    else if (!city.locations.some((l) => l.kind === 'gremio')) errors.push(`contrato ${k.id}: ${city.id} no tiene dónde firmarlo`);
+  }
+  for (const ev of Object.values(c.cityEvents)) if (ev.city && !c.cities[ev.city]) errors.push(`evento ${ev.id}: ciudad inexistente "${ev.city}"`);
   for (const t of Object.values(c.talents)) {
     if (t.requires && !c.talents[t.requires]) errors.push(`talento ${t.id}: requiere "${t.requires}" inexistente`);
     if (t.requires && c.talents[t.requires]?.skill !== t.skill) errors.push(`talento ${t.id}: requiere un talento de otra habilidad`);

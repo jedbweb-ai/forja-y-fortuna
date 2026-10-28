@@ -71,6 +71,17 @@ describe('guardado', () => {
     expect(out.state.settings.permadeath).toBe(false);
   });
 
+  it('migra un guardado de la Fase 6A (v6) a la v7: todo pasa a ser de Valdebrasa', () => {
+    const v6 = makeSaveFile(createInitialState(CONTENT, 1)) as unknown as { version: number; state: Record<string, unknown> };
+    v6.version = 6;
+    delete v6.state.city;
+    v6.state.demand = { arma: 0.8 };
+    const out = migrateSave(JSON.parse(JSON.stringify(v6)));
+    expect(out.version).toBe(SAVE_VERSION);
+    expect(out.state.city).toBe('valdebrasa');
+    expect(out.state.demand).toEqual({ valdebrasa: { arma: 0.8 } });
+  });
+
   it('rechaza saves inválidos o de versiones futuras', () => {
     expect(() => migrateSave(null)).toThrow();
     expect(() => migrateSave({ version: SAVE_VERSION + 1, state: {} })).toThrow();

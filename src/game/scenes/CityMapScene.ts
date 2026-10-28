@@ -18,13 +18,14 @@ export class CityMapScene extends Phaser.Scene {
   }
 
   create() {
-    const city = this.store.content.cities[currentCity()];
+    // También es el fondo de la pantalla de título, cuando todavía no hay partida.
     const state = this.store.getSnapshot().state;
+    const city = this.store.content.cities[state ? currentCity(state) : 'valdebrasa'];
     const slot = state ? slotName(state) : 'mañana';
     const light = SLOT_LIGHT[slot];
     this.cameras.main.setBackgroundColor(light.bg);
 
-    this.drawGround();
+    this.drawGround(city.ground);
     const doors: { x: number; y: number }[] = [];
     for (const loc of city.locations) doors.push(this.drawBuilding(loc));
     this.spawnWalkers(doors, slot === 'noche' ? 2 : 6);
@@ -56,7 +57,9 @@ export class CityMapScene extends Phaser.Scene {
     cam.centerOn(MAP_W / 2, MAP_H / 2 - 10 / zoom);
   }
 
-  private drawGround() {
+  private drawGround(ground: 'valle' | 'puerto' | 'fortaleza') {
+    if (ground === 'puerto') return this.drawPort();
+    if (ground === 'fortaleza') return this.drawFortress();
     const g = this.add.graphics();
     g.fillStyle(0x7cb35a, 1).fillRect(-200, -200, MAP_W + 400, MAP_H + 400);
     g.fillStyle(0x6aa84f, 1);
@@ -87,6 +90,47 @@ export class CityMapScene extends Phaser.Scene {
       if (Math.abs(y - 470) < 40 || Math.abs(x - 640) < 40) continue;
       this.add.image(x, y, 'prop.tree').setScale(0.7).setDepth(y);
     }
+  }
+
+  /** Puerto: arena, mar al sur y un muelle de madera. */
+  private drawPort() {
+    const g = this.add.graphics();
+    g.fillStyle(0xe8d6a8, 1).fillRect(-200, -200, MAP_W + 400, MAP_H + 400);
+    g.fillStyle(0xd9c18a, 1);
+    for (let i = 0; i < 40; i++) g.fillCircle((i * 197) % MAP_W, (i * 113) % 470, 14 + (i % 4) * 5);
+    g.fillStyle(0x3a7ab8, 1).fillRect(-200, 610, MAP_W + 400, 400);
+    g.fillStyle(0x5a9ad0, 1);
+    for (let i = 0; i < 20; i++) g.fillRect((i * 151) % MAP_W, 640 + (i % 4) * 20, 40, 3);
+    g.fillStyle(0x8b5a2b, 1).fillRect(560, 600, 160, 30).fillRect(620, 600, 40, 120);
+    g.lineStyle(26, 0xc9a66b, 1);
+    g.lineBetween(120, 470, 1200, 470);
+    g.lineBetween(640, 140, 640, 600);
+    g.lineBetween(220, 470, 220, 250);
+    g.lineBetween(1050, 470, 1050, 230);
+    for (let i = 0; i < 6; i++) {
+      const x = 80 + i * 220;
+      this.add.image(x, 120, 'prop.tree').setScale(0.6).setTint(0x9acb6a).setDepth(120);
+    }
+  }
+
+  /** Fortaleza: tierra, muralla de piedra alrededor y torres en las esquinas. */
+  private drawFortress() {
+    const g = this.add.graphics();
+    g.fillStyle(0x9a8a6a, 1).fillRect(-200, -200, MAP_W + 400, MAP_H + 400);
+    g.fillStyle(0x8a7a5a, 1);
+    for (let i = 0; i < 50; i++) g.fillCircle((i * 197) % MAP_W, (i * 113) % MAP_H, 12 + (i % 4) * 6);
+    g.lineStyle(34, 0x6a6a72, 1).strokeRect(70, 80, MAP_W - 140, MAP_H - 130);
+    g.lineStyle(4, 0x4a4a52, 1).strokeRect(53, 63, MAP_W - 106, MAP_H - 96);
+    for (const [x, y] of [[70, 80], [MAP_W - 70, 80], [70, MAP_H - 50], [MAP_W - 70, MAP_H - 50]]) {
+      g.fillStyle(0x5a5a62, 1).fillCircle(x, y, 34);
+      g.fillStyle(0x7a7a82, 1).fillCircle(x, y, 26);
+    }
+    g.fillStyle(0x3a2a1a, 1).fillRect(MAP_W / 2 - 40, MAP_H - 66, 80, 34);
+    g.lineStyle(24, 0xb89a6b, 1);
+    g.lineBetween(160, 460, 1120, 460);
+    g.lineBetween(640, 180, 640, 650);
+    g.lineBetween(300, 460, 300, 330);
+    g.lineBetween(1000, 460, 1000, 260);
   }
 
   private drawBuilding(loc: CityLocation): { x: number; y: number } {

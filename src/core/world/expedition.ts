@@ -11,6 +11,7 @@ import { addMaterial, addXp, skillLevel } from '../state';
 import { advanceTime, sleep, slotName } from '../time';
 import type { GameEvent, GameState } from '../types';
 import { recordKills } from '../town/quests';
+import { arrive } from '../city';
 import { bonus } from '../progress/progress';
 import { unequipAll } from '../party/equipment';
 import { servantEscapes, servantsAfterCombat } from '../town/servants';
@@ -138,7 +139,7 @@ export function startExpedition(s: GameState, { c, rng }: Ctx, regionId: string)
   s.expedition = {
     regionId, pos: { ...entry }, energy: expeditionEnergy(s, members, c), maxEnergy: expeditionEnergy(s, members, c), spent: 0,
     bag: {}, capacity: expeditionCapacity(s, members, c), nodes: [], groups: [], members, combat: null, report: null,
-    nightSpawned: false, nextId: 1,
+    nightSpawned: false, nextId: 1, home: s.location,
   };
   populate(c, s, rng, r);
 
@@ -369,7 +370,7 @@ function finishExpedition(s: GameState) {
   for (const [id, q] of Object.entries(e.bag)) addMaterial(s, id, q);
   for (const ch of partyMembers(s)) ch.hp = maxHp(ch);
   s.expedition = null;
-  s.location = 'herreria';
+  s.location = e.home || 'herreria';
   s.outing = false;
 }
 
@@ -385,10 +386,52 @@ export function returnHome(s: GameState, { c, rng }: Ctx): GameEvent[] {
   return [
     ...escapes,
     ...advanceTime(s, r.travelSlots),
-    { type: 'toast', text: `Volvés a Valdebrasa con ${total} materiales.`, tone: 'good' },
+    { type: 'toast', text: `Volvés con ${total} materiales.`, tone: 'good' },
     { type: 'expeditionEnded', outcome: 'return' },
-    { type: 'locationChanged', location: 'herreria' },
+    { type: 'locationChanged', location: s.location },
   ];
+}
+
+// ───────────────────────── Camino entre ciudades ─────────────────────────
+
+/** Algo sale al cruce en el camino: se arma una "expedición" mínima solo para pelear. */
+export function roadEncounter(s: GameState, { c, rng }: Ctx, to: string, slotsLeft: number, families: Record<string, number>, budget: [number, number]): GameEvent[] {
+  const members = readyMembers(s);
+  const zone = { id: 'camino', name: 'Camino', danger: 2, biome: 'pradera' as const, budget, groups: [1, 1] as [number, number], families, vetas: [], arboles: [] };
+  const g = generateGroup(c, zone, slotName(s), rng);
+  s.expedition = {
+    regionId: 'camino', pos: { x: 1, y: 1 }, energy: 1, maxEnergy: 1, spent: 0, bag: {}, capacity: 0, nodes: [], groups: [], members,
+    combat: null, report: null, nightSpawned: true, nextId: 1, home: s.location, travel: { to, slotsLeft },
+  };
+  const group = makeGroup(c, s.expedition, { x: 2, y: 1 }, 0, g.monsters, { aggressive: true });
+  s.expedition.groups.push(group);
+  const arenas = Object.values(c.arenas).filter((a) => ['pradera', 'bosque', 'colinas'].includes(a.biome));
+  s.expedition.combat = buildCombat(c, s, group, rng.pick(arenas).id, members);
+  beginTurn(c, s, rng);
+  const names = [...new Set(g.monsters.map((m) => c.monsters[m].name))].join(', ');
+  return [{ type: 'toast', text: `¡En el camino te sale al cruce: ${names}!`, tone: 'bad' }, { type: 'combatStarted' }];
+}
+
+/** Terminado el combate del camino, se sigue viaje. Si el grupo cayó, unos bandidos se llevan parte del oro. */
+function finishTravel(s: GameState, c: Content, outcome: 'victory' | 'defeat' | 'fled'): GameEvent[] {
+  const e = expedition(s);
+  const travel = e.travel!;
+  const events: GameEvent[] = [];
+  for (const [id, q] of Object.entries(e.bag)) addMaterial(s, id, q);
+  if (outcome === 'defeat') {
+    const lost = Math.floor(s.gold * BALANCE.travel.defeatGoldLoss);
+    s.gold -= lost;
+    for (const id of e.members) {
+      const ch = s.characters[id];
+      if (!ch) continue;
+      ch.hp = maxHp(ch);
+      if (id !== 'herrero') ch.injuredUntilDay = s.day + BALANCE.injury.days;
+    }
+    events.push({ type: 'toast', text: `Te dejaron tirado en el camino y perdiste ${lost} de oro. Llegás como podés.`, tone: 'bad' });
+  }
+  s.expedition = null;
+  events.push(...advanceTime(s, travel.slotsLeft), ...arrive(s, c, travel.to), { type: 'expeditionEnded', outcome: outcome === 'defeat' ? 'defeat' : 'return' });
+  return events;
 }
 
 /** Derrota: se pierde la mitad de lo juntado, se despierta en la ciudad y los compañeros quedan heridos. */
@@ -406,9 +449,9 @@ function defeatHome(s: GameState, rng: Rng): GameEvent[] {
   return [
     ...escapes,
     ...events,
-    { type: 'toast', text: `Despertás en Valdebrasa. Perdiste ${lostCount} materiales en la huida.`, tone: 'bad' },
+    { type: 'toast', text: `Despertás de vuelta en la ciudad. Perdiste ${lostCount} materiales en la huida.`, tone: 'bad' },
     { type: 'expeditionEnded', outcome: 'defeat' },
-    { type: 'locationChanged', location: 'herreria' },
+    { type: 'locationChanged', location: s.location },
   ];
 }
 
@@ -517,12 +560,13 @@ export function combatAiStep(s: GameState, { c, rng }: Ctx): GameEvent[] {
 }
 
 /** Cerrar el reporte del combate y seguir (o volver a la ciudad si fue derrota). */
-export function closeReport(s: GameState, { rng }: Ctx): GameEvent[] {
+export function closeReport(s: GameState, { c, rng }: Ctx): GameEvent[] {
   const e = expedition(s);
   if (!e.report) return [];
   const outcome = e.report.outcome;
   e.report = null;
   e.combat = null;
+  if (e.travel) return finishTravel(s, c, outcome);
   if (outcome === 'defeat') return defeatHome(s, rng);
   // Nadie en pie para seguir: vuelta forzada.
   if (!e.members.some((id) => s.characters[id] && !isInjured(s, s.characters[id]))) return defeatHome(s, rng);
