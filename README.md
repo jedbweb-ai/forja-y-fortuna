@@ -130,7 +130,7 @@ src/
 - **Tres ciudades**: Valdebrasa (con tu herrería), **Puertoseco** (puerto: marineros, arrojadizos y herramientas, ébano, coral y perlas negras que llegan por barco) y **Fuerte Ceniza** (frontera: soldados, armaduras, escudos, flechas y acero negro).
 - **Viajes** desde el mapa del mundo: tardan franjas y a veces sale algo al cruce. Se pelea en el camino y después se sigue viaje; si el grupo cae, unos bandidos se llevan parte del oro.
 - **La herrería queda en Valdebrasa.** En las otras ciudades se compra, se vende rápido, se arma un **puesto ambulante** en el mercado (la misma tienda, con los clientes de esa ciudad), se aceptan encargos y contratos, y se duerme en la **posada** (la noche se paga).
-- Cada ciudad tiene su reputación, sus clientes (marineros, soldados), su **demanda**, sus NPC, encargos, contratos y eventos. Los lugares tienen ids únicos en todo el mundo, así que sumar una ciudad es agregar datos (, ).
+- Cada ciudad tiene su reputación, sus clientes (marineros, soldados), su **demanda**, sus NPC, encargos, contratos y eventos. Los lugares tienen ids únicos en todo el mundo, así que sumar una ciudad es agregar datos (`data/cities6.ts`, `data/content6b.ts`).
 - Las expediciones y mazmorras vuelven a la ciudad desde donde saliste.
 - Las partidas anteriores se migran solas (versión 7 del guardado).
 
