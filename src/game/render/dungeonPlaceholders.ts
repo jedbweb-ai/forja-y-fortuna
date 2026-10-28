@@ -123,4 +123,26 @@ export function generateDungeonPlaceholders(scene: Phaser.Scene) {
     poly(g, [10, 0, 18, 12, 14, 28, 10, 28], W);
     px(g, 8, s ? 10 : 12, 4, 4, 0xffffff);
   }, 2);
+
+  // ── Gigantes y elementales (Fase 6C) ──
+  twoFrames(scene, 'mon.ogro', 30, 34, (g, s) => {
+    px(g, s ? 8 : 9, 27, 5, 7, shade(L, 0.6)); px(g, s ? 17 : 16, 27, 5, 7, shade(L, 0.6));
+    g.fillStyle(L, 1).fillEllipse(15, 19, 22, 18);
+    px(g, 10, 4, 10, 9, W); px(g, 12, 7, 2, 2, D); px(g, 16, 7, 2, 2, D); px(g, 12, 11, 6, 1, D); px(g, 13, 12, 1, 2, W);
+    px(g, 2, 13, 5, 12, L); px(g, 23, 13, 5, 12, L);
+    px(g, 26, 6, 4, 20, 0x6b4220); px(g, 25, 4, 6, 5, 0x5a3a24);
+  }, 3);
+  twoFrames(scene, 'mon.ciclope', 32, 38, (g, s) => {
+    px(g, s ? 8 : 9, 30, 6, 8, shade(L, 0.6)); px(g, s ? 18 : 17, 30, 6, 8, shade(L, 0.6));
+    g.fillStyle(L, 1).fillEllipse(16, 21, 24, 20);
+    px(g, 10, 2, 12, 12, W); g.fillStyle(0xffffff, 1).fillCircle(16, 7, 3); px(g, 15, 6, 2, 2, D); px(g, 12, 11, 8, 1, D);
+    px(g, 2, 15, 5, 12, L); px(g, 25, 15, 5, 12, L);
+  }, 3);
+  twoFrames(scene, 'mon.elemental', 22, 30, (g, s) => {
+    g.fillStyle(L, 0.85).fillEllipse(11, 14, 16, 18);
+    poly(g, [3, 18, 19, 18, 15 + (s ? 1 : 0), 30, 11, 24, 7 - (s ? 1 : 0), 30], L, 0.85);
+    g.fillStyle(W, 1).fillCircle(11, 10, 5);
+    px(g, 8, 9, 2, 2, D); px(g, 13, 9, 2, 2, D);
+    px(g, 2, s ? 6 : 8, 3, 3, W); px(g, 18, s ? 8 : 6, 3, 3, W);
+  });
 }

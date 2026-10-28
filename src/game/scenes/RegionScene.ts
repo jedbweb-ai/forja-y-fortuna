@@ -60,6 +60,7 @@ export class RegionScene extends Phaser.Scene {
         if (ch === '=' || ch === 'E') return 'tile.road';
         if (ch === 'w') return 'tile.water';
         const z = zoneAt(r, c, y);
+        if (r.zoneTiles?.[z]) return r.zoneTiles[z];
         return z === 1 ? 'tile.darkgrass' : z === 2 ? 'tile.dirt' : 'tile.grass';
       },
       sideTint: () => 0x9a7a52,

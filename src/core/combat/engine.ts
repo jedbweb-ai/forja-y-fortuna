@@ -65,7 +65,7 @@ export function monsterUnit(c: Content, id: string, uid: string): CombatUnit {
     id: uid, side: 'enemy', name: m.name, monsterId: m.id, sprite: m.sprite,
     x: 0, y: 0, facing: 2, hp: m.hp, maxHp: m.hp, atk: m.atk, def: m.def, spd: m.spd, move: m.move, jump: m.jump,
     evasion: m.evasion, crit: 0.05, damageType: m.damageType, affinities: { ...(m.affinities ?? {}) }, resist: m.resist,
-    elemental: m.elemental, immune: m.immune ?? [], combat: {}, skills: [...m.skills], cooldowns: {}, statuses: [], abilities: {},
+    elemental: m.elemental, immune: m.immune ?? [], combat: m.regen ? { regen: m.regen } : {}, skills: [...m.skills], cooldowns: {}, statuses: [], abilities: {},
     ai: m.ai, boss: m.boss, moved: false, acted: false, alive: true, shieldedBy: m.shieldedBy,
   };
 }

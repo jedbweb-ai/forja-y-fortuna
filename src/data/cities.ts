@@ -1,4 +1,5 @@
-import type { City } from '../core/types';
+import type { City, CityLocation } from '../core/types';
+import { SHOPS_6C } from './content6c';
 
 // Coordenadas `map` en el lienzo lógico del mapa (1280x720).
 // Coordenadas de escena en casillas isométricas.
@@ -121,6 +122,7 @@ export const CITIES: City[] = [
             rulfa: { x: 3, y: 2 }, ruperto: { x: 9, y: 4 }, ilse: { x: 1, y: 6 },
             brunilda: { x: 6, y: 3 }, teodora: { x: 11, y: 3 }, ciro: { x: 10, y: 6 }, nayra: { x: 2, y: 8 }, gualterio: { x: 9, y: 8 },
             aldana: { x: 5, y: 6 }, odalrico: { x: 6, y: 7 }, lisandro: { x: 4, y: 8 }, braulio: { x: 10, y: 2 }, mirta: { x: 1, y: 3 },
+            tanino: { x: 7, y: 2 }, fabiola: { x: 4, y: 3 },
           },
           ambient: { 'mañana': 2, tarde: 5, noche: 9 },
           carts: false,
@@ -152,9 +154,9 @@ export const CITIES: City[] = [
           animals: ['gato'],
         },
       },
-      { id: 'curtidor', name: 'Curtidor', kind: 'curtidor', available: false, map: { x: 140, y: 270, w: 110, h: 85, roof: '#8a6a3a' }, description: 'Cueros al sol. Abre más adelante.' },
-      { id: 'maderero', name: 'Maderero', kind: 'maderero', available: false, map: { x: 150, y: 590, w: 110, h: 80, roof: '#6a5a2a' }, description: 'Troncos apilados. Abre más adelante.' },
-      { id: 'joyero', name: 'Joyero', kind: 'joyero', available: false, map: { x: 820, y: 180, w: 105, h: 85, roof: '#3a6a8a' }, description: 'Vitrinas brillantes. Abre más adelante.' },
+      { id: 'curtidor', kind: 'curtidor', map: { x: 140, y: 270, w: 110, h: 85, roof: '#8a6a3a' }, ...SHOPS_6C.curtidor } as CityLocation,
+      { id: 'maderero', kind: 'maderero', map: { x: 150, y: 590, w: 110, h: 80, roof: '#6a5a2a' }, ...SHOPS_6C.maderero } as CityLocation,
+      { id: 'joyero', kind: 'joyero', map: { x: 820, y: 180, w: 105, h: 85, roof: '#3a6a8a' }, ...SHOPS_6C.joyero } as CityLocation,
       {
         id: 'libreria', name: 'Librería Pliegue', kind: 'libreria', available: true, owner: 'teodora',
         map: { x: 1010, y: 230, w: 110, h: 90, roof: '#7a2a4a' },

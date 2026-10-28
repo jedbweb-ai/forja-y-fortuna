@@ -62,7 +62,7 @@ describe('tiempo', () => {
 
   it('no deja ir a lugares cerrados ni descansar fuera del taller', () => {
     const { s, ctx } = setup();
-    expect(() => goTo(s, ctx, 'curtidor')).toThrow();
+    expect(() => goTo(s, ctx, 'ps_muelle')).toThrow();
     goTo(s, ctx, 'mercado');
     expect(() => restSlot(s, ctx)).toThrow();
   });

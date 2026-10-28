@@ -62,6 +62,8 @@ export interface RegionDef {
   heights: string[];
   zones: string[];
   zoneDefs: ZoneDef[];
+  /** Suelo de cada zona en el mapa de exploración (si no, el del valle). */
+  zoneTiles?: string[];
   boss?: { monsters: string[]; zone: number };
 }
 

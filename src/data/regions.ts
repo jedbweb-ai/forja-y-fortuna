@@ -142,8 +142,6 @@ export const REGIONS: RegionDef[] = [
   },
   // Regiones que se abren en fases siguientes (se ven en el mapa del mundo con su peligro).
   ...([
-    ['montanas_grises', 'Montañas Grises', 4, 980, 140],
-    ['pantano_niebla', 'Pantano de Niebla', 5, 360, 420],
     ['ruinas_vigia', 'Ruinas del Vigía', 6, 1040, 470],
     ['tierras_dragon', 'Tierras del Dragón', 9, 1160, 90],
   ] as const).map(([id, name, danger, x, y]): RegionDef => ({

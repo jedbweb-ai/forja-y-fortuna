@@ -21,9 +21,11 @@ interface UnitView {
 
 const FLOOR: Record<string, string> = {
   pradera: 'tile.grass', bosque: 'tile.darkgrass', colinas: 'tile.dirt', campamento: 'tile.dirt', cripta: 'tile.cryptstone', cueva: 'tile.cave', jefe: 'tile.cryptstone',
+  montana: 'tile.dirt', pantano: 'tile.darkgrass',
 };
 const OBSTACLE: Record<string, string> = {
   pradera: 'prop.rock', bosque: 'prop.tree', colinas: 'prop.rock', campamento: 'prop.palisade', cripta: 'prop.pillar', cueva: 'prop.stalagmite', jefe: 'prop.pillar',
+  montana: 'prop.rock', pantano: 'prop.tree',
 };
 const STATUS_ICON: Record<string, string> = {
   sangrado: '🩸', veneno: '☠️', quemadura: '🔥', aturdido: '💫', ralentizado: '🐌', inmovilizado: '🕸️',

@@ -2,7 +2,7 @@
 
 Juego de gestión y RPG táctico: sos un herrero en un mundo de fantasía. El diseño completo está en [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (fuente de verdad).
 
-**Estado: Fase 6 (expansión y pulido) en curso: 6A y 6B terminadas.**
+**Estado: Fase 6 (expansión y pulido) en curso: 6A, 6B y 6C terminadas.**
 
 ## Cómo correrlo
 
@@ -134,5 +134,13 @@ src/
 - Las expediciones y mazmorras vuelven a la ciudad desde donde saliste.
 - Las partidas anteriores se migran solas (versión 7 del guardado).
 
+## Decisiones de la Fase 6C (más mundo)
+
+- **Montañas Grises** (faldas, riscos y cumbre, que van subiendo) y **Pantano de Niebla** (orilla, ciénaga y corazón), cada una con su jefe: **Rocamuda**, el cíclope que anuncia avalanchas, y **Madre Ciénaga**, una troll que se cura sola cada turno.
+- **Gigantes** (ogro que empuja, troll que se regenera, cíclope que tira rocas) y **elementales** de agua, fuego, viento y tierra, cada uno débil a su contrario. Arenas de montaña (con alturas) y de pantano (con agua).
+- Materiales nuevos con sus usos: hueso de gigante y piel gruesa (armaduras pesadas), sangre de troll (temple que regenera y una receta secreta), cristales de marea y magma, piedra viva, y los trofeos de los jefes con combinaciones secretas.
+- **Tiendas especializadas** en Valdebrasa: curtiembre, aserradero y joyería, cada una con su dueño, descuentos y mercadería exclusiva.
+- Encargos nuevos de cacería y de jefes.
+
 ## Pendiente para próximas fases
-Lo que sigue de la Fase 6: 6C (Montañas Grises, Pantano de Niebla, gigantes, elementales y tiendas especializadas) y 6D (balance y pulido).
+Lo que sigue de la Fase 6: 6D (balance y pulido).

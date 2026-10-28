@@ -109,6 +109,8 @@ export interface MonsterDef {
   halfHp?: { summon?: string[]; text: string; skills?: string[]; atkPct?: number };
   /** Es invulnerable mientras siga en pie alguno de estos monstruos (pilares, cristales). */
   shieldedBy?: string[];
+  /** Vida que recupera al empezar cada turno (trolls). */
+  regen?: number;
   /** Persigue al grupo en el mapa de exploración. */
   aggressive?: boolean;
   loot: LootEntry[];
@@ -117,7 +119,7 @@ export interface MonsterDef {
 }
 
 /** 'jefe': arenas de jefe de mazmorra (se eligen por id, nunca al azar). */
-export type Biome = 'pradera' | 'bosque' | 'colinas' | 'campamento' | 'cripta' | 'cueva' | 'jefe';
+export type Biome = 'pradera' | 'bosque' | 'colinas' | 'campamento' | 'cripta' | 'cueva' | 'jefe' | 'montana' | 'pantano';
 
 /** Arena chica de combate. `terrain`: '.' suelo, ',' hierba alta, 'w' agua baja, '#' bloqueo. */
 export interface ArenaDef {
