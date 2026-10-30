@@ -142,6 +142,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .bp-list h4 { margin-top: 0; }
 .bp { text-align: left; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); cursor: pointer; min-height: var(--tap); }
 .bp small { display: block; color: var(--muted); font-size: 0.75rem; }
+.bp-icon { float: left; width: 32px; height: 32px; margin: 2px 8px 0 0; }
 .bp.on { border-color: var(--accent); background: #4a2f2a; }
 .bp.design { border-style: dashed; }
 .part { margin-bottom: 8px; }

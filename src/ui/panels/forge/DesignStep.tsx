@@ -5,6 +5,7 @@ import type { Blueprint, GameState } from '../../../core/types';
 import { AffinityList, StatList } from '../../components/ItemView';
 import { CATEGORY_LABEL } from '../../format';
 import { store, useGame, useSnapshot } from '../../hooks';
+import { ART } from '../../../game/render/assets';
 import { Swatch } from '../../components/Swatch';
 
 /** Para cada parte, el material permitido que más tenés (o el más barato si no alcanza ninguno). */
@@ -63,6 +64,7 @@ export function DesignStep({ station }: { station: 'yunque' | 'joyeria' }) {
         <h4>Planos</h4>
         {known.map((b) => (
           <button key={b.id} className={`bp ${b.id === bpId ? 'on' : ''}`} onClick={() => pickBlueprint(b.id)}>
+            {ART[`icon.${b.id}`] && <img className="bp-icon art-icon" src={ART[`icon.${b.id}`]} alt="" />}
             <b>{b.name}</b>
             <small>{CATEGORY_LABEL[b.category]} · {b.slots} franja{b.slots > 1 ? 's' : ''}{b.batch ? ` · lote ×${b.batch}` : ''}</small>
           </button>
