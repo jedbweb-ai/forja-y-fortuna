@@ -43,6 +43,35 @@ export function promptFor(e: AssetEntry): string {
   return `${BASE_PROMPT}\n\n${TEMPLATE[e.type]} ${e.detail}${tail}`;
 }
 
+// ───────────────────────── Modo hoja: varios assets en una sola imagen ─────────────────────────
+
+/** Grilla por defecto (columnas × filas) para cada tipo. */
+export const SHEET_GRID: Record<AssetType, [number, number]> = {
+  personaje: [3, 3], monstruo: [3, 2], jefe: [2, 1], icono: [4, 4], retrato: [3, 3],
+  textura: [3, 2], lado: [3, 2], escenario: [3, 3], edificio: [2, 2], mapa: [1, 1],
+};
+
+const SHEET_ITEMS: Record<AssetType, string> = {
+  personaje: 'personajes chibi distintos, de cuerpo entero, de unas 2,5 cabezas de alto, con cabeza y manos grandes, en vista isométrica de frente en diagonal (mirando hacia abajo a la izquierda), parados y quietos',
+  monstruo: 'monstruos distintos, de cuerpo entero, en vista isométrica de frente en diagonal, dibujados en tonos grises claros y blancos (el color se les agrega en el juego), con los ojos y los detalles oscuros',
+  jefe: 'monstruos jefe distintos, grandes e imponentes, de cuerpo entero, en vista isométrica de frente en diagonal, con sus colores definitivos',
+  icono: 'íconos de objetos distintos, chicos y muy legibles, cada uno en diagonal apuntando hacia arriba a la derecha, pensados para verse a 16×16 píxeles',
+  retrato: 'retratos de busto distintos, de frente y un poco girados, estilo anime con ojos grandes y expresivos, encuadrados de los hombros para arriba, pensados para verse a 48×48 píxeles',
+  textura: 'texturas cuadradas distintas vistas desde arriba, cada una repetible sin costuras y con poco contraste, pensadas para verse a 32×32 píxeles. Cada textura llena por completo su cuadrado y entre los cuadrados queda una franja magenta',
+  lado: 'texturas cuadradas distintas de paredes laterales de escalones de terreno, vistas de frente y repetibles a los costados, pensadas para verse a 32×32 píxeles. Cada textura llena por completo su cuadrado y entre los cuadrados queda una franja magenta',
+  escenario: 'objetos de escenario distintos en vista isométrica (rombo de piso de 2:1), cada uno apoyado sobre su casilla',
+  edificio: 'edificios pequeños distintos en vista isométrica, vistos desde arriba en diagonal, con la puerta hacia el frente',
+  mapa: 'mapas',
+};
+
+/** Pedido para una hoja: una sola imagen con todos, en grilla, numerados en el orden en que se cortan. */
+export function sheetPromptFor(list: AssetEntry[], cols: number, rows: number): string {
+  const empty = list.length < cols * rows ? ' Las celdas que sobran quedan vacías, solo con fondo magenta.' : '';
+  return `${BASE_PROMPT}\n\nUna sola imagen con ${list.length} ${SHEET_ITEMS[list[0].type]}, ordenados en una grilla pareja de ${cols} columnas por ${rows} filas. `
+    + `Cada uno centrado en su celda, todos del mismo tamaño y en el mismo estilo, bien separados entre sí, sin tocarse ni cortarse en los bordes.${empty} `
+    + `En orden, de izquierda a derecha y de arriba a abajo:\n\n${list.map((e, i) => `${i + 1}. ${e.detail}`).join('\n')}`;
+}
+
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
 /** Suelos del juego (tile.<nombre>) y su descripción. */

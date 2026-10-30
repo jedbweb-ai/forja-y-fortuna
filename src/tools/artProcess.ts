@@ -21,6 +21,30 @@ export interface ProcessOptions {
   tolerance: number;
   /** Reducir a la paleta maestra. */
   palette: boolean;
+  /** Con "llenar": recortar antes el fondo magenta (texturas que vienen en una hoja con separaciones). */
+  trim?: boolean;
+}
+
+/**
+ * Corta una hoja en una grilla pareja de celdas (de izquierda a derecha y de arriba a abajo).
+ * Cada celda después se procesa sola: el recorte del fondo acomoda lo que no quedó perfectamente centrado.
+ */
+export function splitGrid(src: Img, cols: number, rows: number): Img[] {
+  const cells: Img[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x0 = Math.floor((c * src.w) / cols);
+      const x1 = Math.floor(((c + 1) * src.w) / cols);
+      const y0 = Math.floor((r * src.h) / rows);
+      const y1 = Math.floor(((r + 1) * src.h) / rows);
+      const w = x1 - x0;
+      const h = y1 - y0;
+      const data = new Uint8ClampedArray(w * h * 4);
+      for (let y = 0; y < h; y++) data.set(src.data.subarray(((y0 + y) * src.w + x0) * 4, ((y0 + y) * src.w + x1) * 4), y * w * 4);
+      cells.push({ w, h, data });
+    }
+  }
+  return cells;
 }
 
 const MAGENTA: Rgb = [255, 0, 255];
@@ -57,11 +81,11 @@ export function processArt(src: Img, o: ProcessOptions): Img {
   const out: Img = { w: o.w, h: o.h, data: new Uint8ClampedArray(o.w * o.h * 4) };
   const fill = o.fit === 'llenar';
   // Qué parte de la imagen original se usa: todo (texturas, mapa) o lo que no es fondo.
-  let box = fill ? { x: 0, y: 0, w: src.w, h: src.h } : contentBox(src, o.tolerance);
-  if (fill && o.w === o.h && src.w !== src.h) {
+  let box = fill && !o.trim ? { x: 0, y: 0, w: src.w, h: src.h } : contentBox(src, o.tolerance);
+  if (fill && o.w === o.h && box.w !== box.h) {
     // Textura cuadrada: se toma el cuadrado del centro.
-    const side = Math.min(src.w, src.h);
-    box = { x: Math.floor((src.w - side) / 2), y: Math.floor((src.h - side) / 2), w: side, h: side };
+    const side = Math.min(box.w, box.h);
+    box = { x: box.x + Math.floor((box.w - side) / 2), y: box.y + Math.floor((box.h - side) / 2), w: side, h: side };
   }
   // Tamaño del dibujo dentro del cuadro, sin deformar (salvo "llenar").
   const s = fill ? 0 : Math.min(o.w / box.w, o.h / box.h);

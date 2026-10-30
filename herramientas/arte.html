@@ -37,6 +37,16 @@
       .previews figcaption { color: var(--muted); font-size: 12px; }
       canvas { image-rendering: pixelated; background: repeating-conic-gradient(#3a3040 0 25%, #2e2634 0 50%) 0 0 / 16px 16px; border-radius: 4px; }
       canvas.scene { background: #1b1420; }
+      .modes { display: flex; gap: 6px; }
+      .modes button.on { border-color: var(--accent); background: #4a3020; }
+      .grid-inputs input { width: 52px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+      #sheetlist { margin: 0; padding-left: 22px; columns: 2; column-gap: 24px; }
+      #sheetlist li { break-inside: avoid; margin: 2px 0; }
+      .cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+      .cell { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px; display: grid; gap: 6px; justify-items: center; }
+      .cell.off { opacity: 0.4; }
+      .cell label { font-size: 12px; text-align: center; }
+      [hidden] { display: none !important; }
     </style>
   </head>
   <body>
@@ -50,9 +60,19 @@
       <div id="list"></div>
     </aside>
     <main>
+      <div class="modes">
+        <button id="mode-one" class="on">Una por una</button>
+        <button id="mode-sheet">🗂️ Hoja: varias en una imagen</button>
+      </div>
       <section>
         <h2 id="title">Elegí un asset de la lista</h2>
+        <div id="sheetopts" class="row grid-inputs" hidden>
+          <label>Columnas <input id="cols" type="number" min="1" max="6" value="3" /></label>
+          <label>Filas <input id="rows" type="number" min="1" max="6" value="3" /></label>
+          <span class="muted">Entran los que faltan del mismo tipo, desde el elegido.</span>
+        </div>
         <div id="meta" class="muted"></div>
+        <ol id="sheetlist" hidden></ol>
         <textarea id="prompt" readonly></textarea>
         <div class="row">
           <button id="copy">📋 Copiar pedido para ChatGPT</button>
@@ -66,7 +86,8 @@
           <label>Tolerancia del fondo magenta <input id="tol" type="range" min="10" max="160" value="70" /> <span id="tolv">70</span></label>
           <label class="row"><input id="pal" type="checkbox" checked /> Reducir a la paleta maestra</label>
         </div>
-        <div class="previews">
+        <div id="cells" class="cells" hidden></div>
+        <div class="previews" id="single">
           <figure><canvas id="orig" width="0" height="0"></canvas><figcaption>Original</figcaption></figure>
           <figure><canvas id="res1" width="0" height="0"></canvas><figcaption>Resultado (tamaño real)</figcaption></figure>
           <figure><canvas id="res4" width="0" height="0"></canvas><figcaption>Resultado ×4</figcaption></figure>
@@ -81,6 +102,7 @@
         </div>
         <div class="row">
           <button id="save" class="primary" disabled>💾 Guardar</button>
+          <button id="saveall" class="primary" disabled hidden>💾 Guardar todos</button>
           <span id="saved" class="muted"></span>
         </div>
       </section>

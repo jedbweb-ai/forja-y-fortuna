@@ -100,6 +100,17 @@ Con `npm run dev` corriendo, abrir la **herramienta de arte**: http://localhost:
 5. **Guardar.** La primera vez se elige la carpeta `src/assets/arte`, y después cada imagen va sola a su subcarpeta. Si el navegador no permite elegir carpetas, se descarga y se copia a mano.
 6. El juego la usa al recargar. Lo que no tiene imagen sigue con el gráfico provisorio, así se puede reemplazar de a poco.
 
+### Modo hoja: varios assets en una sola imagen
+
+Es lo más rápido para íconos, retratos, monstruos, texturas y personajes.
+
+1. Arriba, tocar **"Hoja: varias en una imagen"** y elegir en la lista el primero que falta. Entran ese y los siguientes del mismo tipo que todavía no tienen arte.
+2. La grilla viene armada según el tipo (retratos 3×3, íconos 4×4, monstruos 3×2, texturas 3×2) y se puede cambiar. El pedido numera cada asset en el orden en que se va a cortar.
+3. Copiar el pedido, generar en ChatGPT y pegar la imagen. La herramienta la corta en la grilla y procesa cada celda.
+4. Revisar las vistas previas y destildar las que salieron mal (quedan pendientes para la próxima hoja). Después, **"Guardar todos"**.
+
+Si ChatGPT no respeta la grilla (pone menos, los amontona o cambia el orden), conviene volver a pedirla o bajar a una grilla más chica. Las que salen mal se rehacen después en modo "una por una".
+
 ### Nombres de archivo (la clave es el nombre)
 
 | Archivo | Qué es |

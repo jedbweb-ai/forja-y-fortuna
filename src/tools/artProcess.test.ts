@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CONTENT } from '../data';
-import { buildAssetList, promptFor } from './assetList';
-import { processArt, type Img } from './artProcess';
+import { buildAssetList, promptFor, sheetPromptFor } from './assetList';
+import { processArt, splitGrid, type Img } from './artProcess';
 import { MASTER_PALETTE } from './palette';
 
 /** Imagen de prueba: fondo magenta con un rectángulo de color, como las que da ChatGPT pero en chico. */
@@ -46,6 +46,49 @@ describe('preparación de arte', () => {
     const src = picture(300, 200, { x: 0, y: 0, w: 300, h: 200 }, [90, 140, 60]);
     const out = processArt(src, { w: 32, h: 32, fit: 'llenar', tolerance: 60, palette: true });
     for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) expect(alpha(out, x, y)).toBe(255);
+  });
+
+  it('una hoja se corta en su grilla y cada celda se procesa con su medida', () => {
+    // 3×2 figuras de colores distintos, cada una en su celda de 200×200 y no del todo centrada.
+    const w = 600;
+    const h = 400;
+    const data = new Uint8ClampedArray(w * h * 4);
+    const colors: [number, number, number][] = [[200, 70, 50], [90, 140, 70], [90, 150, 210], [220, 170, 60], [170, 140, 210], [120, 90, 60]];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const cell = Math.floor(y / 200) * 3 + Math.floor(x / 200);
+        const lx = x % 200;
+        const ly = y % 200;
+        const inside = lx > 40 + cell * 5 && lx < 150 && ly > 30 && ly < 180;
+        data.set(inside ? [...colors[cell], 255] : [255, 0, 255, 255], (y * w + x) * 4);
+      }
+    }
+    const cells = splitGrid({ w, h, data }, 3, 2);
+    expect(cells).toHaveLength(6);
+    const outs = cells.map((cell) => processArt(cell, { w: 24, h: 24, fit: 'centro', tolerance: 60, palette: false }));
+    outs.forEach((o, i) => {
+      expect(alpha(o, 12, 12), `celda ${i}`).toBe(255);
+      expect(Math.abs(o.data[(12 * 24 + 12) * 4] - colors[i][0]), `color de la celda ${i}`).toBeLessThan(3);
+    });
+  });
+
+  it('las texturas de una hoja recortan las franjas magenta antes de llenar el cuadro', () => {
+    // Textura verde de 160×160 rodeada de una franja magenta de 20.
+    const src = picture(200, 200, { x: 20, y: 20, w: 160, h: 160 }, [90, 140, 60]);
+    const out = processArt(src, { w: 32, h: 32, fit: 'llenar', tolerance: 60, palette: false, trim: true });
+    for (const [x, y] of [[0, 0], [31, 0], [0, 31], [31, 31], [16, 16]]) {
+      const i = (y * 32 + x) * 4;
+      expect([out.data[i], out.data[i + 1], out.data[i + 2]]).toEqual([90, 140, 60]);
+    }
+  });
+
+  it('el pedido de una hoja numera los assets en orden y pide la grilla', () => {
+    const list = buildAssetList(CONTENT).filter((e) => e.type === 'retrato').slice(0, 9);
+    const p = sheetPromptFor(list, 3, 3);
+    expect(p).toContain('3 columnas por 3 filas');
+    expect(p).toContain('1. ');
+    expect(p).toContain('9. ');
+    expect(p.indexOf(list[0].detail)).toBeLessThan(p.indexOf(list[8].detail));
   });
 
   it('la lista de assets cubre el contenido del juego, sin claves repetidas y con pedido para cada una', () => {
