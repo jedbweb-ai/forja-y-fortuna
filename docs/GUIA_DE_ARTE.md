@@ -41,7 +41,7 @@ En todo el juego **un píxel del dibujo se ve como 2×2 píxeles en pantalla**. 
 
 ## 3. Paleta maestra
 
-Todo se reduce a esta paleta, y eso es lo que hace que combine aunque cada imagen salga de un pedido distinto. Se puede ampliar si un monstruo o una zona necesita un color que falta.
+Todo se reduce a esta paleta, y eso es lo que hace que combine aunque cada imagen salga de un pedido distinto. Las texturas del terreno y el mapa del mundo no se reducen: en superficies grandes la paleta las vuelve manchadas. Se puede ampliar si un monstruo o una zona necesita un color que falta.
 
 | Grupo | Colores |
 |---|---|

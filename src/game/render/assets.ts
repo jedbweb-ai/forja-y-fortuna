@@ -129,11 +129,15 @@ function diamondFromTexture(scene: Phaser.Scene, key: string, tex: Px) {
   canvas.refresh();
 }
 
+/** Franjas de la textura de pared: el escalón de arriba usa la primera, los de abajo bajan por la textura. */
+export const SIDE_BANDS = 4;
+
 /**
- * Cara lateral de un escalón (las dos caras visibles, 64×16) a partir de una textura cuadrada.
- * Si se pasa la textura de la tapa, la primera fila es de ese color: el borde de pasto que sobresale.
+ * Cara lateral de un escalón (las dos caras visibles, 64×16) a partir de una franja de una textura cuadrada:
+ * la franja 0 es la de arriba (pasto que asoma), las siguientes bajan hacia la tierra y la roca.
+ * Si se pasa la textura de la tapa, la primera fila de la franja 0 es de ese color: el borde que sobresale.
  */
-function sideFromTexture(scene: Phaser.Scene, key: string, tex: Px, lip?: Px) {
+function sideFromTexture(scene: Phaser.Scene, key: string, tex: Px, lip: Px | undefined, band: number) {
   const w = TILE_W / 2;
   const lh = LEVEL_H / 2;
   const canvas = scene.textures.createCanvas(key, TILE_W, LEVEL_H + TILE_H / 2)!;
@@ -150,8 +154,10 @@ function sideFromTexture(scene: Phaser.Scene, key: string, tex: Px, lip?: Px) {
     // Las caras siguen el borde inferior del rombo: bajan hasta el centro y vuelven a subir.
     const top = Math.floor((left ? x : w - 1 - x) / 2);
     for (let y = 0; y < lh; y++) {
-      const fromLip = lip && y === 0;
-      const rgb = fromLip ? sample(lip, x, 0, 0.85) : sample(tex, x, y + (left ? 0 : tex.h / 2), left ? 0.8 : 0.62);
+      const fromLip = lip && band === 0 && y === 0;
+      // La cara derecha toma otra parte de la textura (a lo ancho) para que no se vean iguales.
+      const row = Math.floor(((band * lh + y) * tex.h) / (SIDE_BANDS * lh));
+      const rgb = fromLip ? sample(lip, x, 0, 0.85) : sample(tex, x + (left ? 0 : tex.w / 2), row, left ? 0.8 : 0.62);
       put(x, top + y, rgb);
     }
   }
@@ -169,16 +175,22 @@ export function prepareArt(scene: Phaser.Scene) {
     if (isUpscaled(key)) upscale(scene, key);
     real.add(key);
   }
-  // tex.<suelo>.png → tile.<suelo> (tapa); tex.<suelo>.lado.png → tile.<suelo>.side (cara de los escalones).
+  // tex.<suelo>.png → tile.<suelo> (tapa); tex.<suelo>.lado.png → tile.<suelo>.side, .side.1… (franjas de la pared).
   for (const key of Object.keys(ART).filter((k) => k.startsWith('tex.') && !k.endsWith('.lado'))) {
     const name = key.slice(4);
     const top = pixels(scene, key);
     diamondFromTexture(scene, `tile.${name}`, top);
     real.add(`tile.${name}`);
-    const side = ART[`${key}.lado`] ? pixels(scene, `${key}.lado`) : null;
-    if (side) {
-      sideFromTexture(scene, `tile.${name}.side`, side, top);
-      real.add(`tile.${name}.side`);
+    const sideKey = ART[`${key}.lado`] ? `${key}.lado` : SIDE_OF[name] && ART[`tex.${SIDE_OF[name]}.lado`] ? `tex.${SIDE_OF[name]}.lado` : null;
+    if (!sideKey) continue;
+    const side = pixels(scene, sideKey);
+    for (let band = 0; band < SIDE_BANDS; band++) {
+      const k = band ? `tile.${name}.side.${band}` : `tile.${name}.side`;
+      sideFromTexture(scene, k, side, top, band);
+      real.add(k);
     }
   }
 }
+
+/** Suelos sin pared propia usan la de uno parecido. */
+const SIDE_OF: Record<string, string> = { darkgrass: 'grass', road: 'dirt', lava: 'ash', wood: 'dirt', wood_dark: 'dirt' };

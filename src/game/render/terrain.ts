@@ -25,7 +25,10 @@ export function drawGround(scene: Phaser.Scene, g: GroundSpec) {
       const side = `${g.tile(c, r)}.side`;
       const ownSide = scene.textures.exists(side);
       for (let lvl = 0; lvl < h; lvl++) {
-        const img = scene.add.image(base.x - 32, base.y - (lvl + 1) * LEVEL_H, ownSide ? side : 'tile.side')
+        // El escalón de más arriba usa la franja superior de la pared; los de abajo, las siguientes.
+        const band = Math.min(h - 1 - lvl, 3);
+        const key = !ownSide ? 'tile.side' : band && scene.textures.exists(`${side}.${band}`) ? `${side}.${band}` : side;
+        const img = scene.add.image(base.x - 32, base.y - (lvl + 1) * LEVEL_H, key)
           .setOrigin(0, 0).setDepth(-10000 + isoDepth(c, r) - 1);
         if (!ownSide) img.setTint(g.sideTint(c, r));
       }

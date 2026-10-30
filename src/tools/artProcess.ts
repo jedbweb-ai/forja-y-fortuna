@@ -220,15 +220,16 @@ export function processArt(src: Img, o: ProcessOptions): Img {
         for (let xx = sx0; xx < sx1; xx++) {
           total++;
           const i = (yy * src.w + xx) * 4;
-          if (!fill && !fg!.keep[yy * src.w + xx]) continue;
+          // Figuras: solo lo que es figura. Texturas recortadas: se saltea el magenta que se cuela en el borde.
+          if (fg && !fg.keep[yy * src.w + xx]) continue;
           r += src.data[i];
           g += src.data[i + 1];
           b += src.data[i + 2];
           n++;
         }
       }
-      // Si más de la mitad del bloque es fondo, el píxel queda transparente.
-      if (!n || n / total < 0.5) continue;
+      // Si más de la mitad del bloque es fondo, el píxel queda transparente (una textura nunca: se rellena después).
+      if (!n || (!fill && n / total < 0.5)) continue;
       let rgb: Rgb = [r / n, g / n, b / n];
       if (o.palette) rgb = nearest(rgb);
       const j = ((oy + y) * o.w + ox + x) * 4;
@@ -236,6 +237,21 @@ export function processArt(src: Img, o: ProcessOptions): Img {
       out.data[j + 1] = rgb[1];
       out.data[j + 2] = rgb[2];
       out.data[j + 3] = 255;
+    }
+  }
+  // Una textura no puede tener huecos: cada píxel vacío toma el color del más cercano de su columna.
+  if (fill) {
+    for (let x = 0; x < o.w; x++) {
+      for (let y = 0; y < o.h; y++) {
+        const j = (y * o.w + x) * 4;
+        if (out.data[j + 3]) continue;
+        for (let d = 1; d < o.h; d++) {
+          const near = [y + d, y - d].find((yy) => yy >= 0 && yy < o.h && out.data[(yy * o.w + x) * 4 + 3]);
+          if (near === undefined) continue;
+          out.data.copyWithin(j, (near * o.w + x) * 4, (near * o.w + x) * 4 + 4);
+          break;
+        }
+      }
     }
   }
   return out;

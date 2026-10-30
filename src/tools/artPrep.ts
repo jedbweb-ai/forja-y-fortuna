@@ -150,7 +150,8 @@ function bitmap(img: Img): HTMLCanvasElement {
 function options(e: AssetEntry, trim: boolean) {
   return {
     w: e.w, h: e.h, fit: FIT[e.type], tolerance: Number($<HTMLInputElement>('tol').value),
-    palette: $<HTMLInputElement>('pal').checked, trim,
+    // Las texturas y el mapa conservan sus colores: la paleta en superficies grandes las ensucia.
+    palette: $<HTMLInputElement>('pal').checked && FIT[e.type] !== 'llenar', trim,
   };
 }
 
