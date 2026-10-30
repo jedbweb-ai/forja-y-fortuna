@@ -21,7 +21,7 @@ export const CITIES_6: City[] = [
   {
     id: 'puertoseco', name: 'Puertoseco',
     description: 'Puerto de pescadores y contrabandistas. Lo que llega por barco no se consigue en ningún otro lado.',
-    world: { x: 240, y: 560 }, arrival: 'ps_muelle', ground: 'puerto',
+    world: { x: 380, y: 490 }, arrival: 'ps_muelle', ground: 'puerto',
     routes: [
       { to: 'valdebrasa', slots: 3, chance: 0.3, families: { bestias: 2, gelines: 1 }, budget: [6, 9] },
       { to: 'fuerte_ceniza', slots: 5, chance: 0.5, families: { goblins: 1, bestias: 1, gelines: 1 }, budget: [9, 13] },
@@ -85,7 +85,7 @@ export const CITIES_6: City[] = [
   {
     id: 'fuerte_ceniza', name: 'Fuerte Ceniza',
     description: 'La última fortaleza antes de la frontera. Soldados, contratos militares y acero negro.',
-    world: { x: 300, y: 170 }, arrival: 'fc_plaza', ground: 'fortaleza',
+    world: { x: 410, y: 150 }, arrival: 'fc_plaza', ground: 'fortaleza',
     routes: [
       { to: 'valdebrasa', slots: 3, chance: 0.4, families: { goblins: 2, bestias: 1 }, budget: [8, 12] },
       { to: 'puertoseco', slots: 5, chance: 0.5, families: { goblins: 1, bestias: 1, gelines: 1 }, budget: [9, 13] },

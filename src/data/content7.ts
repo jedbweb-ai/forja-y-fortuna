@@ -214,7 +214,7 @@ const DRAGON_HEIGHTS = DRAGON_TERRAIN.map(() => [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1
 const zone = (z: ZoneDef) => z;
 export const REGIONS_7: RegionDef[] = [
   {
-    id: 'ruinas_vigia', name: 'Ruinas del Vigía', danger: 6, available: true, travelSlots: 2, world: { x: 1040, y: 470 },
+    id: 'ruinas_vigia', name: 'Ruinas del Vigía', danger: 6, available: true, travelSlots: 2, world: { x: 920, y: 470 },
     description: 'Lo que queda de la torre del Vigía, arriba de su cripta. Gólems que todavía hacen guardia, muertos que no descansan y, en el fondo, una grieta de la que salen demonios.',
     terrain: RUINAS_TERRAIN, heights: RUINAS_TERRAIN.map((r) => '0'.repeat(r.length)), zones: zones3(RUINAS_TERRAIN),
     zoneTiles: ['tile.stone', 'tile.cryptstone', 'tile.cryptstone'], wallProp: 'prop.pillar', bossArena: 'ruinas_grieta',
@@ -244,7 +244,7 @@ export const REGIONS_7: RegionDef[] = [
     boss: { monsters: ['malgor', 'sombra_abisal'], zone: 3 },
   },
   {
-    id: 'tierras_dragon', name: 'Tierras del Dragón', danger: 9, available: true, travelSlots: 3, world: { x: 1160, y: 90 },
+    id: 'tierras_dragon', name: 'Tierras del Dragón', danger: 9, available: true, travelSlots: 3, world: { x: 1040, y: 140 },
     description: 'Llanos de ceniza, nidos de wyverns y, en lo más alto, la caldera donde duerme Cendralia sobre un montón de oro y huesos.',
     terrain: DRAGON_TERRAIN, heights: DRAGON_HEIGHTS, zones: zones3(DRAGON_TERRAIN),
     zoneTiles: ['tile.ash', 'tile.ash', 'tile.cave'], bossArena: 'volcan_caldera',

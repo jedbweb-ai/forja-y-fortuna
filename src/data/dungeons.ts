@@ -70,7 +70,7 @@ const CRIPTA_LOOT = (gold: [number, number], extra: { material: string; chance: 
 
 export const DUNGEONS: DungeonDef[] = [
   {
-    id: 'cripta_vigia', name: 'Cripta del Vigía', danger: 4, floors: 3, travelSlots: 1, world: { x: 900, y: 360 },
+    id: 'cripta_vigia', name: 'Cripta del Vigía', danger: 4, floors: 3, travelSlots: 1, world: { x: 1060, y: 420 },
     description: 'Bajo las colinas de Brezal duerme la guardia de un rey olvidado. Sus vigías no saben que el reino ya no existe.',
     unlock: { flag: 'cripta_hallada', hint: 'Todavía no sabés dónde está la entrada. Dicen que está en las colinas de Brezal.' },
     entrance: 'linde_brezal',

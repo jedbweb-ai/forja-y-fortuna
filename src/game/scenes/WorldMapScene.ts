@@ -16,13 +16,21 @@ export class WorldMapScene extends Phaser.Scene {
 
   create() {
     this.cameras.main.setBackgroundColor(0x2a2230);
-    const g = this.add.graphics();
     // Con arte definitivo, la ilustración del mapa (world.mapa) reemplaza al pergamino dibujado.
-    const art = this.textures.exists('world.mapa') && isRealArt('world.mapa');
-    if (art) this.add.image(20, 20, 'world.mapa').setOrigin(0, 0).setDisplaySize(W - 40, H - 40);
-    else this.drawParchment(g);
-    this.add.text(W / 2, 40, 'El Valle y más allá', { fontFamily: 'Georgia, serif', fontSize: '34px', color: '#5a3a24' }).setOrigin(0.5, 0).setResolution(2);
+    this.art = this.textures.exists('world.mapa') && isRealArt('world.mapa');
+    if (this.art) this.add.image(20, 20, 'world.mapa').setOrigin(0, 0).setDisplaySize(W - 40, H - 40);
+    const g = this.add.graphics();
+    if (!this.art) this.drawParchment(g);
+    this.label(W / 2, 30, 'El Valle y más allá', { fontFamily: 'Georgia, serif', fontSize: '34px', color: '#5a3a24' });
     this.drawPlaces(g);
+  }
+
+  private art = false;
+
+  /** Texto del mapa. Sobre el arte definitivo lleva fondo oscuro y letra clara para que se lea encima del dibujo. */
+  private label(x: number, y: number, text: string, style: Phaser.Types.GameObjects.Text.TextStyle, dim = false) {
+    const s = this.art ? { ...style, color: dim ? '#d6d0c4' : '#fff8e8', backgroundColor: '#3a2418cc', padding: { x: 6, y: 3 } } : style;
+    return this.add.text(x, y, text, s).setOrigin(0.5, 0).setResolution(2);
   }
 
   /** Pergamino dibujado (placeholder del mapa del mundo). */
@@ -58,9 +66,9 @@ export class WorldMapScene extends Phaser.Scene {
       }
       g.fillStyle(0x7a3b2e, 1).fillRect(x - 22, y - 10, 44, 24);
       g.fillStyle(mine ? 0xc0563b : 0x5a6a8a, 1).fillTriangle(x - 28, y - 10, x, y - 34, x + 28, y - 10);
-      this.add.text(x, y + 22, mine ? `${city.name}\n(estás acá)` : route ? `${city.name}\n${route.slots} franjas` : city.name, {
+      this.label(x, y + 22, mine ? `${city.name}\n(estás acá)` : route ? `${city.name}\n${route.slots} franjas` : city.name, {
         fontFamily: 'Georgia, serif', fontSize: '22px', color: '#3a2418', fontStyle: 'bold', align: 'center',
-      }).setOrigin(0.5, 0).setResolution(2);
+      });
       const zone = this.add.zone(x, y, 140, 100).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => {
         if (mine) this.store.setUi({ view: 'location' });
@@ -88,10 +96,10 @@ export class WorldMapScene extends Phaser.Scene {
       }
       const marker = this.add.circle(x, y, 18, open ? 0xc0392b : 0x8a8270).setStrokeStyle(4, 0x3a2418);
       if (open) this.tweens.add({ targets: marker, scale: 1.15, yoyo: true, repeat: -1, duration: 700 });
-      this.add.text(x, y + 24, `${region.name}\n${'★'.repeat(Math.min(region.danger, 9))}${locked ? `\n(${locked})` : ''}`, {
+      this.label(x, y + 24, `${region.name}\n${'★'.repeat(Math.min(region.danger, 9))}${locked ? `\n(${locked})` : ''}`, {
         fontFamily: 'system-ui, sans-serif', fontSize: '18px', color: open ? '#3a2418' : '#7a6e5a', align: 'center',
         fontStyle: open ? 'bold' : 'normal',
-      }).setOrigin(0.5, 0).setResolution(2);
+      }, !open);
       const zone = this.add.zone(x, y + 20, 170, 110).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => {
         if (open) this.store.setUi({ panel: 'expedition', regionId: region.id });
@@ -109,9 +117,9 @@ export class WorldMapScene extends Phaser.Scene {
       g2.fillStyle(open ? 0x3a2a4a : 0x6a6470, 1).fillTriangle(x - 26, y + 14, x, y - 24, x + 26, y + 14);
       g2.fillStyle(0x0c0a10, 1).fillTriangle(x - 10, y + 14, x, y - 4, x + 10, y + 14);
       const p = s?.dungeons.progress[d.id];
-      this.add.text(x, y + 20, `${d.name}\n${'★'.repeat(Math.min(d.danger, 9))} · ${d.floors} pisos${open ? (p?.clears ? ` · ✔ ${p.clears}` : '') : '\n(cerrada)'}`, {
+      this.label(x, y + 20, `${d.name}\n${'★'.repeat(Math.min(d.danger, 9))} · ${d.floors} pisos${open ? (p?.clears ? ` · ✔ ${p.clears}` : '') : '\n(cerrada)'}`, {
         fontFamily: 'system-ui, sans-serif', fontSize: '17px', color: open ? '#3a2418' : '#7a6e5a', align: 'center', fontStyle: open ? 'bold' : 'normal',
-      }).setOrigin(0.5, 0).setResolution(2);
+      }, !open);
       const zone = this.add.zone(x, y + 10, 170, 100).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => this.store.setUi({ panel: 'dungeon', dungeonId: d.id }));
     }
