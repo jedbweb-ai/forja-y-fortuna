@@ -161,6 +161,9 @@ const MONSTER_SIZE: Record<string, [number, number]> = {
   'mon.golem': [36, 40], 'mon.gargola': [36, 34], 'mon.cristal': [20, 30], 'mon.ogro': [40, 44], 'mon.ciclope': [44, 48],
   'mon.elemental': [28, 34], 'mon.diablillo': [32, 30], 'mon.demonio': [40, 44], 'mon.kobold': [30, 30], 'mon.wyvern': [48, 40],
   'mon.dragon': [56, 48],
+  // Jefes con dibujo propio.
+  'mon.grunaz': [44, 46], 'mon.ulmar': [48, 54], 'mon.golem_eco': [60, 56], 'mon.rocamuda': [58, 56],
+  'mon.madre_cienaga': [56, 54], 'mon.malgor': [60, 58], 'mon.cendralia': [76, 60],
 };
 
 /** Medida por vida, para monstruos nuevos que todavía no están en la tabla. */
@@ -203,7 +206,7 @@ export function buildAssetList(c: Content): AssetEntry[] {
     });
   }
   for (const m of Object.values(c.monsters).filter((x) => x.boss)) {
-    add({ key: `mon.${m.id}`, type: 'jefe', folder: 'monstruos', w: 64, h: 56, name: m.name, group: 'Jefes (opcional: si no, usan el dibujo de su especie)', detail: `${m.name}. ${m.description}` });
+    add({ key: `mon.${m.id}`, type: 'jefe', folder: 'monstruos', w: (MONSTER_SIZE[`mon.${m.id}`] ?? [64, 56])[0], h: (MONSTER_SIZE[`mon.${m.id}`] ?? [64, 56])[1], name: m.name, group: 'Jefes (opcional: si no, usan el dibujo de su especie)', detail: `${m.name}. ${m.description}` });
   }
 
   // Íconos

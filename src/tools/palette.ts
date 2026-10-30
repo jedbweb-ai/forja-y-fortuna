@@ -12,6 +12,8 @@ export const MASTER_PALETTE = [
   '#c8c8d0', '#8a8a92', '#5e5e6a',
   // Verdes
   '#c8d878', '#8aaa48', '#5a8a38', '#2e5028',
+  // Verdes oliva (piel de orcos y trolls, musgo)
+  '#a8ac68', '#7a8044', '#52582e',
   // Azules y agua
   '#a8e0f0', '#5a9ad0', '#2a5a98', '#1e3060',
   // Rojos

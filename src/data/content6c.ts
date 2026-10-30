@@ -195,7 +195,7 @@ export const REGIONS_6C: RegionDef[] = [
   {
     id: 'montanas_grises', name: 'Montañas Grises', danger: 5, available: true, travelSlots: 2, world: { x: 980, y: 140 },
     description: 'Laderas de piedra y nieve. Minerales buenos, gigantes peores y, en la cumbre, un cíclope que no deja pasar a nadie.',
-    terrain: MONTE_TERRAIN, heights: MONTE_HEIGHTS, zones: zones3(MONTE_TERRAIN), zoneTiles: ['tile.dirt', 'tile.stone', 'tile.stone'],
+    terrain: MONTE_TERRAIN, heights: MONTE_HEIGHTS, zones: zones3(MONTE_TERRAIN), zoneTiles: ['tile.dirt', 'tile.stone', 'tile.stone'], bossArena: 'montana_paso',
     zoneDefs: [
       zone({
         id: 'faldas', name: 'Faldas', danger: 3, biome: 'colinas', budget: [8, 11], groups: [2, 3], families: { bestias: 2, goblins: 1 },
@@ -225,7 +225,7 @@ export const REGIONS_6C: RegionDef[] = [
     id: 'pantano_niebla', name: 'Pantano de Niebla', danger: 5, available: true, travelSlots: 2, world: { x: 330, y: 380 },
     description: 'Agua quieta, niebla espesa y hongos que brillan. Trolls que se curan solos y elementales que salen del barro.',
     terrain: PANTANO_TERRAIN, heights: PANTANO_TERRAIN.map((r) => '0'.repeat(r.length)), zones: zones3(PANTANO_TERRAIN),
-    zoneTiles: ['tile.grass', 'tile.darkgrass', 'tile.darkgrass'],
+    zoneTiles: ['tile.grass', 'tile.darkgrass', 'tile.darkgrass'], bossArena: 'pantano_islotes',
     zoneDefs: [
       zone({
         id: 'orilla', name: 'Orilla', danger: 3, biome: 'pantano', budget: [8, 11], groups: [2, 3], families: { gelines: 2, bestias: 1 },

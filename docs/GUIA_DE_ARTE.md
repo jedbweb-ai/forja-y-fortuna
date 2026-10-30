@@ -51,6 +51,7 @@ Todo se reduce a esta paleta, y eso es lo que hace que combine aunque cada image
 | Piedra y tierra | `#f0e2c0` `#c8b088` `#9a8468` `#6e604e` |
 | Piedra gris y metal | `#c8c8d0` `#8a8a92` `#5e5e6a` |
 | Verdes | `#c8d878` `#8aaa48` `#5a8a38` `#2e5028` |
+| Verdes oliva | `#a8ac68` `#7a8044` `#52582e` |
 | Azules y agua | `#a8e0f0` `#5a9ad0` `#2a5a98` `#1e3060` |
 | Rojos | `#f08a5a` `#c8482e` `#7a2422` |
 | Violetas | `#a88ad0` `#6a4a8a` `#3a2a5a` |
