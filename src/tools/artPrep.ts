@@ -1,7 +1,7 @@
 import { CONTENT } from '../data';
 import { ART } from '../game/render/assets';
 import { buildAssetList, promptFor, SHEET_GRID, sheetPromptFor, type AssetEntry, type AssetType } from './assetList';
-import { processArt, splitGrid, type Fit, type Img } from './artProcess';
+import { processArt, splitByFigures, splitGrid, type Fit, type Img } from './artProcess';
 
 // Herramienta de arte (solo en desarrollo): http://localhost:5173/herramientas/arte.html
 // Lista lo que falta, da el pedido para ChatGPT y convierte la imagen generada en pixel art del juego.
@@ -175,7 +175,11 @@ function run() {
 /** Corta la hoja en la grilla y procesa cada celda con la medida de su asset. */
 function runSheet() {
   const list = sheetEntries();
-  const cells = splitGrid(source!, Number($<HTMLInputElement>('cols').value), Number($<HTMLInputElement>('rows').value));
+  const cols = Number($<HTMLInputElement>('cols').value);
+  const rows = Number($<HTMLInputElement>('rows').value);
+  // Las figuras se buscan una por una (aunque la grilla no sea pareja); las texturas, que llenan su cuadrado, van por grilla.
+  const textures = list[0].type === 'textura' || list[0].type === 'lado';
+  const cells = textures ? splitGrid(source!, cols, rows) : splitByFigures(source!, cols, rows, Number($<HTMLInputElement>('tol').value));
   const previous = new Map(results.map((r) => [r.entry.key, r.keep]));
   results = list.map((entry, i) => ({ entry, img: processArt(cells[i], options(entry, true)), keep: previous.get(entry.key) ?? true }));
   const box = $('cells');

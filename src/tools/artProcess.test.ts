@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CONTENT } from '../data';
 import { buildAssetList, promptFor, sheetPromptFor } from './assetList';
-import { processArt, splitGrid, type Img } from './artProcess';
+import { processArt, splitByFigures, splitGrid, type Img } from './artProcess';
 import { MASTER_PALETTE } from './palette';
 
 /** Imagen de prueba: fondo magenta con un rectángulo de color, como las que da ChatGPT pero en chico. */
@@ -70,6 +70,27 @@ describe('preparación de arte', () => {
       expect(alpha(o, 12, 12), `celda ${i}`).toBe(255);
       expect(Math.abs(o.data[(12 * 24 + 12) * 4] - colors[i][0]), `color de la celda ${i}`).toBeLessThan(3);
     });
+  });
+
+  it('el corte por figuras funciona aunque las filas de la hoja no sean parejas', () => {
+    // Grilla 2×2 en 400×400, pero la figura de arriba a la izquierda baja hasta y=260 (pasa la mitad).
+    const w = 400;
+    const h = 400;
+    const data = new Uint8ClampedArray(w * h * 4);
+    const rects: [number, number, number, number, [number, number, number]][] = [
+      [40, 20, 120, 260, [200, 70, 50]], [240, 20, 120, 150, [90, 140, 70]], [40, 290, 120, 100, [90, 150, 210]], [240, 290, 120, 100, [220, 170, 60]],
+    ];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const r = rects.find(([rx, ry, rw, rh]) => x >= rx && x < rx + rw && y >= ry && y < ry + rh);
+        data.set(r ? [...r[4], 255] : [255, 0, 255, 255], (y * w + x) * 4);
+      }
+    }
+    const cells = splitByFigures({ w, h, data }, 2, 2, 60);
+    expect(cells.map((c) => [c.w, c.h])).toEqual([[124, 264], [124, 154], [124, 104], [124, 104]]);
+    // La de abajo a la izquierda no tiene ningún pedazo rojo de la de arriba.
+    const bottomLeft = cells[2];
+    for (let p = 0; p < bottomLeft.w * bottomLeft.h; p++) expect(bottomLeft.data[p * 4 + 1] === 70 && bottomLeft.data[p * 4] === 200).toBe(false);
   });
 
   it('ignora las manchitas sueltas que se cuelan de la celda vecina', () => {

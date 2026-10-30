@@ -26,6 +26,76 @@ export interface ProcessOptions {
 }
 
 /**
+ * Corta una hoja buscando cada figura: las partes conectadas grandes se asignan a la celda de la grilla donde cae
+ * su centro, y cada celda sale recortada a sus figuras (sin pedazos de las vecinas). Sirve aunque ChatGPT no deje
+ * las filas o columnas parejas. Las celdas sin figura quedan vacías (solo fondo).
+ */
+export function splitByFigures(src: Img, cols: number, rows: number, tolerance: number): Img[] {
+  const n = src.w * src.h;
+  const label = new Int32Array(n).fill(-1);
+  const comps: { size: number; sx: number; sy: number; x0: number; y0: number; x1: number; y1: number }[] = [];
+  const stack: number[] = [];
+  for (let p = 0; p < n; p++) {
+    if (label[p] >= 0 || isBackground(src.data, p * 4, tolerance)) continue;
+    const id = comps.length;
+    const c = { size: 0, sx: 0, sy: 0, x0: src.w, y0: src.h, x1: 0, y1: 0 };
+    label[p] = id;
+    stack.push(p);
+    while (stack.length) {
+      const q = stack.pop()!;
+      const x = q % src.w;
+      const y = (q - x) / src.w;
+      c.size++;
+      c.sx += x;
+      c.sy += y;
+      c.x0 = Math.min(c.x0, x);
+      c.y0 = Math.min(c.y0, y);
+      c.x1 = Math.max(c.x1, x);
+      c.y1 = Math.max(c.y1, y);
+      for (const r of [q - src.w, q + src.w, x > 0 ? q - 1 : -1, x < src.w - 1 ? q + 1 : -1]) {
+        if (r < 0 || r >= n || label[r] >= 0 || isBackground(src.data, r * 4, tolerance)) continue;
+        label[r] = id;
+        stack.push(r);
+      }
+    }
+    comps.push(c);
+  }
+  const biggest = Math.max(0, ...comps.map((c) => c.size));
+  // Cada parte que cuenta (no manchitas) va a la celda de su centro.
+  const cellOf = comps.map((c) => {
+    if (c.size < Math.max(4, biggest * 0.02)) return -1;
+    const col = Math.min(cols - 1, Math.floor(((c.sx / c.size) * cols) / src.w));
+    const row = Math.min(rows - 1, Math.floor(((c.sy / c.size) * rows) / src.h));
+    return row * cols + col;
+  });
+  const cells: Img[] = [];
+  for (let cell = 0; cell < cols * rows; cell++) {
+    const mine = comps.map((c, i) => (cellOf[i] === cell ? c : null)).filter((c): c is (typeof comps)[number] => !!c);
+    if (!mine.length) {
+      cells.push({ w: 1, h: 1, data: new Uint8ClampedArray([255, 0, 255, 255]) });
+      continue;
+    }
+    const x0 = Math.max(0, Math.min(...mine.map((c) => c.x0)) - 2);
+    const y0 = Math.max(0, Math.min(...mine.map((c) => c.y0)) - 2);
+    const x1 = Math.min(src.w - 1, Math.max(...mine.map((c) => c.x1)) + 2);
+    const y1 = Math.min(src.h - 1, Math.max(...mine.map((c) => c.y1)) + 2);
+    const w = x1 - x0 + 1;
+    const h = y1 - y0 + 1;
+    const data = new Uint8ClampedArray(w * h * 4);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const p = (y0 + y) * src.w + x0 + x;
+        // Lo que no es de esta celda (fondo o pedazos de otra figura) queda como fondo.
+        const own = label[p] >= 0 && cellOf[label[p]] === cell;
+        data.set(own ? src.data.subarray(p * 4, p * 4 + 4) : [255, 0, 255, 255], (y * w + x) * 4);
+      }
+    }
+    cells.push({ w, h, data });
+  }
+  return cells;
+}
+
+/**
  * Corta una hoja en una grilla pareja de celdas (de izquierda a derecha y de arriba a abajo).
  * Cada celda después se procesa sola: el recorte del fondo acomoda lo que no quedó perfectamente centrado.
  */

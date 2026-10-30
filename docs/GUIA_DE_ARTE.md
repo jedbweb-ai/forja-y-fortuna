@@ -106,7 +106,7 @@ Es lo más rápido para íconos, retratos, monstruos, texturas y personajes.
 
 1. Arriba, tocar **"Hoja: varias en una imagen"** y elegir en la lista el primero que falta. Entran ese y los siguientes del mismo tipo que todavía no tienen arte.
 2. La grilla viene armada según el tipo (retratos 3×3, íconos 4×4, monstruos 3×2, texturas 3×2) y se puede cambiar. El pedido numera cada asset en el orden en que se va a cortar.
-3. Copiar el pedido, generar en ChatGPT y pegar la imagen. La herramienta la corta en la grilla y procesa cada celda.
+3. Copiar el pedido, generar en ChatGPT y pegar la imagen. La herramienta busca cada figura y la asigna a la celda donde cae su centro, así funciona aunque ChatGPT no deje las filas parejas. Las texturas se cortan por grilla.
 4. Revisar las vistas previas y destildar las que salieron mal (quedan pendientes para la próxima hoja). Después, **"Guardar todos"**.
 
 Si ChatGPT no respeta la grilla (pone menos, los amontona o cambia el orden), conviene volver a pedirla o bajar a una grilla más chica. Las que salen mal se rehacen después en modo "una por una".
