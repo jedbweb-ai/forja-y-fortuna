@@ -151,7 +151,19 @@ const PROPS: Record<string, [number, number, string]> = {
   basalt: [20, 28, 'Una columna de basalto oscuro con una grieta de brasa.'],
 };
 
-/** Medida del dibujo de un monstruo según su vida (o jefe). */
+/**
+ * Medida del dibujo de cada monstruo (ancho × alto en píxeles de arte), pensada respecto de un personaje (24×36).
+ * Los jefes que comparten dibujo se agrandan en el juego con su escala.
+ */
+const MONSTER_SIZE: Record<string, [number, number]> = {
+  'mon.gelin': [24, 20], 'mon.goblin': [24, 28], 'mon.jefe': [32, 36], 'mon.lobo': [32, 24], 'mon.jabali': [32, 24],
+  'mon.arana': [32, 24], 'mon.oso': [40, 36], 'mon.esqueleto': [32, 36], 'mon.espectro': [32, 36], 'mon.caballero': [36, 40],
+  'mon.golem': [36, 40], 'mon.gargola': [36, 34], 'mon.cristal': [20, 30], 'mon.ogro': [40, 44], 'mon.ciclope': [44, 48],
+  'mon.elemental': [28, 34], 'mon.diablillo': [32, 30], 'mon.demonio': [40, 44], 'mon.kobold': [30, 30], 'mon.wyvern': [48, 40],
+  'mon.dragon': [56, 48],
+};
+
+/** Medida por vida, para monstruos nuevos que todavía no están en la tabla. */
 function monsterSize(hp: number): [number, number] {
   if (hp < 60) return [24, 24];
   if (hp < 130) return [32, 32];
@@ -184,7 +196,7 @@ export function buildAssetList(c: Content): AssetEntry[] {
   for (const [key, ms] of bySprite) {
     const common = ms.filter((m) => !m.boss);
     const ref = common.length ? common : ms;
-    const [w, h] = monsterSize(Math.max(...ref.map((m) => m.hp)));
+    const [w, h] = MONSTER_SIZE[key] ?? monsterSize(Math.max(...ref.map((m) => m.hp)));
     add({
       key, type: 'monstruo', folder: 'monstruos', w, h, name: ref.map((m) => m.name.split(',')[0]).join(', '), group: 'Monstruos',
       detail: `${ref[0].name.split(',')[0]}: ${ref[0].description} (Este mismo dibujo se usa también para: ${ref.slice(1).map((m) => m.name.split(',')[0]).join(', ') || 'nada más'}.)`,
