@@ -4,3 +4,6 @@ dev-dist/
 *.log
 .DS_Store
 .claude/settings.local.json
+
+# Referencias del usuario (no se suben)
+sprites y assets/
