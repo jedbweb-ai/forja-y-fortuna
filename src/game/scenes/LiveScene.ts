@@ -98,7 +98,8 @@ export class LiveScene extends Phaser.Scene {
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const key = r === roadRow ? 'tile.road' : floor;
-        const variant = (c * 7 + r * 3) % 5 === 0 ? `${key}.1` : key;
+        // La variante solo existe en los placeholders (con arte definitivo no se mezclan estilos).
+        const variant = (c * 7 + r * 3) % 5 === 0 && this.textures.exists(`${key}.1`) ? `${key}.1` : key;
         const p = isoToScreen(c, r);
         this.add.image(p.x, p.y, variant).setOrigin(0.5, 16 / 34).setDepth(-10000 + isoDepth(c, r));
       }
