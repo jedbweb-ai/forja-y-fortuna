@@ -209,3 +209,17 @@ src/
 ## Pendiente para próximas fases
 - **Arte definitivo**: generar la muestra de estilo (herrero, Brunilda, monstruos del Linde, texturas básicas, yunque y fragua, íconos y retrato del herrero), revisarla en el juego y seguir por tandas.
 - Tutorial (más adelante, a decidir).
+
+## Publicación
+
+- El juego está en https://jedbweb-ai.github.io/forja-y-fortuna/ (GitHub Pages).
+- Cada push a `main` corre los tests, arma el juego y lo publica (`.github/workflows/pages.yml`). Si un test falla, no se publica.
+
+## Sonido
+
+- Guía y pedidos para la IA de música: `docs/GUIA_DE_SONIDO.md`.
+- **Música por lugar** con fundido cruzado. Cada tema va en `src/assets/audio/musica/<clave>.mp3`. Un lugar sin tema usa el de su grupo, y sin ninguno queda en silencio.
+  - La música no entra en la carga inicial: se baja cuando suena y queda guardada.
+- **Efectos** generados por código (Web Audio), sin archivos: herrería, dinero, expedición, combate e interfaz (`src/audio/sfx.ts`).
+- **Volumen** de música y efectos, y silenciar todo, en Ajustes. Se guarda en el dispositivo.
+- En el celular, el sonido arranca con el primer toque y se pausa al cambiar de app.

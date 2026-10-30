@@ -6,6 +6,7 @@ import { arenaSize, heightAt, terrainAt } from '../../core/combat/grid';
 import type { ArenaDef, CombatFx, CombatState, CombatUnit, TerrainKind } from '../../core/combat/types';
 import type { Affinity } from '../../core/types';
 import { slotName } from '../../core/time';
+import { sfx, type SfxId } from '../../audio/sfx';
 import type { GameEvent } from '../../core/types';
 import { artScale, monsterLook } from '../render/assets';
 import { isoBounds, screenToIso } from '../render/iso';
@@ -292,6 +293,8 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private play(fx: CombatFx, done: () => void) {
+    // Sonido de cada efecto, en el momento de su animación (los golpes suenan al impactar).
+    const elementSfx = (e?: Affinity): SfxId => (e === 'fuego' || e === 'hielo' || e === 'rayo' ? e : 'magia');
     const cs = this.cs;
     const view = (id: string) => this.units.get(id);
     switch (fx.kind) {
@@ -320,6 +323,8 @@ export class CombatScene extends Phaser.Scene {
         const skill = this.store.content.skills[fx.skill];
         const ranged = !!skill && (skill.ammo || skill.throw || skill.range[1] > 1) && !skill.area;
         const impact = () => {
+          sfx(fx.kind === 'miss' ? 'falla' : fx.crit ? 'critico' : 'golpe');
+          if (fx.kind === 'hit' && fx.element) sfx(elementSfx(fx.element));
           if (fx.kind === 'hit') {
             this.flash(t, 0xffffff);
             this.tweens.add({ targets: t.box, x: t.box.x + 4, yoyo: true, repeat: 2, duration: 40 });
@@ -331,6 +336,7 @@ export class CombatScene extends Phaser.Scene {
           this.time.delayedCall(260, done);
         };
         if (ranged) {
+          sfx('flecha');
           const shot = this.add.image(a.box.x, a.box.y - 30, 'fx.spark').setDepth(9700).setScale(2).setTint(0xffe9a8);
           this.tweens.add({ targets: shot, x: t.box.x, y: t.box.y - 30, duration: 220, onComplete: () => { shot.destroy(); impact(); } });
         } else {
@@ -339,6 +345,7 @@ export class CombatScene extends Phaser.Scene {
         return;
       }
       case 'heal': {
+        sfx('curar');
         const t = view(fx.to);
         if (t) {
           this.flash(t, 0x9aff9a);
@@ -347,16 +354,19 @@ export class CombatScene extends Phaser.Scene {
         return void this.time.delayedCall(300, done);
       }
       case 'tick': {
+        sfx('estado');
         const t = view(fx.unit);
         if (t) this.float(t.box.x, t.box.y - t.sprite.displayHeight - 10, `${fx.damage} ${STATUS_ICON[fx.status] ?? ''}`, '#d8b7ff');
         return void this.time.delayedCall(300, done);
       }
       case 'status': {
+        sfx('estado');
         const t = view(fx.unit);
         if (t) this.float(t.box.x, t.box.y - t.sprite.displayHeight - 30, `${STATUS_ICON[fx.status] ?? ''} ${STATUS_TEXT[fx.status] ?? fx.status}`, '#9fd3ff');
         return void this.time.delayedCall(200, done);
       }
       case 'buff': {
+        sfx('refuerzo');
         const t = view(fx.unit);
         if (t) {
           const ring = this.add.image(t.box.x, t.box.y - 4, 'fx.ring').setDepth(9600).setTint(0xffd04d);
@@ -365,6 +375,7 @@ export class CombatScene extends Phaser.Scene {
         return void this.time.delayedCall(300, done);
       }
       case 'push': {
+        sfx('empuje');
         const t = view(fx.unit);
         if (!t) return done();
         const p = this.unitPos(fx.to);
@@ -373,12 +384,14 @@ export class CombatScene extends Phaser.Scene {
         return;
       }
       case 'death': {
+        sfx('muerte');
         const t = view(fx.unit);
         if (!t) return done();
         this.tweens.add({ targets: t.box, alpha: 0, y: t.box.y + 8, duration: 350, onComplete: () => { t.box.setVisible(false); done(); } });
         return;
       }
       case 'area': {
+        sfx(elementSfx(fx.element));
         // Destello del área de la acción (cono, línea, radio).
         const g = this.add.graphics().setDepth(-4900);
         const color = (fx.element && ELEMENT_COLOR[fx.element]) ?? 0xffe9a8;
@@ -389,6 +402,7 @@ export class CombatScene extends Phaser.Scene {
         return void this.time.delayedCall(260, done);
       }
       case 'telegraph':
+        sfx('aviso');
         this.drawTerrain();
         this.cameras.main.shake(120, 0.004);
         return void this.time.delayedCall(450, done);
@@ -396,6 +410,7 @@ export class CombatScene extends Phaser.Scene {
         this.drawTerrain();
         return void this.time.delayedCall(fx.terrain ? 220 : 60, done);
       case 'chain': {
+        sfx('rayo');
         // El rayo corre por el agua de casilla en casilla.
         const g = this.add.graphics().setDepth(9650);
         g.lineStyle(3, 0xfff07a, 1);
@@ -413,6 +428,7 @@ export class CombatScene extends Phaser.Scene {
         return void this.time.delayedCall(300, done);
       }
       case 'spawn': {
+        sfx('aparece');
         const u = cs?.units.find((x) => x.id === fx.unit);
         if (u) {
           this.makeUnit(u);

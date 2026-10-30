@@ -32,6 +32,12 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg,webmanifest}'],
         // Phaser va en un chunk grande; lo cacheamos igual para jugar offline.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        // La música no entra en la carga inicial: cada tema se guarda la primera vez que suena.
+        runtimeCaching: [{
+          urlPattern: /\.(?:mp3|ogg|m4a)$/,
+          handler: 'CacheFirst',
+          options: { cacheName: 'musica', rangeRequests: true, cacheableResponse: { statuses: [200] } },
+        }],
       },
     }),
   ],

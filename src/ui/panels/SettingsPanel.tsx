@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
+import { getAudioPrefs, setAudioPrefs, subscribeAudioPrefs } from '../../audio/prefs';
 import { Panel } from '../components/Panel';
 import { store, useGame } from '../hooks';
 import { SHORTCUTS } from '../shortcuts';
@@ -6,12 +7,27 @@ import { SHORTCUTS } from '../shortcuts';
 export function SettingsPanel() {
   const s = useGame();
   const [confirm, setConfirm] = useState(false);
+  const audio = useSyncExternalStore(subscribeAudioPrefs, getAudioPrefs);
   const toggleFullscreen = () => {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => undefined);
     else document.documentElement.requestFullscreen?.().catch(() => store.toast('Este navegador no permite pantalla completa.', 'bad'));
   };
   return (
     <Panel title="Ajustes">
+      <h3>Sonido</h3>
+      {(['music', 'sfx'] as const).map((ch) => (
+        <label key={ch} className="volume">
+          <span>{ch === 'music' ? 'Música' : 'Efectos'}</span>
+          <input type="range" min={0} max={100} step={5} value={Math.round(audio[ch] * 100)} disabled={audio.muted}
+            onChange={(e) => setAudioPrefs({ [ch]: Number(e.target.value) / 100 })} />
+          <output>{Math.round(audio[ch] * 100)}%</output>
+        </label>
+      ))}
+      <label className="setting">
+        <input type="checkbox" checked={audio.muted} onChange={(e) => setAudioPrefs({ muted: e.target.checked })} />
+        <span>Silenciar todo <small className="muted block">El volumen queda guardado en este dispositivo.</small></span>
+      </label>
+      <hr />
       <label className="setting">
         <input type="checkbox" checked={s.settings.skipItemCard} onChange={(e) => store.updateSettings({ skipItemCard: e.target.checked })} />
         <span>Saltear la tarjeta del objeto terminado <small className="muted block">Muestra solo un aviso breve.</small></span>

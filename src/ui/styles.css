@@ -256,6 +256,9 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 /* ── Ajustes y debug ── */
 .setting { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; padding: 6px 0; }
 .setting input { width: 22px; height: 22px; accent-color: var(--accent); margin-top: 2px; }
+.volume { display: grid; grid-template-columns: 90px 1fr 44px; gap: 10px; align-items: center; padding: 4px 0; }
+.volume input { width: 100%; height: var(--tap); accent-color: var(--accent); }
+.volume output { text-align: right; font-variant-numeric: tabular-nums; }
 .debug-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
 .debug-grid select { min-height: var(--tap); border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); padding: 4px 8px; }
 
