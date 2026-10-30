@@ -270,7 +270,27 @@ async function write(entry: AssetEntry, img: Img) {
   }
 }
 
+async function pickFolder(): Promise<boolean> {
+  const pick = (window as unknown as { showDirectoryPicker?: (o: object) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker;
+  if (!pick) {
+    $('dirname').textContent = 'Este navegador no permite elegir carpetas: se descarga el archivo y lo copiás a mano.';
+    return false;
+  }
+  try {
+    dir = await pick({ mode: 'readwrite' });
+  } catch {
+    return false;
+  }
+  $('dirname').textContent = `Carpeta: ${dir.name}${dir.name === 'arte' ? '' : ' (¿seguro que es src/assets/arte?)'}`;
+  return true;
+}
+
 async function save(only: typeof results) {
+  // Varias descargas seguidas las bloquea el navegador: con más de una, primero se pide la carpeta.
+  if (!dir && only.length > 1 && !(await pickFolder())) {
+    $('saved').textContent = 'Para guardar varias juntas elegí la carpeta src/assets/arte (el navegador no deja descargar muchas de una).';
+    return;
+  }
   for (const r of only) await write(r.entry, r.img);
   const names = only.map((r) => `${r.entry.folder}/${r.entry.key}.png`);
   $('saved').textContent = dir
@@ -310,15 +330,7 @@ window.addEventListener('paste', (e) => {
   const f = item?.getAsFile();
   if (f) loadImage(f);
 });
-$('dir').onclick = async () => {
-  const pick = (window as unknown as { showDirectoryPicker?: (o: object) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker;
-  if (!pick) {
-    $('dirname').textContent = 'Este navegador no permite elegir carpetas: se descarga el archivo y lo copiás a mano.';
-    return;
-  }
-  dir = await pick({ mode: 'readwrite' });
-  $('dirname').textContent = `Carpeta: ${dir.name}${dir.name === 'arte' ? '' : ' (¿seguro que es src/assets/arte?)'}`;
-};
+$('dir').onclick = () => pickFolder();
 $('save').onclick = () => save(results);
 $('saveall').onclick = () => save(results.filter((r) => r.keep));
 

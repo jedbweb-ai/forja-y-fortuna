@@ -59,29 +59,69 @@ function isBackground(d: Uint8ClampedArray, i: number, tolerance: number): boole
   return d[i] > 150 && d[i + 2] > 150 && d[i + 1] < 90 && Math.abs(d[i] - d[i + 2]) < 70;
 }
 
-/** Caja que encierra los píxeles que no son fondo. */
-export function contentBox(src: Img, tolerance: number) {
+/**
+ * Qué píxeles son la figura: lo que no es fondo, sin las manchitas sueltas
+ * (pedazos de la celda vecina en una hoja, restos del borde). Se quedan las partes conectadas grandes.
+ */
+export function foreground(src: Img, tolerance: number): { keep: Uint8Array; box: { x: number; y: number; w: number; h: number } } {
+  const n = src.w * src.h;
+  const solid = new Uint8Array(n);
+  for (let p = 0; p < n; p++) solid[p] = isBackground(src.data, p * 4, tolerance) ? 0 : 1;
+  // Partes conectadas (vecinos de los 4 lados).
+  const label = new Int32Array(n).fill(-1);
+  const sizes: number[] = [];
+  const stack: number[] = [];
+  for (let p = 0; p < n; p++) {
+    if (!solid[p] || label[p] >= 0) continue;
+    const id = sizes.length;
+    let size = 0;
+    label[p] = id;
+    stack.push(p);
+    while (stack.length) {
+      const q = stack.pop()!;
+      size++;
+      const x = q % src.w;
+      for (const r of [q - src.w, q + src.w, x > 0 ? q - 1 : -1, x < src.w - 1 ? q + 1 : -1]) {
+        if (r < 0 || r >= n || !solid[r] || label[r] >= 0) continue;
+        label[r] = id;
+        stack.push(r);
+      }
+    }
+    sizes.push(size);
+  }
+  // Se descartan las partes chicas comparadas con la más grande (ojos, botones y detalles sueltos quedan: superan el 2%).
+  const biggest = Math.max(0, ...sizes);
+  const min = Math.max(4, biggest * 0.02);
+  const keep = new Uint8Array(n);
   let x0 = src.w;
   let y0 = src.h;
   let x1 = -1;
   let y1 = -1;
-  for (let y = 0; y < src.h; y++) {
-    for (let x = 0; x < src.w; x++) {
-      if (isBackground(src.data, (y * src.w + x) * 4, tolerance)) continue;
-      x0 = Math.min(x0, x);
-      y0 = Math.min(y0, y);
-      x1 = Math.max(x1, x);
-      y1 = Math.max(y1, y);
-    }
+  for (let p = 0; p < n; p++) {
+    if (label[p] < 0 || sizes[label[p]] < min) continue;
+    keep[p] = 1;
+    const x = p % src.w;
+    const y = Math.floor(p / src.w);
+    x0 = Math.min(x0, x);
+    y0 = Math.min(y0, y);
+    x1 = Math.max(x1, x);
+    y1 = Math.max(y1, y);
   }
-  return x1 < 0 ? { x: 0, y: 0, w: src.w, h: src.h } : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  const box = x1 < 0 ? { x: 0, y: 0, w: src.w, h: src.h } : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  return { keep, box };
+}
+
+/** Caja que encierra la figura (sin el fondo ni las manchitas sueltas). */
+export function contentBox(src: Img, tolerance: number) {
+  return foreground(src, tolerance).box;
 }
 
 export function processArt(src: Img, o: ProcessOptions): Img {
   const out: Img = { w: o.w, h: o.h, data: new Uint8ClampedArray(o.w * o.h * 4) };
   const fill = o.fit === 'llenar';
   // Qué parte de la imagen original se usa: todo (texturas, mapa) o lo que no es fondo.
-  let box = fill && !o.trim ? { x: 0, y: 0, w: src.w, h: src.h } : contentBox(src, o.tolerance);
+  const fg = fill && !o.trim ? null : foreground(src, o.tolerance);
+  let box = fg ? fg.box : { x: 0, y: 0, w: src.w, h: src.h };
   if (fill && o.w === o.h && box.w !== box.h) {
     // Textura cuadrada: se toma el cuadrado del centro.
     const side = Math.min(box.w, box.h);
@@ -110,7 +150,7 @@ export function processArt(src: Img, o: ProcessOptions): Img {
         for (let xx = sx0; xx < sx1; xx++) {
           total++;
           const i = (yy * src.w + xx) * 4;
-          if (!fill && isBackground(src.data, i, o.tolerance)) continue;
+          if (!fill && !fg!.keep[yy * src.w + xx]) continue;
           r += src.data[i];
           g += src.data[i + 1];
           b += src.data[i + 2];

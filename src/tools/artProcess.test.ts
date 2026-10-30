@@ -72,6 +72,17 @@ describe('preparación de arte', () => {
     });
   });
 
+  it('ignora las manchitas sueltas que se cuelan de la celda vecina', () => {
+    // Una figura en el centro y un pedacito de 6×4 en el borde de abajo (pelo de la celda de abajo).
+    const src = picture(200, 200, { x: 70, y: 40, w: 60, h: 120 }, [140, 90, 50]);
+    for (let y = 194; y < 198; y++) for (let x = 20; x < 26; x++) src.data.set([200, 60, 40, 255], (y * 200 + x) * 4);
+    const out = processArt(src, { w: 24, h: 36, fit: 'figura', tolerance: 60, palette: false });
+    // Sin la manchita, la figura ocupa todo el alto y queda centrada; con ella, se habría corrido y achicado.
+    expect(alpha(out, 12, 0)).toBe(255);
+    expect(alpha(out, 12, 35)).toBe(255);
+    expect(alpha(out, 0, 34)).toBe(0);
+  });
+
   it('las texturas de una hoja recortan las franjas magenta antes de llenar el cuadro', () => {
     // Textura verde de 160×160 rodeada de una franja magenta de 20.
     const src = picture(200, 200, { x: 20, y: 20, w: 160, h: 160 }, [90, 140, 60]);
