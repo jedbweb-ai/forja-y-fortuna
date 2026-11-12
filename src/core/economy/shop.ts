@@ -141,6 +141,24 @@ function minQty(type: CustomerType, item: ItemInstance) {
   return range ? Math.min(item.quantity, range[0]) : 1;
 }
 
+/** Lo que ofrece ahora el cliente: su primera oferta o, si ya regatearon, su última contraoferta. */
+export function currentOffer(s: GameState): number {
+  const n = s.shop?.negotiation;
+  return n ? (n.rounds ? n.lastOffer : n.opening) : 0;
+}
+
+/** Lo mínimo que tiene sentido pedir: la oferta del cliente (pedir menos sería regalar la diferencia). */
+export const minAsk = (s: GameState) => Math.max(1, currentOffer(s));
+
+/**
+ * Con qué precio arranca tu pedido: el valor del objeto o, si el cliente ofrece más que eso,
+ * unas monedas por encima de su oferta. Nunca por debajo de lo que ofrece.
+ */
+export function startingAsk(s: GameState): number {
+  const offer = currentOffer(s);
+  return Math.max(suggestedPrice(s), offer + Math.max(1, Math.round(offer * S.askAboveOffer)));
+}
+
 /** Precio sugerido para la negociación en curso (valor base). */
 export function suggestedPrice(s: GameState): number {
   const n = s.shop?.negotiation;

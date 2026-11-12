@@ -6,7 +6,7 @@ import { setup, withRng } from '../testUtils';
 import type { GameState } from '../types';
 import type { Ctx } from '../content';
 import { buyMaterial, quickSell } from './market';
-import { acceptOffer, askPrice, closeShop, declineCustomer, nextCustomer, openShop } from './shop';
+import { acceptOffer, askPrice, closeShop, currentOffer, declineCustomer, minAsk, nextCustomer, openShop, startingAsk, suggestedPrice } from './shop';
 
 function forgeDagger(s: GameState, ctx: Ctx) {
   forgeBegin(s, ctx, 'daga', { hoja: 'hierro', guarda: 'hierro', mango: 'pino' });
@@ -69,6 +69,28 @@ describe('tienda', () => {
       acceptOffer(s, ctx);
       expect(s.gold).toBe(goldBefore + offer);
     }
+  });
+
+  it('tu pedido arranca unas monedas por encima de la oferta del cliente, nunca por debajo', () => {
+    const { s, ctx } = setup(3);
+    for (let i = 0; i < 3; i++) forgeDagger(s, ctx);
+    s.slot = 0;
+    const n = openUntilNegotiation(s, ctx)!;
+    // Si el cliente ofrece más que el valor del objeto, el pedido arranca por encima de su oferta.
+    n.opening = suggestedPrice(s) + 10;
+    expect(currentOffer(s)).toBe(n.opening);
+    expect(startingAsk(s)).toBeGreaterThan(n.opening);
+    expect(startingAsk(s)).toBe(n.opening + Math.max(1, Math.round(n.opening * 0.1)));
+    expect(minAsk(s)).toBe(n.opening);
+    // Si ofrece menos que el valor, arranca en el valor.
+    n.opening = Math.max(1, Math.floor(suggestedPrice(s) / 2));
+    expect(startingAsk(s)).toBe(Math.max(suggestedPrice(s), n.opening + Math.max(1, Math.round(n.opening * 0.1))));
+    expect(startingAsk(s)).toBeGreaterThan(n.opening);
+    // Después de una contraoferta, el piso es la contraoferta.
+    n.rounds = 1;
+    n.lastOffer = suggestedPrice(s) * 3;
+    expect(minAsk(s)).toBe(n.lastOffer);
+    expect(startingAsk(s)).toBeGreaterThan(n.lastOffer);
   });
 
   it('cerrar la tienda gasta la franja', () => {

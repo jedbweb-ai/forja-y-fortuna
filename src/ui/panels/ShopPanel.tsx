@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { displaySlots } from '../../core/progress/progress';
 import {
-  acceptOffer, askPrice, canOpenShop, closeShop, customerCount, declineCustomer, exhibitedItems, nextCustomer, openShop, suggestedPrice, toggleExhibit,
+  acceptOffer, askPrice, canOpenShop, closeShop, customerCount, declineCustomer, exhibitedItems, minAsk, nextCustomer, openShop, startingAsk, suggestedPrice, toggleExhibit,
 } from '../../core/economy/shop';
 import { slotName } from '../../core/time';
 import { Panel } from '../components/Panel';
@@ -59,8 +59,12 @@ function ShopSessionView() {
   const n = sh.negotiation;
   const item = n && s.items.find((i) => i.uid === n.itemUid);
   const suggested = suggestedPrice(s);
-  const [price, setPrice] = useState(suggested);
-  useEffect(() => setPrice(suggested), [suggested, sh.index]);
+  const start = startingAsk(s);
+  // Nunca se pide menos de lo que ofrece el cliente.
+  const floor = minAsk(s);
+  const [rawPrice, setPrice] = useState(start);
+  useEffect(() => setPrice(start), [start, sh.index]);
+  const price = Math.max(floor, rawPrice);
   const remaining = sh.customers.length - sh.index - 1;
   const done = !customer;
 
@@ -97,13 +101,14 @@ function ShopSessionView() {
                 {n.qty > 1 ? `${n.qty}× ` : ''}{item.name} · valor base 🪙 {suggested}
               </div>
               <div className="price-row">
-                <button className="btn" onClick={() => setPrice(Math.max(1, Math.round(price * 0.9)))}>−10%</button>
+                <button className="btn" onClick={() => setPrice(Math.max(floor, Math.round(price * 0.9)))}>−10%</button>
                 <input
-                  type="number" inputMode="numeric" min={1} value={price}
-                  onChange={(e) => setPrice(Math.max(1, Number(e.target.value) || 1))} aria-label="Precio"
+                  type="number" inputMode="numeric" min={floor} value={rawPrice || ''}
+                  onChange={(e) => setPrice(Math.max(0, Math.round(Number(e.target.value) || 0)))}
+                  onBlur={() => setPrice(price)} aria-label="Precio"
                 />
-                <button className="btn" onClick={() => setPrice(Math.round(price * 1.1))}>+10%</button>
-                <button className="btn" onClick={() => setPrice(Math.round(suggested * 1.25))}>+25% sobre valor</button>
+                <button className="btn" onClick={() => setPrice(Math.max(price + 1, Math.round(price * 1.1)))}>+10%</button>
+                <button className="btn" onClick={() => setPrice(Math.max(floor, Math.round(suggested * 1.25)))}>+25% sobre valor</button>
               </div>
               <div className="row">
                 <button className="btn primary big" data-key="enter" onClick={() => store.run(askPrice, price)}>Pedir 🪙 {price}</button>

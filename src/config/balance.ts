@@ -100,6 +100,8 @@ export const BALANCE = {
     /** Ruperto con mala relación te saca clientes por franja hablando mal de vos. */
     rivalCustomerLoss: 1,
     openingRatio: [0.6, 0.8] as [number, number],
+    /** Tu pedido arranca al menos esta parte por encima de la oferta del cliente (mínimo 1 moneda). */
+    askAboveOffer: 0.1,
   },
 
   skills: {
