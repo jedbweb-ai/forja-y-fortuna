@@ -150,52 +150,101 @@ El dibujo de frente mira abajo a la izquierda y el de espalda, arriba a la derec
 
 ## 7. Ciudades ilustradas
 
-Cada ciudad es **una sola ilustración isométrica completa**, con calles, plaza, río, árboles y todos sus edificios dibujados. Reemplaza al mapa armado con edificios sueltos. Yo marco sobre la imagen dónde se toca cada edificio y pongo encima los nombres, el brillo de las puertas, la gente que camina, el humo y la luz de cada hora.
+Cada ciudad es **una sola ilustración en pixel art, vista desde el aire**: la ciudad entera con su muralla, su río o su puerto, calles, plazas y cientos de techos de casas comunes. Los edificios del juego van **más grandes y reconocibles** que las casas comunes, como en los mapas de los RPG, cada uno con un lugar libre delante para su nombre. Reemplaza al mapa armado con edificios sueltos.
+
+Yo marco sobre la imagen dónde se toca cada edificio y pongo encima los nombres, el brillo de las puertas, el humo de las chimeneas y la luz de cada hora.
+
+**Inspiración**: ciudades amuralladas vistas desde el aire, con un río que las cruza, calles que salen de una plaza central y techos apretados. Es solo inspiración: **no subas a ChatGPT capturas de animes ni de otros juegos**, el pedido ya lo describe en palabras.
 
 **Cómo pedirla:**
 
-1. En ChatGPT, **adjuntá las hojas de edificios de esa ciudad** (están en `arte/originales/edificios/`) para que los dibuje parecidos a los que ya tenemos.
+1. En ChatGPT, **adjuntá las hojas de edificios de esa ciudad** (están en `arte/originales/edificios/`), para que los dibuje parecidos a los que ya tenemos.
 2. Pegá el pedido de la ciudad (abajo).
-3. Si un edificio sale repetido, falta o tiene letras, pedile que lo corrija sobre la misma imagen.
+3. Si un edificio importante sale repetido, falta, queda tapado o tiene letras, pedile que lo corrija sobre la misma imagen.
 4. Guardala en `arte/originales/ciudades/<ciudad>.png` (o mandámela por el chat).
 
-**Formato**: horizontal 3:2. El juego la muestra en 16:9, así que se recorta un poco arriba y abajo: por eso el pedido deja una franja de campo en esos bordes.
+**Formato**: horizontal 3:2. El juego la muestra en 16:9, así que se recorta un poco arriba y abajo: por eso cada pedido deja una franja de campo, mar o roca en esos bordes.
 
 ### Valdebrasa
 
 Adjuntar: `hoja54.webp` (herrería, mercado, taberna, alquimista), `hoja53.webp` (curtiembre, aserradero, joyería, librería) y `hoja58.webp` (gremio, tablón, subastas, mercado de esclavos).
 
 ```
-Pixel art para un videojuego táctico isométrico de fantasía, estilo anime, muy detallado y pulido, con el mismo estilo que los edificios de las imágenes adjuntas: paleta terrosa con acentos de color, 3 o 4 tonos por color, contorno de color oscuro (no negro puro), luz desde arriba a la izquierda, planos de color limpios y sin tramado de puntos.
+Pixel art para un videojuego de rol táctico de fantasía, estilo anime, muy detallado y pulido, con el mismo estilo que los edificios de las imágenes adjuntas: paleta terrosa con acentos de color, 3 o 4 tonos por color, contorno de color oscuro (no negro puro), luz desde arriba a la izquierda, planos de color limpios y sin tramado de puntos.
 
-Una sola ilustración horizontal de una ciudad entera vista desde arriba en diagonal, en vista isométrica (el piso es una grilla de rombos 2:1). Es Valdebrasa, un pueblo de valle medieval, próspero y acogedor. La imagen se llena por completo con la escena: sin fondo magenta, sin marco y sin bordes vacíos.
+Una sola ilustración horizontal: la ciudad de Valdebrasa vista desde el aire, desde bastante arriba y en diagonal, como el mapa de una ciudad en un RPG. Es un pueblo grande de valle, próspero y acogedor, rodeado por una muralla baja de piedra clara con forma redondeada, con portones de madera donde entran los caminos. La ciudad llena casi toda la imagen.
 
-Usá los edificios de las imágenes adjuntas como referencia: misma forma, color de techo y carteles. Cada edificio aparece una sola vez, bien separado de los demás, con su puerta hacia el frente y un espacio libre de calle delante (debajo) para poner su nombre encima en el juego. Ubicación de los 12 edificios, mirando la imagen:
+Adentro de la muralla, cientos de casas comunes chicas, apretadas, con techos de teja roja y naranja (algunas con techos más oscuros para variar), patios con árboles y huertitas entre ellas. Las calles de tierra clara y adoquines salen como rayos desde una plaza central y se cruzan con calles en anillo. Un río azul entra por arriba, serpentea por la ciudad un poco a la izquierda del centro y sale por abajo, cruzado por dos puentes de piedra. Afuera de la muralla: campos de cultivo en parcelas de distintos verdes, caminos de tierra y manchas de bosque espeso.
+
+Los 12 edificios importantes de las imágenes adjuntas van dibujados más grandes que las casas comunes (unas tres o cuatro veces), bien reconocibles, con la misma forma, color de techo y detalles que en las imágenes. Cada uno aparece una sola vez, sin quedar tapado, y con un espacio libre delante (calle, patio o placita) para poner su nombre encima en el juego. Ubicación, mirando la imagen:
 
 Arriba, de izquierda a derecha:
 1. Curtiembre de Tanino (techo marrón claro, cueros secándose afuera), en el extremo izquierdo.
-2. La Retorta de Bastián, la tienda del alquimista (techo violeta, alambique de cobre y frascos).
-3. Casa de subastas (techo dorado, columnas, alfombra roja y escalinata), arriba al centro: el edificio más elegante del pueblo.
+2. La Retorta de Bastián, la tienda del alquimista (techo violeta, alambique de cobre).
+3. Casa de subastas (techo dorado, columnas y escalinata), arriba al centro: el edificio más elegante de la ciudad.
 4. Joyería Engaste (techo azul, vidriera con gemas).
-5. Librería Pliegue (techo bordó, estantes de libros y enredaderas), a la derecha.
+5. Librería Pliegue (techo bordó, enredaderas), a la derecha.
 
 En el medio, de izquierda a derecha:
-6. Tu herrería (techo rojo oscuro, fragua de piedra con brasas, yunque y armas apoyadas afuera), a la izquierda: es la casa del protagonista, que se note acogedora y trabajada.
-7. El Mercado, en el centro, sobre una plaza grande de adoquines: varios puestos con toldos a rayas rojos, crema y azules, cajones de frutas, telas y barriles.
-8. Taberna El Fuelle Roto (techo verde musgo, mesas afuera con jarras), a la derecha del mercado.
-9. Gremio de aventureros (techo azul, estandartes con espadas cruzadas), en el extremo derecho.
+6. Tu herrería (techo rojo oscuro, fragua de piedra y yunque afuera), a la izquierda, del otro lado del río: es la casa del protagonista.
+7. El Mercado, en el centro de la plaza central de adoquines: puestos con toldos a rayas rojos, crema y azules.
+8. Taberna El Fuelle Roto (techo verde musgo, mesas afuera), a la derecha de la plaza.
+9. Gremio de aventureros (techo azul, estandartes), en el extremo derecho.
 
 Abajo, de izquierda a derecha:
-10. Aserradero Duela (techo oliva, rueda de sierra y pilas de troncos), abajo a la izquierda, cerca del río y del bosque.
-11. Tablón de anuncios (un tablero techado con papeles clavados y banderines), abajo al centro, en una placita al lado del camino.
-12. Mercado de esclavos (techo marrón oscuro, rejas, cadenas y antorchas), abajo a la derecha, más apartado y sombrío.
+10. Aserradero Duela (techo oliva, rueda de sierra y troncos), abajo a la izquierda, junto al río.
+11. Tablón de anuncios (un tablero techado con papeles), abajo al centro, en una placita.
+12. Mercado de esclavos (techo marrón oscuro, rejas y antorchas), abajo a la derecha, más apartado y sombrío.
 
-El pueblo:
-- Un río azul baja de arriba hacia abajo, un poco a la izquierda del centro, entre la herrería y el mercado, con juncos y piedras en las orillas. Lo cruza un puente de madera.
-- Un camino principal de tierra atraviesa el pueblo de izquierda a derecha por el medio y pasa por el puente. Otro camino baja desde la casa de subastas, cruza la plaza del mercado y llega al tablón. Senderos más chicos llevan a la puerta de cada edificio.
-- Muchos detalles chicos: un pozo de piedra, faroles en las calles, cercas de madera, canteros con flores, huertas, barriles, cajones, una carreta, pilas de leña, muros bajos de piedra, arbustos y árboles frondosos entre las casas.
-- Alrededor del pueblo, campo y bosque. Dejá una franja de campo y árboles arriba y abajo de la imagen, sin edificios, porque se recorta un poco.
+Dejá una franja de campos y bosque arriba y abajo de la imagen, sin edificios importantes, porque se recorta un poco.
+Luz pareja de mediodía (sin atardecer ni noche: el juego cambia la luz según la hora), sin rayos de sol ni destellos. Chimeneas sin humo (el juego lo agrega animado).
+Sin personas ni animales grandes. Sin texto, letras, números ni carteles con palabras.
+```
 
-Luz pareja de mediodía (sin atardecer ni noche: el juego cambia la luz según la hora). Chimeneas sin humo (el juego lo agrega animado).
-Sin personas ni animales (el juego los agrega caminando). Sin texto, letras, números ni carteles con palabras.
+### Puertoseco
+
+Adjuntar: `hoja52.webp` (muelle, mercado, taberna, casa de los navegantes) y `hoja49.webp` (la posada es el de arriba a la izquierda).
+
+```
+Pixel art para un videojuego de rol táctico de fantasía, estilo anime, muy detallado y pulido, con el mismo estilo que los edificios de las imágenes adjuntas: paleta terrosa con acentos de color, 3 o 4 tonos por color, contorno de color oscuro (no negro puro), luz desde arriba a la izquierda, planos de color limpios y sin tramado de puntos.
+
+Una sola ilustración horizontal: la ciudad de Puertoseco vista desde el aire, desde bastante arriba y en diagonal, como el mapa de una ciudad en un RPG. Es un puerto de pescadores y contrabandistas sobre una bahía: la ciudad baja en terrazas desde unas colinas secas (arriba) hasta el mar (abajo). Una muralla de piedra clara la rodea por tierra y termina en el agua con dos torres. La ciudad llena casi toda la imagen.
+
+Adentro, cientos de casas comunes chicas y apretadas de paredes blancas y crema, con techos de teja naranja y algunos azules, escaleras entre terrazas, callejones y patios con macetas. Una calle ancha (la rambla) baja de la puerta de la muralla hasta el puerto. Abajo, el mar azul turquesa con muelles de madera, barcos de pesca y un par de barcos grandes con velas recogidas, redes, cajones y barriles. Un faro de piedra en la punta de la bahía.
+
+Los 5 edificios importantes de las imágenes adjuntas van dibujados más grandes que las casas comunes (unas tres o cuatro veces), bien reconocibles, con la misma forma, color de techo y detalles que en las imágenes. Cada uno aparece una sola vez, sin quedar tapado, y con un espacio libre delante para poner su nombre encima en el juego. Ubicación, mirando la imagen:
+
+1. Posada del Faro (techo rojo, cartel de jarra y bandera con ancla), arriba a la izquierda, cerca de la muralla y mirando al mar.
+2. Casa de los Navegantes (techo azul, timón en la fachada y bandera con estrella), arriba a la derecha.
+3. Mercado de la Rambla (techo naranja, puestos con toldos y pescado), a la izquierda del centro, sobre la rambla.
+4. Taberna La Ballena Seca (techo marrón, cartel con una ballena), a la derecha del centro.
+5. El muelle (galpón de techo azul sobre un muelle de madera, grúa con red y un bote), abajo al centro, sobre el agua.
+
+Dejá una franja de colinas secas arriba y de mar abajo, sin edificios importantes, porque se recorta un poco.
+Luz pareja de mediodía (sin atardecer ni noche: el juego cambia la luz según la hora), sin rayos de sol ni destellos. Chimeneas sin humo (el juego lo agrega animado).
+Sin personas ni animales grandes. Sin texto, letras, números ni carteles con palabras.
+```
+
+### Fuerte Ceniza
+
+Adjuntar: `hoja49.webp` (plaza de armas, intendencia y mercado de la guarnición: los tres que no son la posada) y `hoja50.webp` (cantina y cuartel de huéspedes).
+
+```
+Pixel art para un videojuego de rol táctico de fantasía, estilo anime, muy detallado y pulido, con el mismo estilo que los edificios de las imágenes adjuntas: paleta terrosa con acentos de color, 3 o 4 tonos por color, contorno de color oscuro (no negro puro), luz desde arriba a la izquierda, planos de color limpios y sin tramado de puntos.
+
+Una sola ilustración horizontal: Fuerte Ceniza visto desde el aire, desde bastante arriba y en diagonal, como el mapa de una ciudad en un RPG. Es la última fortaleza antes de la frontera, sobre una meseta de tierra y roca gris con poca vegetación: una muralla alta y gruesa de piedra gris en forma de estrella, con torres en cada punta, almenas, pasarelas y un portón grande abajo al centro con puente levadizo sobre un foso seco. La fortaleza llena casi toda la imagen.
+
+Adentro, cuarteles, establos, depósitos y casas comunes de piedra gris con techos de pizarra oscura y algunos de teja marrón, apretados en calles rectas que llevan a una gran plaza de armas empedrada en el centro. Detalles: armeros, carros de suministros, pilas de leña, barriles, estandartes azules y rojos, una forja militar y campos de entrenamiento con muñecos de paja. Afuera de la muralla, tierra seca, pocos árboles, un camino que sale hacia la frontera y un campamento de carpas a un costado.
+
+Los 5 edificios importantes de las imágenes adjuntas van dibujados más grandes que las casas comunes (unas tres o cuatro veces), bien reconocibles, con la misma forma, color de techo y detalles que en las imágenes. Cada uno aparece una sola vez, sin quedar tapado, y con un espacio libre delante para poner su nombre encima en el juego. Ubicación, mirando la imagen:
+
+1. Cuartel de huéspedes (techo de pizarra azul, catres bajo un alero), arriba al centro.
+2. Intendencia (edificio de piedra con techo de pizarra, columnas, balanza en el estandarte), arriba a la derecha.
+3. Mercado de la guarnición (techo marrón, toldos claros y armas y armaduras en venta), a la izquierda.
+4. Plaza de armas (patio empedrado con estandartes, armero de lanzas y tablón de avisos), en el centro.
+5. Cantina El Escudo Roto (techo marrón oscuro, cartel con un escudo rojo), abajo a la derecha.
+
+Dejá una franja de tierra seca y roca arriba y abajo de la imagen, sin edificios importantes, porque se recorta un poco.
+Luz pareja de mediodía (sin atardecer ni noche: el juego cambia la luz según la hora), sin rayos de sol ni destellos. Chimeneas sin humo (el juego lo agrega animado).
+Sin personas ni animales grandes. Sin texto, letras, números ni carteles con palabras.
 ```
