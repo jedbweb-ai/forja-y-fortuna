@@ -2,8 +2,11 @@
 // y funde el final con el principio para que, al repetirse, no se note el corte. Trabaja sobre muestras sueltas
 // (sin Web Audio), así se puede probar.
 
-/** Volumen medio (RMS) al que se llevan todos los temas. */
-export const TARGET_RMS = 0.16;
+/**
+ * Volumen percibido al que se llevan todos los temas (en LUFS, la medida que usan radios y plataformas de música).
+ * Se mide como lo escucha el oído: los graves pesan menos y los agudos medios más, y no cuentan los silencios.
+ */
+export const TARGET_LUFS = -16;
 /** Debajo de esto se considera silencio (el relleno que agrega el mp3 al principio y al final). */
 const SILENCE = 0.003;
 /** Fundido del empalme: corto si el tema ya empalma bien; largo si termina mucho más fuerte o más suave de lo que empieza. */
@@ -24,6 +27,57 @@ const rmsOf = (chs: Float32Array[], a: number, b: number) => {
   return Math.sqrt(s / Math.max(1, (b - a) * chs.length));
 };
 
+/** Filtro biquad aplicado a una copia de la señal. */
+function biquad(x: Float32Array, b0: number, b1: number, b2: number, a1: number, a2: number) {
+  const y = new Float32Array(x.length);
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let i = 0; i < x.length; i++) {
+    const v = b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    x2 = x1; x1 = x[i]; y2 = y1; y1 = v;
+    y[i] = v;
+  }
+  return y;
+}
+
+/** Ponderación K: realce de agudos medios y corte de graves, como escucha el oído (norma ITU-R BS.1770). */
+function kWeight(x: Float32Array, fs: number) {
+  // Etapa 1: realce de unos 4 dB arriba de ~1,7 kHz.
+  let K = Math.tan((Math.PI * 1681.974450955533) / fs);
+  const Q1 = 0.7071752369554196, Vh = 10 ** (3.999843853973347 / 20), Vb = Vh ** 0.4996667741545416;
+  let a0 = 1 + K / Q1 + K * K;
+  const s1 = biquad(x, (Vh + (Vb * K) / Q1 + K * K) / a0, (2 * (K * K - Vh)) / a0, (Vh - (Vb * K) / Q1 + K * K) / a0, (2 * (K * K - 1)) / a0, (1 - K / Q1 + K * K) / a0);
+  // Etapa 2: corte de graves por debajo de ~38 Hz.
+  K = Math.tan((Math.PI * 38.13547087602444) / fs);
+  const Q2 = 0.5003270373238773;
+  a0 = 1 + K / Q2 + K * K;
+  return biquad(s1, 1, -2, 1, (2 * (K * K - 1)) / a0, (1 - K / Q2 + K * K) / a0);
+}
+
+/** Volumen integrado en LUFS: bloques de 400 ms ponderados, sin contar silencios ni partes muy bajas. */
+export function loudness(chs: Float32Array[], fs: number): number {
+  const weighted = chs.map((c) => kWeight(c, fs));
+  const block = Math.floor(fs * 0.4);
+  const hop = Math.floor(block / 4);
+  const blocks: number[] = [];
+  for (let start = 0; start + block <= weighted[0].length; start += hop) {
+    let z = 0;
+    for (const c of weighted) {
+      let s = 0;
+      for (let i = start; i < start + block; i++) s += c[i] * c[i];
+      z += s / block;
+    }
+    blocks.push(z);
+  }
+  if (!blocks.length) return -70;
+  const lufs = (z: number) => -0.691 + 10 * Math.log10(Math.max(z, 1e-12));
+  const mean = (zs: number[]) => zs.reduce((a, b) => a + b, 0) / zs.length;
+  const loud = blocks.filter((z) => lufs(z) > -70);
+  if (!loud.length) return -70;
+  const relative = lufs(mean(loud)) - 10;
+  const gated = loud.filter((z) => lufs(z) > relative);
+  return lufs(mean(gated.length ? gated : loud));
+}
+
 export function prepareTrack(input: Float32Array[], sampleRate: number, loop: boolean): Prepared {
   const n = input[0].length;
   const loud = (i: number) => input.some((c) => Math.abs(c[i]) > SILENCE);
@@ -36,8 +90,8 @@ export function prepareTrack(input: Float32Array[], sampleRate: number, loop: bo
 
   let peak = 0;
   for (const c of chs) for (let i = 0; i < len; i++) peak = Math.max(peak, Math.abs(c[i]));
-  const rms = rmsOf(chs, 0, len);
-  const gain = rms > 0 ? Math.min(TARGET_RMS / rms, 0.95 / Math.max(peak, 1e-6)) : 1;
+  const level = loudness(chs, sampleRate);
+  const gain = level > -70 ? Math.min(10 ** ((TARGET_LUFS - level) / 20), 0.95 / Math.max(peak, 1e-6)) : 1;
 
   if (!loop) return { channels: chs, gain, seam: 0 };
 

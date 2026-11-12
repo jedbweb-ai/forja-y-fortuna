@@ -16,6 +16,12 @@ export const MUSIC: Record<string, string> = Object.fromEntries(
 /** Temas cortos que suenan una vez (victoria, derrota) en vez de repetirse. */
 const JINGLES = new Set(['victoria', 'derrota']);
 
+/**
+ * Ajuste fino a oído, en decibeles, después de igualar el volumen (por ejemplo `jefe: -2` lo baja un poco,
+ * `mazmorra: 3` lo sube). Cada 6 dB es el doble o la mitad de fuerte.
+ */
+const TRIM_DB: Record<string, number> = {};
+
 const FADE_MS = 1200;
 /** Temas preparados que se guardan en memoria (cada uno ocupa unos 40 MB): los demás se vuelven a cargar. */
 const CACHE = 3;
@@ -118,7 +124,7 @@ class MusicPlayer {
         const prep = prepareTrack(chs, decoded.sampleRate, !JINGLES.has(key));
         const buffer = ctx.createBuffer(prep.channels.length, prep.channels[0].length, decoded.sampleRate);
         prep.channels.forEach((c, i) => buffer.getChannelData(i).set(c));
-        return { buffer, norm: prep.gain };
+        return { buffer, norm: prep.gain * 10 ** ((TRIM_DB[key] ?? 0) / 20) };
       } catch (err) {
         console.warn(`No se pudo cargar la música "${key}"`, err);
         this.loaded.delete(key);
