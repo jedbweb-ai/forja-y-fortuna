@@ -3,10 +3,11 @@ import type { GameStore } from '../../bridge/GameStore';
 import { cityLocation, npcsAt } from '../../core/city';
 import { pickDialogue } from '../../core/dialogue';
 import { slotName } from '../../core/time';
-import type { HotspotDef, LiveSceneDef, TimeSlot } from '../../core/types';
+import type { HotspotDef, LiveSceneDef, LocationKind, TimeSlot } from '../../core/types';
 import { isoBounds, isoDepth, isoToScreen, TILE_H } from '../render/iso';
 import { artScale, facing, installWalkBob } from '../render/assets';
 import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../render/placeholders';
+import { drawInteriorWalls, drawWindowLight, isIndoor, WALL_H } from '../render/interior';
 import { SLOT_LIGHT } from './lighting';
 
 interface Tile { x: number; y: number }
@@ -18,6 +19,7 @@ const CHAR_SCALE = 2;
 export class LiveScene extends Phaser.Scene {
   private locId = '';
   private def!: LiveSceneDef;
+  private kind: LocationKind = 'herreria';
   private blocked = new Set<string>();
   private walkers: Phaser.GameObjects.Sprite[] = [];
   private unsubs: (() => void)[] = [];
@@ -38,16 +40,18 @@ export class LiveScene extends Phaser.Scene {
     const loc = cityLocation(this.store.content, this.locId);
     if (!loc?.scene) throw new Error(`Lugar sin escena: ${this.locId}`);
     this.def = loc.scene;
+    this.kind = loc.kind;
     const state = this.store.state;
     const slot = slotName(state);
     const light = SLOT_LIGHT[slot];
     this.cameras.main.setBackgroundColor(light.bg);
 
-    this.blocked = new Set(this.def.props.filter((p) => p.blocks).map((p) => `${p.x},${p.y}`));
+    this.blocked = new Set(this.def.props.filter((p) => p.blocks && this.textures.exists(p.key)).map((p) => `${p.x},${p.y}`));
     Object.values(this.def.npcSpots).forEach((p) => this.blocked.add(`${p.x},${p.y}`));
     this.blocked.add(`${this.def.spawn.x},${this.def.spawn.y}`);
 
     this.drawFloor();
+    if (isIndoor(this.kind)) this.drawWalls(slot);
     this.drawProps(light.lamps);
     this.drawHotspots();
     this.drawNamedNpcs();
@@ -85,7 +89,7 @@ export class LiveScene extends Phaser.Scene {
   private fit() {
     const b = isoBounds(this.def.cols, this.def.rows);
     const { width, height } = this.scale.gameSize;
-    const top = b.top - 70;
+    const top = b.top - WALL_H;
     const zoom = Phaser.Math.Clamp(Math.min(width / (b.width + 20), (height - 96) / (b.bottom - top)), 0.5, 2.6);
     this.cameras.main.setZoom(zoom);
     this.cameras.main.centerOn((b.left + b.right) / 2, (top + b.bottom) / 2 - 10 / zoom);
@@ -95,7 +99,6 @@ export class LiveScene extends Phaser.Scene {
 
   private drawFloor() {
     const { cols, rows, floor, roadRow } = this.def;
-    const indoor = floor.startsWith('tile.wood');
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const key = r === roadRow ? 'tile.road' : floor;
@@ -105,36 +108,26 @@ export class LiveScene extends Phaser.Scene {
         this.add.image(p.x, p.y, variant).setOrigin(0.5, 16 / 34).setDepth(-10000 + isoDepth(c, r));
       }
     }
-    if (indoor) {
-      // Paredes del fondo para los interiores.
-      const g = this.add.graphics().setDepth(-20000);
-      const wallH = 70;
-      const lastRow = roadRow !== undefined ? roadRow - 1 : rows - 1;
-      const a = isoToScreen(0, 0);
-      const right = isoToScreen(cols - 1, 0);
-      const left = isoToScreen(0, lastRow);
-      const wall = floor === 'tile.wood_dark' ? 0x5a3f33 : 0x8a6a52;
-      g.fillStyle(wall, 1);
-      g.fillPoints([
-        new Phaser.Math.Vector2(a.x, a.y - TILE_H / 2), new Phaser.Math.Vector2(right.x + 32, right.y),
-        new Phaser.Math.Vector2(right.x + 32, right.y - wallH), new Phaser.Math.Vector2(a.x, a.y - TILE_H / 2 - wallH),
-      ], true);
-      g.fillStyle(0x000000, 0.18);
-      g.fillPoints([
-        new Phaser.Math.Vector2(a.x, a.y - TILE_H / 2), new Phaser.Math.Vector2(left.x - 32, left.y),
-        new Phaser.Math.Vector2(left.x - 32, left.y - wallH), new Phaser.Math.Vector2(a.x, a.y - TILE_H / 2 - wallH),
-      ], true);
-      g.fillStyle(wall, 0.85);
-      g.fillPoints([
-        new Phaser.Math.Vector2(a.x, a.y - TILE_H / 2), new Phaser.Math.Vector2(left.x - 32, left.y),
-        new Phaser.Math.Vector2(left.x - 32, left.y - wallH), new Phaser.Math.Vector2(a.x, a.y - TILE_H / 2 - wallH),
-      ], true);
+  }
+
+  /** Paredes del fondo con textura y lo colgado; de día entra luz por las ventanas y las antorchas siempre brillan. */
+  private drawWalls(slot: TimeSlot) {
+    const lights = drawInteriorWalls(this, this.def, this.kind);
+    if (slot !== 'noche') for (const w of lights.windows) drawWindowLight(this, w, slot === 'mañana' ? 0.16 : 0.11);
+    for (const t of lights.torches) {
+      const glow = this.add.image(t.x, t.y - 6, 'fx.glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(9001).setScale(0.8).setAlpha(slot === 'noche' ? 1 : 0.5);
+      this.tweens.add({ targets: glow, alpha: glow.alpha * 0.7, yoyo: true, repeat: -1, duration: 260 + Math.random() * 200 });
     }
   }
 
   private drawProps(night: boolean) {
     for (const p of this.def.props) {
+      if (!this.textures.exists(p.key)) continue;
       const pos = isoToScreen(p.x, p.y);
+      if (p.key === 'prop.alfombra') {
+        this.add.image(pos.x, pos.y, p.key).setDepth(-9600);
+        continue;
+      }
       const img = this.add.image(pos.x, pos.y + TILE_H / 2 - 2, p.key).setOrigin(0.5, 1).setDepth(isoDepth(p.x, p.y, 5));
       if (p.key === 'prop.forge' || p.key === 'prop.fireplace') {
         this.tweens.add({ targets: img, alpha: 0.9, yoyo: true, repeat: -1, duration: 300 + Math.random() * 200 });

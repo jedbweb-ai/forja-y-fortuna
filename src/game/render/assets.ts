@@ -142,6 +142,11 @@ function pixels(scene: Phaser.Scene, key: string) {
 }
 
 type Px = ReturnType<typeof pixels>;
+
+/** Píxeles de un arte que se procesa al cargarlo (texturas y escenario), en su medida de arte; null si no hay. */
+export function artPixels(scene: Phaser.Scene, key: string): Px | null {
+  return scene.textures.exists(key + SRC) ? pixels(scene, key) : null;
+}
 const sample = (t: Px, u: number, v: number, dark = 1): [number, number, number] => {
   const x = ((Math.floor(u) % t.w) + t.w) % t.w;
   const y = ((Math.floor(v) % t.h) + t.h) % t.h;

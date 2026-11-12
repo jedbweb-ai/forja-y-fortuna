@@ -35,6 +35,11 @@ export const CITIES: City[] = [
             { key: 'prop.runetable', x: 8, y: 2, blocks: true },
             { key: 'prop.jewelbench', x: 4, y: 0, blocks: true },
             { key: 'prop.alchemy', x: 8, y: 6, blocks: true },
+            { key: 'prop.tina', x: 2, y: 1, blocks: true },
+            { key: 'prop.afiladora', x: 0, y: 2, blocks: true },
+            { key: 'prop.lena', x: 0, y: 1, blocks: true },
+            { key: 'prop.sacos', x: 2, y: 0, blocks: true },
+            { key: 'prop.alfombra', x: 4, y: 4 },
           ],
           spawn: { x: 4, y: 3 },
           doors: [{ x: 0, y: 9 }, { x: 9, y: 9 }],
@@ -108,6 +113,8 @@ export const CITIES: City[] = [
             { key: 'prop.barrel', x: 0, y: 0, blocks: true },
             { key: 'prop.barrel', x: 1, y: 0, blocks: true },
             { key: 'prop.fireplace', x: 10, y: 0, blocks: true },
+            { key: 'prop.lena', x: 11, y: 0, blocks: true },
+            { key: 'prop.alfombra', x: 10, y: 2 },
             { key: 'prop.table', x: 3, y: 5, blocks: true },
             { key: 'prop.table', x: 7, y: 4, blocks: true },
             { key: 'prop.table', x: 8, y: 7, blocks: true },
@@ -138,6 +145,7 @@ export const CITIES: City[] = [
           cols: 9, rows: 8, floor: 'tile.stone',
           props: [
             { key: 'prop.potionshelf', x: 1, y: 0, blocks: true },
+            { key: 'prop.sacos', x: 0, y: 2, blocks: true },
             { key: 'prop.potionshelf', x: 3, y: 0, blocks: true },
             { key: 'prop.cauldron', x: 6, y: 2, blocks: true },
             { key: 'prop.table', x: 2, y: 3, blocks: true },
@@ -173,6 +181,7 @@ export const CITIES: City[] = [
           props: [
             { key: 'prop.shelf', x: 0, y: 0, blocks: true },
             { key: 'prop.shelf', x: 2, y: 0, blocks: true },
+            { key: 'prop.alfombra', x: 4, y: 6 },
             { key: 'prop.shelf', x: 4, y: 0, blocks: true },
             { key: 'prop.shelf', x: 8, y: 2, blocks: true },
             { key: 'prop.shelf', x: 8, y: 4, blocks: true },
@@ -197,6 +206,7 @@ export const CITIES: City[] = [
           cols: 12, rows: 10, floor: 'tile.wood',
           props: [
             { key: 'prop.counter', x: 5, y: 2, blocks: true },
+            { key: 'prop.alfombra', x: 6, y: 5 },
             { key: 'prop.counter', x: 6, y: 2, blocks: true },
             { key: 'prop.board', x: 10, y: 1, blocks: true },
             { key: 'prop.banner', x: 2, y: 0, blocks: true },
@@ -253,6 +263,7 @@ export const CITIES: City[] = [
           cols: 12, rows: 10, floor: 'tile.wood_dark',
           props: [
             { key: 'prop.podium', x: 6, y: 1, blocks: true },
+            { key: 'prop.alfombra', x: 6, y: 3 },
             { key: 'prop.bench', x: 3, y: 5, blocks: true },
             { key: 'prop.bench', x: 4, y: 5, blocks: true },
             { key: 'prop.bench', x: 7, y: 5, blocks: true },

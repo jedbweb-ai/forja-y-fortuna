@@ -21,7 +21,7 @@ let results: { entry: AssetEntry; img: Img; keep: boolean }[] = [];
 
 const FIT: Record<AssetType, Fit> = {
   personaje: 'figura', monstruo: 'figura', jefe: 'figura', espalda: 'figura', espalda_monstruo: 'figura', espalda_jefe: 'figura', escenario: 'figura', edificio: 'figura',
-  icono: 'centro', retrato: 'centro', textura: 'llenar', lado: 'llenar', mapa: 'llenar', marcador: 'figura', animal: 'figura',
+  icono: 'centro', retrato: 'centro', textura: 'llenar', lado: 'llenar', mapa: 'llenar', marcador: 'figura', animal: 'figura', muro: 'llenar', decoracion: 'figura',
 };
 
 // ───────────────────────── Lista ─────────────────────────
@@ -180,7 +180,7 @@ function runSheet() {
   const cols = Number($<HTMLInputElement>('cols').value);
   const rows = Number($<HTMLInputElement>('rows').value);
   // Las figuras se buscan una por una (aunque la grilla no sea pareja); las texturas, que llenan su cuadrado, van por grilla.
-  const textures = list[0].type === 'textura' || list[0].type === 'lado';
+  const textures = list[0].type === 'textura' || list[0].type === 'lado' || list[0].type === 'muro';
   const cells = textures ? splitGrid(source!, cols, rows) : splitByFigures(source!, cols, rows, Number($<HTMLInputElement>('tol').value));
   const previous = new Map(results.map((r) => [r.entry.key, r.keep]));
   results = list.map((entry, i) => ({ entry, img: processArt(cells[i], options(entry, true)), keep: previous.get(entry.key) ?? true }));
@@ -243,7 +243,7 @@ function drawScene(canvas: HTMLCanvasElement, entry: AssetEntry, img: Img) {
     for (const [c, r] of [[0, 0], [1, 0], [0, 1], [1, 1], [2, 1], [1, 2]]) diamond(W / 2 + (c - r) * 32, 24 + (c + r) * 16, at);
     return;
   }
-  if (entry.type === 'lado' || entry.type === 'icono' || entry.type === 'retrato' || entry.type === 'mapa') {
+  if (entry.type === 'lado' || entry.type === 'muro' || entry.type === 'decoracion' || entry.type === 'icono' || entry.type === 'retrato' || entry.type === 'mapa') {
     // Sin casilla: la imagen sola, ampliada.
     const z = Math.max(1, Math.floor(Math.min((W - 8) / img.w, (H - 8) / img.h)));
     ctx.drawImage(bitmap(img), (W - img.w * z) / 2, (H - img.h * z) / 2, img.w * z, img.h * z);

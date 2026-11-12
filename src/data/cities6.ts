@@ -59,7 +59,7 @@ export const CITIES_6: City[] = [
         scene: scene('tile.wood_dark', 11, 9, [
           { key: 'prop.bar', x: 2, y: 1, blocks: true }, { key: 'prop.bar', x: 3, y: 1, blocks: true }, { key: 'prop.barrel', x: 0, y: 0, blocks: true },
           { key: 'prop.table', x: 3, y: 5, blocks: true }, { key: 'prop.table', x: 7, y: 4, blocks: true }, { key: 'prop.bench', x: 7, y: 5, blocks: true },
-          { key: 'prop.fireplace', x: 9, y: 0, blocks: true },
+          { key: 'prop.fireplace', x: 9, y: 0, blocks: true }, { key: 'prop.lena', x: 10, y: 0, blocks: true },
         ], [], { bruno: { x: 2, y: 2 }, ondina: { x: 8, y: 6 }, rolo: { x: 5, y: 6 } }, { ambient: { 'mañana': 2, tarde: 5, noche: 9 }, animals: ['gato'] }),
       },
       {
@@ -76,7 +76,7 @@ export const CITIES_6: City[] = [
         map: { x: 220, y: 200, w: 130, h: 95, roof: '#8a3a3a' },
         description: 'Camas limpias y una ventana al mar. Se descansa y se duerme (la noche se paga).',
         scene: scene('tile.wood', 9, 8, [
-          { key: 'prop.counter', x: 3, y: 1, blocks: true }, { key: 'prop.bench', x: 6, y: 4, blocks: true }, { key: 'prop.table', x: 1, y: 4, blocks: true },
+          { key: 'prop.counter', x: 3, y: 1, blocks: true }, { key: 'prop.bench', x: 6, y: 4, blocks: true }, { key: 'prop.table', x: 1, y: 4, blocks: true }, { key: 'prop.alfombra', x: 4, y: 4 },
           { key: 'prop.lamp', x: 8, y: 7, blocks: true },
         ], [], {}, { ambient: { 'mañana': 1, tarde: 2, noche: 3 } }),
       },
@@ -127,7 +127,7 @@ export const CITIES_6: City[] = [
         description: 'Cerveza amarga y soldados que cuentan la misma batalla todas las noches.',
         scene: scene('tile.wood_dark', 11, 9, [
           { key: 'prop.bar', x: 2, y: 1, blocks: true }, { key: 'prop.bar', x: 3, y: 1, blocks: true }, { key: 'prop.table', x: 6, y: 4, blocks: true },
-          { key: 'prop.bench', x: 6, y: 5, blocks: true }, { key: 'prop.barrel', x: 10, y: 0, blocks: true }, { key: 'prop.fireplace', x: 8, y: 0, blocks: true },
+          { key: 'prop.bench', x: 6, y: 5, blocks: true }, { key: 'prop.barrel', x: 10, y: 0, blocks: true }, { key: 'prop.fireplace', x: 8, y: 0, blocks: true }, { key: 'prop.lena', x: 9, y: 0, blocks: true },
         ], [], { bocanegra: { x: 2, y: 2 }, ilda: { x: 8, y: 6 }, pim: { x: 4, y: 6 } }, { ambient: { 'mañana': 2, tarde: 5, noche: 10 } }),
       },
       {
@@ -135,7 +135,7 @@ export const CITIES_6: City[] = [
         map: { x: 640, y: 150, w: 140, h: 95, roof: '#5a5a6a' },
         description: 'Catres duros y mantas de lana. Se descansa y se duerme (la noche se paga).',
         scene: scene('tile.wood', 9, 8, [
-          { key: 'prop.counter', x: 3, y: 1, blocks: true }, { key: 'prop.bench', x: 1, y: 4, blocks: true }, { key: 'prop.bench', x: 6, y: 4, blocks: true },
+          { key: 'prop.counter', x: 3, y: 1, blocks: true }, { key: 'prop.bench', x: 1, y: 4, blocks: true }, { key: 'prop.bench', x: 6, y: 4, blocks: true }, { key: 'prop.alfombra', x: 4, y: 4 },
           { key: 'prop.lamp', x: 8, y: 7, blocks: true },
         ], [], {}, { ambient: { 'mañana': 1, tarde: 2, noche: 3 } }),
       },

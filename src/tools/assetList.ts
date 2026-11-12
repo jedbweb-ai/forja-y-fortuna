@@ -5,7 +5,7 @@ import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../game/render/variants';
 // Cada entrada trae su clave (nombre del archivo), carpeta, medida del dibujo y el pedido para ChatGPT.
 // Medidas y estilo: docs/GUIA_DE_ARTE.md.
 
-export type AssetType = 'personaje' | 'monstruo' | 'jefe' | 'espalda' | 'espalda_monstruo' | 'espalda_jefe' | 'icono' | 'retrato' | 'textura' | 'lado' | 'escenario' | 'edificio' | 'mapa' | 'marcador' | 'animal';
+export type AssetType = 'personaje' | 'monstruo' | 'jefe' | 'espalda' | 'espalda_monstruo' | 'espalda_jefe' | 'icono' | 'retrato' | 'textura' | 'lado' | 'escenario' | 'edificio' | 'mapa' | 'marcador' | 'animal' | 'muro' | 'decoracion';
 
 export interface AssetEntry {
   key: string;
@@ -41,6 +41,8 @@ const TEMPLATE: Record<AssetType, string> = {
   escenario: 'Un solo objeto de escenario en vista isométrica (rombo de piso de 2:1), centrado, apoyado sobre una casilla.',
   marcador: 'Un solo marcador del mapa del mundo: un dibujito chico y muy legible del lugar, como una maqueta en vista isométrica, apoyado sobre una base de pasto o tierra con forma de rombo, centrado.',
   animal: 'Un solo animal chico de pueblo, de cuerpo entero, en vista isométrica de frente en diagonal (mirando hacia abajo a la izquierda), parado, centrado.',
+  muro: 'Textura cuadrada de una pared interior vista de frente, sin perspectiva, que se pueda repetir sin costuras a los costados y arriba y abajo, con poco contraste, pensada para verse a 32×32 píxeles. Sin fondo magenta: la textura ocupa todo el cuadro.',
+  decoracion: 'Un solo objeto colgado en una pared, dibujado de frente y plano, sin perspectiva (como si se lo mirara de frente pegado a la pared), centrado.',
   edificio: 'Un solo edificio pequeño en vista isométrica, visto desde arriba en diagonal, centrado, con la puerta hacia el frente.',
   mapa: 'Mapa de fantasía en pixel art visto desde muy arriba, levemente inclinado. Colores vivos pero naturales, bosques en manchas espesas, montañas, ríos y caminos de tierra. Sin texto. Sin fondo magenta: el mapa ocupa todo el cuadro.',
 };
@@ -56,7 +58,7 @@ export function promptFor(e: AssetEntry): string {
 /** Grilla por defecto (columnas × filas) para cada tipo. */
 export const SHEET_GRID: Record<AssetType, [number, number]> = {
   personaje: [3, 3], monstruo: [3, 2], jefe: [2, 1], espalda: [3, 3], espalda_monstruo: [3, 2], espalda_jefe: [2, 1], icono: [4, 4], retrato: [3, 3],
-  textura: [3, 2], lado: [3, 2], escenario: [3, 3], edificio: [2, 2], mapa: [1, 1], marcador: [4, 3], animal: [3, 1],
+  textura: [3, 2], lado: [3, 2], escenario: [3, 3], edificio: [2, 2], mapa: [1, 1], marcador: [4, 3], animal: [3, 1], muro: [2, 1], decoracion: [4, 3],
 };
 
 const SHEET_ITEMS: Record<AssetType, string> = {
@@ -73,6 +75,8 @@ const SHEET_ITEMS: Record<AssetType, string> = {
   escenario: 'objetos de escenario distintos en vista isométrica (rombo de piso de 2:1), cada uno apoyado sobre su casilla',
   marcador: 'marcadores distintos del mapa del mundo: dibujitos chicos y muy legibles de cada lugar, como maquetas en vista isométrica, cada uno apoyado sobre una base de pasto o tierra con forma de rombo',
   animal: 'animales chicos de pueblo distintos, de cuerpo entero, en vista isométrica de frente en diagonal (mirando hacia abajo a la izquierda), parados',
+  muro: 'texturas cuadradas distintas de paredes interiores vistas de frente, sin perspectiva, cada una repetible sin costuras y con poco contraste, pensadas para verse a 32×32 píxeles. Cada textura llena por completo su cuadrado y entre los cuadrados queda una franja magenta',
+  decoracion: 'objetos distintos colgados en una pared, cada uno dibujado de frente y plano, sin perspectiva (como si se los mirara de frente pegados a la pared)',
   edificio: 'edificios pequeños distintos en vista isométrica, vistos desde arriba en diagonal, con la puerta hacia el frente',
   mapa: 'mapas',
 };
@@ -169,6 +173,12 @@ const PROPS: Record<string, [number, number, string]> = {
   key: [14, 10, 'Una llave de hierro antigua en el piso.'],
   cryptdoor: [32, 28, 'Una puerta de cripta de piedra con relieves.'],
   basalt: [20, 28, 'Una columna de basalto oscuro con una grieta de brasa.'],
+  // Interiores
+  alfombra: [48, 26, 'Una alfombra rectangular tejida, roja con guarda dorada, plana sobre el piso y vista desde arriba en isométrico (forma de rombo 2:1).'],
+  tina: [24, 22, 'Una tina de madera con agua para templar el metal, con aros de hierro y un poco de vapor.'],
+  afiladora: [28, 26, 'Una piedra de afilar redonda con pedal, montada en un banco de madera.'],
+  lena: [28, 20, 'Una pila de leña cortada, apilada prolija.'],
+  sacos: [24, 20, 'Dos o tres sacos de arpillera llenos, uno abierto con carbón.'],
 };
 
 /** Cómo se ve cada lugar en su marcador del mapa del mundo. */
@@ -183,6 +193,26 @@ const MARKERS: Record<string, string> = {
   tierras_dragon: 'un volcán chico con lava naranja y un nido de huesos al pie.',
   cripta_vigia: 'la entrada a una cripta: una puerta de piedra en la ladera de una colina, entre dos columnas.',
   cuevas_eco: 'la boca de una cueva oscura en una pared de roca, con cristales azules brillando adentro.',
+};
+
+/** Paredes de los interiores (tex.muro.<nombre>): madera clara en tiendas y talleres, oscura en tabernas y salones. */
+const WALLS: Record<string, string> = {
+  claro: 'Pared de revoque color crema con vigas de madera marrón (entramado), algunas manchas y grietas finas.',
+  oscuro: 'Pared de piedra gris oscura en la parte de abajo y tablones de madera oscura arriba, con vigas.',
+};
+
+/** Lo que se cuelga en las paredes de los interiores (deco.<nombre>), con su medida y descripción. */
+const WALL_DECOR: Record<string, [number, number, string]> = {
+  ventana: [18, 22, 'Una ventana de madera con vidrios en cuadritos, con luz de día del otro lado y una maceta con flores en el alféizar.'],
+  herramientas: [24, 18, 'Un tablero de madera con herramientas de herrero colgadas: tenazas, martillos y una lima.'],
+  escudos: [24, 20, 'Dos escudos redondos de madera y metal con dos espadas cruzadas detrás.'],
+  antorcha: [8, 16, 'Una antorcha de pared con soporte de hierro y la llama encendida.'],
+  estante: [26, 16, 'Un estante de madera con frascos, jarras y un par de libros.'],
+  tapiz: [16, 28, 'Un tapiz de tela roja con bordes dorados y un emblema de un martillo y un yunque.'],
+  hierbas: [22, 14, 'Ramos de hierbas y flores secas colgando cabeza abajo de una cuerda.'],
+  cornamenta: [22, 14, 'Una cornamenta de ciervo montada en una tabla de madera.'],
+  cuadro: [16, 14, 'Un cuadro chico con marco de madera: un paisaje de montañas.'],
+  mapa: [22, 16, 'Un mapa de pergamino clavado en la pared, con caminos y montañas dibujados.'],
 };
 
 /** Animales (animal.<nombre>), con su medida de dibujo y descripción. */
@@ -274,6 +304,10 @@ export function buildAssetList(c: Content): AssetEntry[] {
   // Terreno
   for (const [id, text] of Object.entries(FLOORS)) add({ key: `tex.${id}`, type: 'textura', folder: 'texturas', w: 32, h: 32, name: `Suelo: ${id}`, group: 'Terreno', detail: text });
   for (const [id, text] of Object.entries(SIDES)) add({ key: `tex.${id}.lado`, type: 'lado', folder: 'texturas', w: 32, h: 32, name: `Pared de escalón: ${id}`, group: 'Terreno', detail: text });
+
+  // Paredes y decoración de los interiores
+  for (const [id, text] of Object.entries(WALLS)) add({ key: `tex.muro.${id}`, type: 'muro', folder: 'texturas', w: 32, h: 32, name: `Pared interior: ${id}`, group: 'Interiores: paredes', detail: text });
+  for (const [id, [w, h, text]] of Object.entries(WALL_DECOR)) add({ key: `deco.${id}`, type: 'decoracion', folder: 'escenario', w, h, name: id, group: 'Interiores: cosas colgadas', detail: text });
 
   // Escenario y edificios
   for (const [id, [w, h, text]] of Object.entries(PROPS)) add({ key: `prop.${id}`, type: 'escenario', folder: 'escenario', w, h, name: id, group: 'Escenario', detail: text });
