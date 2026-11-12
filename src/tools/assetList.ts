@@ -96,6 +96,34 @@ export function sheetPromptFor(list: AssetEntry[], cols: number, rows: number): 
 export const isBack = (t: AssetType) => t === 'espalda' || t === 'espalda_monstruo' || t === 'espalda_jefe';
 export const frontKey = (key: string) => key.replace(/\.espalda$/, '');
 
+/** Orden en que conviene generar lo que falta: primero lo que más se ve. */
+const PRIORITY: AssetType[] = ['muro', 'decoracion', 'escenario', 'marcador', 'animal', 'espalda', 'espalda_monstruo', 'espalda_jefe'];
+
+export interface PendingSheet {
+  /** Número de hoja, de 1 en adelante, en el orden de PRIORITY. */
+  n: number;
+  type: AssetType;
+  group: string;
+  entries: AssetEntry[];
+  cols: number;
+  rows: number;
+}
+
+/** Lo que todavía no tiene arte, repartido en hojas con la grilla de cada tipo (ver docs/PEDIDOS_DE_ARTE.md). */
+export function pendingSheets(list: AssetEntry[], hasArt: (key: string) => boolean): PendingSheet[] {
+  const out: PendingSheet[] = [];
+  const types = [...PRIORITY, ...[...new Set(list.map((e) => e.type))].filter((t) => !PRIORITY.includes(t))];
+  for (const type of types) {
+    const [cols, rows] = SHEET_GRID[type];
+    const pending = list.filter((e) => e.type === type && !hasArt(e.key));
+    for (let i = 0; i < pending.length; i += cols * rows) {
+      const entries = pending.slice(i, i + cols * rows);
+      out.push({ n: out.length + 1, type, group: entries[0].group, entries, cols, rows });
+    }
+  }
+  return out;
+}
+
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
 /** Suelos del juego (tile.<nombre>) y su descripción. */
