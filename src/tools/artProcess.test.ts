@@ -136,4 +136,18 @@ describe('preparación de arte', () => {
     for (const npc of Object.keys(CONTENT.npcs)) expect(keys).toContain(`retrato.${npc}`);
     for (const e of list) expect(promptFor(e)).toContain('#FF00FF');
   });
+
+  it('cada figura tiene su espalda, con la misma medida, y el pedido pide la referencia de frente', () => {
+    const list = buildAssetList(CONTENT);
+    const figures = list.filter((e) => ['personaje', 'monstruo', 'jefe'].includes(e.type) && !e.key.endsWith('_b'));
+    for (const f of figures) {
+      const back = list.find((e) => e.key === `${f.key}.espalda`);
+      expect(back, f.key).toBeDefined();
+      expect([back!.w, back!.h]).toEqual([f.w, f.h]);
+    }
+    const backs = list.filter((e) => e.type === 'espalda').slice(0, 9);
+    const p = sheetPromptFor(backs, 3, 3);
+    expect(p).toContain('imagen de referencia');
+    expect(p).toContain('arriba a la derecha');
+  });
 });

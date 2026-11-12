@@ -3,7 +3,7 @@ import type { GameStore } from '../../bridge/GameStore';
 import { currentCity } from '../../core/state';
 import { slotName } from '../../core/time';
 import type { CityLocation } from '../../core/types';
-import { artScale, isRealArt } from '../render/assets';
+import { artScale, facing, isRealArt } from '../render/assets';
 import { AMBIENT_VARIANTS } from '../render/placeholders';
 import { SLOT_LIGHT } from './lighting';
 
@@ -193,11 +193,11 @@ export class CityMapScene extends Phaser.Scene {
       const key = `char.amb.${i % AMBIENT_VARIANTS}`;
       const start = Phaser.Utils.Array.GetRandom(doors);
       const s = this.add.sprite(start.x, start.y, key).setScale(artScale(key, 1.6)).setOrigin(0.5, 1);
-      s.play(`${key}.walk`);
       const walk = () => {
         const to = Phaser.Utils.Array.GetRandom(doors);
         const dist = Phaser.Math.Distance.Between(s.x, s.y, to.x, to.y);
-        s.setFlipX(to.x < s.x);
+        const f = facing(key, to.x - s.x, to.y - s.y);
+        s.play(`${f.key}.walk`, true).setFlipX(f.flip);
         this.tweens.add({
           targets: s, x: to.x, y: to.y, duration: dist * 22, delay: Phaser.Math.Between(300, 2500),
           onUpdate: () => s.setDepth(s.y), onComplete: walk,

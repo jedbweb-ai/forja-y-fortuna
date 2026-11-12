@@ -112,11 +112,21 @@ Es lo más rápido para íconos, retratos, monstruos, texturas y personajes.
 
 Si ChatGPT no respeta la grilla (pone menos, los amontona o cambia el orden), conviene volver a pedirla o bajar a una grilla más chica. Las que salen mal se rehacen después en modo "una por una".
 
+### Espaldas: que las figuras miren en las 4 direcciones
+
+El dibujo de frente mira abajo a la izquierda y el de espalda, arriba a la derecha. Espejando cada uno, salen las 4 diagonales. El juego elige solo cuál usar según hacia dónde camina o mira la figura. Mientras una figura no tenga espalda, usa el frente también al ir hacia arriba.
+
+1. En la lista, en **"Espaldas de personajes"** (o de monstruos o de jefes), elegir la primera que falta, en modo hoja.
+2. Tocar **"Bajar la referencia de frente"**: arma una imagen con los dibujos de frente de esas mismas figuras, en la misma grilla y el mismo orden que el pedido.
+3. En ChatGPT, adjuntar esa imagen y pegar el pedido. Así dibuja las mismas figuras, cada una en su lugar, pero de espalda.
+4. Pegar el resultado en la herramienta, revisar y **"Guardar todos"**. Se guardan como `<clave>.espalda.png` junto al frente.
+
 ### Nombres de archivo (la clave es el nombre)
 
 | Archivo | Qué es |
 |---|---|
 | `char.herrero.png`, `char.npc.<id>.png` | Personajes. Opcional: `<clave>_b.png` para el segundo cuadro de la caminata (si no está, se repite el primero). |
+| `<clave>.espalda.png` | Vista de espalda de un personaje o monstruo (`char.herrero.espalda.png`, `mon.lobo.espalda.png`). |
 | `retrato.herrero.png`, `retrato.<id>.png` | Retratos para diálogos, grupo y combate. |
 | `mon.<dibujo>.png` | Monstruo en grises: lo comparten varias especies y el juego lo tiñe (`mon.lobo` sirve para el lobo gris y el albino). |
 | `mon.<id del monstruo>.png` | Dibujo propio, con colores, para un monstruo puntual (pensado para los jefes). Tiene prioridad sobre el compartido. |

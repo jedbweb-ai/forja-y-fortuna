@@ -7,7 +7,7 @@ import { dungeonInteract, expMap, isSeen } from '../../core/dungeon/dungeon';
 import type { DungeonDef } from '../../core/dungeon/types';
 import { adjacent, heightAt, isWalkable, regionSize, tileAt, zoneAt } from '../../core/world/region';
 import type { ExpeditionState, MonsterGroup, RegionDef } from '../../core/world/types';
-import { artScale, monsterLook } from '../render/assets';
+import { artScale, facing, monsterLook } from '../render/assets';
 import { isoBounds, screenToIso } from '../render/iso';
 import { drawGround, standDepth, tilePos } from '../render/terrain';
 import { SLOT_LIGHT } from './lighting';
@@ -353,17 +353,19 @@ export class RegionScene extends Phaser.Scene {
     if (!path.length) return;
     this.walking = true;
     const sprites = this.player.list.filter((o): o is Phaser.GameObjects.Sprite => o instanceof Phaser.GameObjects.Sprite);
-    sprites.forEach((sp) => sp.play(`${sp.name}.walk`, true));
     const step = (i: number) => {
       if (i >= path.length || !this.sys.isActive()) {
-        sprites.forEach((sp) => { sp.stop(); sp.setTexture(sp.name); });
+        sprites.forEach((sp) => { sp.stop(); sp.setTexture(sp.getData('face') ?? sp.name); });
         this.walking = false;
         this.placePlayer();
         return;
       }
       const t = path[i];
       const p = this.at(t.x, t.y);
-      sprites.forEach((sp) => sp.setFlipX(p.x < this.player.x));
+      sprites.forEach((sp) => {
+        const f = facing(sp.name, p.x - this.player.x, p.y + 6 - this.player.y);
+        sp.setData('face', f.key).play(`${f.key}.walk`, true).setFlipX(f.flip);
+      });
       this.player.setDepth(standDepth(t.x, t.y, 9));
       this.tweens.add({ targets: this.player, x: p.x, y: p.y + 6, duration: 150, onComplete: () => step(i + 1) });
     };

@@ -5,7 +5,7 @@ import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../game/render/variants';
 // Cada entrada trae su clave (nombre del archivo), carpeta, medida del dibujo y el pedido para ChatGPT.
 // Medidas y estilo: docs/GUIA_DE_ARTE.md.
 
-export type AssetType = 'personaje' | 'monstruo' | 'jefe' | 'icono' | 'retrato' | 'textura' | 'lado' | 'escenario' | 'edificio' | 'mapa';
+export type AssetType = 'personaje' | 'monstruo' | 'jefe' | 'espalda' | 'espalda_monstruo' | 'espalda_jefe' | 'icono' | 'retrato' | 'textura' | 'lado' | 'escenario' | 'edificio' | 'mapa';
 
 export interface AssetEntry {
   key: string;
@@ -24,10 +24,16 @@ export interface AssetEntry {
 
 export const BASE_PROMPT = 'Pixel art para un videojuego táctico isométrico de fantasía, estilo anime. Paleta apagada y terrosa, 3 o 4 tonos por color, luz desde arriba a la izquierda, contorno de color oscuro (no negro puro), sin tramado de puntos, planos de color limpios. Fondo plano de un solo color magenta #FF00FF. Sin texto, sin marco, sin sombra en el piso.';
 
+/** Cómo se describe la vista de espalda (la de frente mira abajo a la izquierda; espejando las dos salen las 4 direcciones). */
+const BACK = 'de espalda en diagonal en vista isométrica: mirando hacia arriba a la derecha, alejándose de quien mira, de modo que se le ve la espalda y la nuca y no la cara';
+
 const TEMPLATE: Record<AssetType, string> = {
   personaje: 'Un solo personaje chibi de cuerpo entero, de unas 2,5 cabezas de alto, con cabeza y manos grandes, en vista isométrica de frente en diagonal (mirando hacia abajo a la izquierda), parado y quieto, centrado.',
   monstruo: 'Un solo monstruo de cuerpo entero en vista isométrica de frente en diagonal, centrado, dibujado en tonos grises claros y blancos (el color se le agrega en el juego), con los ojos y los detalles oscuros.',
   jefe: 'Un solo monstruo jefe, grande e imponente, de cuerpo entero en vista isométrica de frente en diagonal, centrado, con sus colores definitivos.',
+  espalda: `Un solo personaje chibi: el mismo de la imagen adjunta (misma ropa, colores, peinado y proporciones), pero ${BACK}, parado y quieto, centrado.`,
+  espalda_monstruo: `Un solo monstruo: el mismo de la imagen adjunta, en los mismos tonos grises claros y blancos, pero ${BACK}, centrado.`,
+  espalda_jefe: `Un solo monstruo jefe: el mismo de la imagen adjunta, con sus mismos colores, pero ${BACK}, centrado.`,
   icono: 'Un solo ícono de objeto, chico y muy legible, en diagonal apuntando hacia arriba a la derecha, centrado y ocupando casi todo el cuadro, pensado para verse a 16×16 píxeles.',
   retrato: 'Retrato de busto, de frente y un poco girado, estilo anime con ojos grandes y expresivos, encuadrado de los hombros para arriba, con fondo magenta liso. Pensado para verse a 48×48 píxeles.',
   textura: 'Textura cuadrada vista desde arriba, que se pueda repetir sin costuras en los cuatro lados, con poco contraste para que no distraiga, pensada para verse a 32×32 píxeles. Sin fondo magenta: la textura ocupa todo el cuadro.',
@@ -47,7 +53,7 @@ export function promptFor(e: AssetEntry): string {
 
 /** Grilla por defecto (columnas × filas) para cada tipo. */
 export const SHEET_GRID: Record<AssetType, [number, number]> = {
-  personaje: [3, 3], monstruo: [3, 2], jefe: [2, 1], icono: [4, 4], retrato: [3, 3],
+  personaje: [3, 3], monstruo: [3, 2], jefe: [2, 1], espalda: [3, 3], espalda_monstruo: [3, 2], espalda_jefe: [2, 1], icono: [4, 4], retrato: [3, 3],
   textura: [3, 2], lado: [3, 2], escenario: [3, 3], edificio: [2, 2], mapa: [1, 1],
 };
 
@@ -55,6 +61,9 @@ const SHEET_ITEMS: Record<AssetType, string> = {
   personaje: 'personajes chibi distintos, de cuerpo entero, de unas 2,5 cabezas de alto, con cabeza y manos grandes, en vista isométrica de frente en diagonal (mirando hacia abajo a la izquierda), parados y quietos',
   monstruo: 'monstruos distintos, de cuerpo entero, en vista isométrica de frente en diagonal, dibujados en tonos grises claros y blancos (el color se les agrega en el juego), con los ojos y los detalles oscuros',
   jefe: 'monstruos jefe distintos, grandes e imponentes, de cuerpo entero, en vista isométrica de frente en diagonal, con sus colores definitivos',
+  espalda: `personajes chibi distintos, de cuerpo entero, ${BACK}, parados y quietos`,
+  espalda_monstruo: `monstruos distintos, de cuerpo entero, ${BACK}, en tonos grises claros y blancos`,
+  espalda_jefe: `monstruos jefe distintos, grandes e imponentes, de cuerpo entero, ${BACK}, con sus colores definitivos`,
   icono: 'íconos de objetos distintos, chicos y muy legibles, cada uno en diagonal apuntando hacia arriba a la derecha, pensados para verse a 16×16 píxeles',
   retrato: 'retratos de busto distintos, de frente y un poco girados, estilo anime con ojos grandes y expresivos, encuadrados de los hombros para arriba, pensados para verse a 48×48 píxeles',
   textura: 'texturas cuadradas distintas vistas desde arriba, cada una repetible sin costuras y con poco contraste, pensadas para verse a 32×32 píxeles. Cada textura llena por completo su cuadrado y entre los cuadrados queda una franja magenta',
@@ -67,10 +76,17 @@ const SHEET_ITEMS: Record<AssetType, string> = {
 /** Pedido para una hoja: una sola imagen con todos, en grilla, numerados en el orden en que se cortan. */
 export function sheetPromptFor(list: AssetEntry[], cols: number, rows: number): string {
   const empty = list.length < cols * rows ? ' Las celdas que sobran quedan vacías, solo con fondo magenta.' : '';
+  const ref = isBack(list[0].type)
+    ? ` Te adjunto una imagen de referencia con estos mismos ${list.length}, en la misma grilla y el mismo orden, vistos de frente: dibujá exactamente los mismos (misma ropa, colores, peinado, armas y proporciones) y en el mismo lugar de la grilla, pero de espalda.`
+    : '';
   return `${BASE_PROMPT}\n\nUna sola imagen con ${list.length} ${SHEET_ITEMS[list[0].type]}, ordenados en una grilla pareja de ${cols} columnas por ${rows} filas. `
-    + `Cada uno centrado en su celda, todos del mismo tamaño y en el mismo estilo, bien separados entre sí, sin tocarse ni cortarse en los bordes.${empty} `
+    + `Cada uno centrado en su celda, todos del mismo tamaño y en el mismo estilo, bien separados entre sí, sin tocarse ni cortarse en los bordes.${empty}${ref} `
     + `En orden, de izquierda a derecha y de arriba a abajo:\n\n${list.map((e, i) => `${i + 1}. ${e.detail}`).join('\n')}`;
 }
+
+/** Tipos de vista de espalda y el dibujo de frente del que salen. */
+export const isBack = (t: AssetType) => t === 'espalda' || t === 'espalda_monstruo' || t === 'espalda_jefe';
+export const frontKey = (key: string) => key.replace(/\.espalda$/, '');
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
@@ -207,6 +223,13 @@ export function buildAssetList(c: Content): AssetEntry[] {
   }
   for (const m of Object.values(c.monsters).filter((x) => x.boss)) {
     add({ key: `mon.${m.id}`, type: 'jefe', folder: 'monstruos', w: (MONSTER_SIZE[`mon.${m.id}`] ?? [64, 56])[0], h: (MONSTER_SIZE[`mon.${m.id}`] ?? [64, 56])[1], name: m.name, group: 'Jefes (opcional: si no, usan el dibujo de su especie)', detail: `${m.name}. ${m.description}` });
+  }
+
+  // Espaldas: la misma figura vista de atrás. Con el espejo, frente y espalda cubren las 4 direcciones.
+  const BACK_OF = { personaje: ['espalda', 'Espaldas de personajes'], monstruo: ['espalda_monstruo', 'Espaldas de monstruos'], jefe: ['espalda_jefe', 'Espaldas de jefes'] } as const;
+  for (const e of out.filter((x) => x.type in BACK_OF && !x.key.endsWith('_b'))) {
+    const [type, group] = BACK_OF[e.type as keyof typeof BACK_OF];
+    add({ ...e, key: `${e.key}.espalda`, type, name: `${e.name} (espalda)`, group });
   }
 
   // Íconos

@@ -1,6 +1,6 @@
 import { CONTENT } from '../data';
 import { ART } from '../game/render/assets';
-import { buildAssetList, promptFor, SHEET_GRID, sheetPromptFor, type AssetEntry, type AssetType } from './assetList';
+import { buildAssetList, frontKey, isBack, promptFor, SHEET_GRID, sheetPromptFor, type AssetEntry, type AssetType } from './assetList';
 import { processArt, splitByFigures, splitGrid, type Fit, type Img } from './artProcess';
 
 // Herramienta de arte (solo en desarrollo): http://localhost:5173/herramientas/arte.html
@@ -20,7 +20,7 @@ let sheetMode = false;
 let results: { entry: AssetEntry; img: Img; keep: boolean }[] = [];
 
 const FIT: Record<AssetType, Fit> = {
-  personaje: 'figura', monstruo: 'figura', jefe: 'figura', escenario: 'figura', edificio: 'figura',
+  personaje: 'figura', monstruo: 'figura', jefe: 'figura', espalda: 'figura', espalda_monstruo: 'figura', espalda_jefe: 'figura', escenario: 'figura', edificio: 'figura',
   icono: 'centro', retrato: 'centro', textura: 'llenar', lado: 'llenar', mapa: 'llenar',
 };
 
@@ -80,6 +80,7 @@ function select(e: AssetEntry) {
 
 function showPrompt() {
   if (!current) return;
+  $('ref').hidden = !isBack(current.type);
   if (!sheetMode) {
     $('title').textContent = current.name;
     $('meta').innerHTML = `Archivo <code>${current.folder}/${current.key}.png</code> · dibujo de <b>${current.w}×${current.h}</b> píxeles${ART[current.key] ? ' · <b>ya tiene arte</b> (si guardás, se reemplaza)' : ''}`;
@@ -312,6 +313,45 @@ $('pal').onchange = run;
 for (const id of ['cols', 'rows']) $(id).oninput = () => { showPrompt(); renderList(); run(); };
 $('mode-one').onclick = () => setMode(false);
 $('mode-sheet').onclick = () => setMode(true);
+/**
+ * Imagen de referencia para las espaldas: los dibujos de frente en la misma grilla y el mismo orden que el pedido,
+ * agrandados y sobre magenta, para adjuntarla en ChatGPT junto con el pedido.
+ */
+$('ref').onclick = async () => {
+  if (!current) return;
+  const list = sheetMode ? sheetEntries() : [current];
+  const cols = sheetMode ? Number($<HTMLInputElement>('cols').value) : 1;
+  const rows = sheetMode ? Number($<HTMLInputElement>('rows').value) : 1;
+  const cell = 400;
+  const canvas = document.createElement('canvas');
+  canvas.width = cols * cell;
+  canvas.height = rows * cell;
+  const ctx = canvas.getContext('2d')!;
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#ff00ff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const missing: string[] = [];
+  for (const [i, e] of list.entries()) {
+    const url = ART[frontKey(e.key)];
+    if (!url) {
+      missing.push(e.name);
+      continue;
+    }
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const z = Math.floor((cell * 0.8) / Math.max(img.width, img.height));
+    const x = (i % cols) * cell + (cell - img.width * z) / 2;
+    const y = Math.floor(i / cols) * cell + cell * 0.9 - img.height * z;
+    ctx.drawImage(img, x, y, img.width * z, img.height * z);
+  }
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = `referencia-${frontKey(list[0].key)}.png`;
+  a.click();
+  if (missing.length) alert(`Estos todavía no tienen dibujo de frente y quedan vacíos en la referencia: ${missing.join(', ')}.`);
+};
+
 $('copy').onclick = () => {
   navigator.clipboard.writeText($<HTMLTextAreaElement>('prompt').value);
   $('copy').textContent = '✓ Copiado';

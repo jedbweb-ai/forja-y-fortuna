@@ -53,6 +53,22 @@ export function monsterLook(sprite: { key: string; tint?: number; scale?: number
   return { key: sprite.key, scale: placeholderScale * mult, tint: sprite.tint };
 }
 
+/**
+ * Dibujo y espejo para una figura que mira hacia (dx, dy) en pantalla.
+ * El arte definitivo de frente mira abajo a la izquierda y el de espalda (<clave>.espalda) arriba a la derecha;
+ * las otras dos diagonales salen de espejarlos. Sin espalda, hacia arriba se usa el frente.
+ * Los placeholders miran a la derecha.
+ */
+export function facing(key: string, dx: number, dy: number): { key: string; flip: boolean } {
+  if (!real.has(key)) return { key, flip: dx < 0 };
+  const back = `${key}.espalda`;
+  if (dy < 0 && real.has(back)) return { key: back, flip: dx < 0 };
+  return { key, flip: dx > 0 };
+}
+
+/** Vector en pantalla de cada dirección del combate (+x, +y, -x, -y en la grilla isométrica). */
+export const DIR_SCREEN: Record<0 | 1 | 2 | 3, [number, number]> = { 0: [1, 1], 1: [-1, 1], 2: [-1, -1], 3: [1, -1] };
+
 /** Animación de caminar para las figuras con arte propio que no tienen placeholder (por ejemplo mon.<jefe>). */
 export function ensureWalkAnims(scene: Phaser.Scene) {
   for (const key of real) {

@@ -8,7 +8,7 @@ import type { Affinity } from '../../core/types';
 import { slotName } from '../../core/time';
 import { sfx, type SfxId } from '../../audio/sfx';
 import type { GameEvent } from '../../core/types';
-import { artScale, monsterLook } from '../render/assets';
+import { artScale, DIR_SCREEN, facing, monsterLook } from '../render/assets';
 import { isoBounds, screenToIso } from '../render/iso';
 import { drawGround, standDepth, tilePos } from '../render/terrain';
 import { SLOT_LIGHT } from './lighting';
@@ -19,6 +19,9 @@ interface UnitView {
   hp: Phaser.GameObjects.Graphics;
   status: Phaser.GameObjects.Text;
   baseTint?: number;
+  /** Dibujo de frente de la figura, y el que muestra ahora (frente o espalda). */
+  key: string;
+  face?: string;
 }
 
 const FLOOR: Record<string, string> = {
@@ -172,7 +175,17 @@ export class CombatScene extends Phaser.Scene {
     const hp = this.add.graphics();
     const status = this.add.text(0, -sprite.displayHeight - 22, '', { fontSize: '13px' }).setOrigin(0.5, 1).setResolution(2);
     box.add([shadow, sprite, hp, status]);
-    this.units.set(u.id, { box, sprite, hp, status, baseTint: look.tint });
+    this.units.set(u.id, { box, sprite, hp, status, baseTint: look.tint, key: look.key });
+  }
+
+  /** Orienta la figura hacia (dx, dy): frente o espalda, y espejo. Los enemigos y quien camina se animan. */
+  private face(v: UnitView, u: CombatUnit, dx: number, dy: number, walking = false) {
+    const f = facing(v.key, dx, dy);
+    v.face = f.key;
+    v.sprite.setFlipX(f.flip);
+    const anim = `${f.key}.walk`;
+    if ((walking || u.side === 'enemy') && this.anims.exists(anim)) v.sprite.play(anim, true);
+    else if (v.sprite.texture.key !== f.key) v.sprite.stop().setTexture(f.key);
   }
 
   private drawHp(view: UnitView, u: CombatUnit) {
@@ -193,7 +206,7 @@ export class CombatScene extends Phaser.Scene {
       const v = this.units.get(u.id)!;
       const p = this.unitPos(u);
       v.box.setPosition(p.x, p.y).setDepth(standDepth(u.x, u.y, 8)).setVisible(u.alive).setAlpha(1);
-      if (u.side === 'enemy') v.sprite.setFlipX(u.facing === 1 || u.facing === 2);
+      this.face(v, u, ...DIR_SCREEN[u.facing]);
       this.drawHp(v, u);
     }
     const cur = !cs.outcome ? currentUnit(cs) : undefined;
@@ -302,14 +315,13 @@ export class CombatScene extends Phaser.Scene {
         const v = view(fx.unit);
         if (!v) return done();
         const unit = cs?.units.find((u) => u.id === fx.unit);
-        if (unit && this.anims.exists(`${unit.sprite.key}.walk`)) v.sprite.play(`${unit.sprite.key}.walk`, true);
         const step = (i: number) => {
           if (i >= fx.path.length) {
-            if (unit?.side === 'party') { v.sprite.stop(); v.sprite.setTexture(unit.sprite.key); }
+            if (unit?.side === 'party') { v.sprite.stop(); v.sprite.setTexture(v.face ?? v.key); }
             return done();
           }
           const p = this.unitPos(fx.path[i]);
-          if (unit?.side === 'enemy') v.sprite.setFlipX(p.x < v.box.x);
+          if (unit) this.face(v, unit, p.x - v.box.x, p.y - v.box.y, true);
           v.box.setDepth(standDepth(fx.path[i].x, fx.path[i].y, 8));
           this.tweens.add({ targets: v.box, x: p.x, y: p.y, duration: 160, onComplete: () => step(i + 1) });
         };

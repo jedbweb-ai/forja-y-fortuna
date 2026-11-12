@@ -5,7 +5,7 @@ import { pickDialogue } from '../../core/dialogue';
 import { slotName } from '../../core/time';
 import type { HotspotDef, LiveSceneDef, TimeSlot } from '../../core/types';
 import { isoBounds, isoDepth, isoToScreen, TILE_H } from '../render/iso';
-import { artScale } from '../render/assets';
+import { artScale, facing } from '../render/assets';
 import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../render/placeholders';
 import { SLOT_LIGHT } from './lighting';
 
@@ -286,7 +286,8 @@ export class LiveScene extends Phaser.Scene {
       const buddy = this.walkers.find((w) => w !== s && w.active && Phaser.Math.Distance.Between(w.x, w.y, s.x, s.y) < 90);
       if (buddy) {
         // Charlan o discuten precios.
-        s.setFlipX(buddy.x < s.x);
+        const f = facing(s.getData('key'), buddy.x - s.x, buddy.y - s.y);
+        s.setTexture(f.key).setFlipX(f.flip);
         const bubble = this.add.image(s.x, s.y - 52, 'fx.bubble').setDepth(8500).setScale(1.2);
         this.tweens.add({ targets: bubble, y: bubble.y - 3, yoyo: true, repeat: 3, duration: 250, onComplete: () => bubble.destroy() });
       }
@@ -316,17 +317,20 @@ export class LiveScene extends Phaser.Scene {
   }
 
   private walk(s: Phaser.GameObjects.Sprite, steps: Tile[], done: () => void) {
-    s.play(`${s.getData('key')}.walk`, true);
+    const key: string = s.getData('key');
+    let face = key;
     const go = (i: number) => {
       if (!s.active) return;
       if (i >= steps.length) {
         s.stop();
-        s.setTexture(s.getData('key'));
+        s.setTexture(face);
         return done();
       }
       const t = steps[i];
       const pos = isoToScreen(t.x, t.y);
-      s.setFlipX(pos.x < s.x);
+      const f = facing(key, pos.x - s.x, pos.y + 6 - s.y);
+      face = f.key;
+      s.play(`${f.key}.walk`, true).setFlipX(f.flip);
       this.tweens.add({
         targets: s, x: pos.x, y: pos.y + 6, duration: STEP_MS,
         onComplete: () => { s.setData('tile', t).setDepth(isoDepth(t.x, t.y, 7)); go(i + 1); },
@@ -351,10 +355,11 @@ export class LiveScene extends Phaser.Scene {
         if (!opts.length) return;
         const n = Phaser.Utils.Array.GetRandom(opts);
         const p = isoToScreen(n.x, n.y);
-        a.setFlipX(p.x < a.x).play(`${key}.walk`, true);
+        const f = facing(key, p.x - a.x, p.y + 6 - a.y);
+        a.setFlipX(f.flip).play(`${f.key}.walk`, true);
         this.tweens.add({
           targets: a, x: p.x, y: p.y + 6, duration: kind === 'gallina' ? 300 : 600, delay: Phaser.Math.Between(400, 3500),
-          onComplete: () => { a.stop(); a.setTexture(key).setData('tile', n).setDepth(isoDepth(n.x, n.y, 6)); hop(); },
+          onComplete: () => { a.stop(); a.setTexture(f.key).setData('tile', n).setDepth(isoDepth(n.x, n.y, 6)); hop(); },
         });
       };
       hop();
@@ -412,8 +417,11 @@ export class LiveScene extends Phaser.Scene {
     const start = isoToScreen(door.x, door.y);
     const end = isoToScreen(spot.x, spot.y);
     const s = this.add.sprite(start.x, start.y + 6, tex).setOrigin(0.5, 1).setScale(CHAR_SCALE).setDepth(isoDepth(spot.x, spot.y, 7));
-    s.play(`${tex}.walk`).setFlipX(end.x < start.x);
-    this.tweens.add({ targets: s, x: end.x, y: end.y + 6, duration: 1100, onComplete: () => { s.stop(); s.setTexture(tex).setFlipX(true); } });
+    const go = facing(tex, end.x - start.x, end.y - start.y);
+    // En el mostrador queda mirando hacia él (hacia -y en la grilla).
+    const atCounter = facing(tex, 1, -1);
+    s.play(`${go.key}.walk`).setFlipX(go.flip);
+    this.tweens.add({ targets: s, x: end.x, y: end.y + 6, duration: 1100, onComplete: () => { s.stop(); s.setTexture(atCounter.key).setFlipX(atCounter.flip); } });
     this.customer = { sprite: s, key: wantKey! };
   }
 }
