@@ -1,21 +1,26 @@
 import { CONTENT } from '../data';
 import { ART } from '../game/render/assets';
-import { buildAssetList, frontKey, isBack, promptFor, SHEET_GRID, sheetPromptFor, type AssetEntry, type AssetType } from './assetList';
+import { buildAssetList, frontKey, isBack, pendingSheets, promptFor, SHEET_GRID, sheetPromptFor, type AssetEntry, type AssetType } from './assetList';
 import { processArt, splitByFigures, splitGrid, type Fit, type Img } from './artProcess';
 
 // Herramienta de arte (solo en desarrollo): http://localhost:5173/herramientas/arte.html
 // Lista lo que falta, da el pedido para ChatGPT y convierte la imagen generada en pixel art del juego.
-// Dos modos: una imagen por asset, u "hoja": varios assets en una sola imagen en grilla, que se corta sola.
+// Tres modos: "pedidos en orden" (te lleva hoja por hoja por todo lo que falta), una imagen por asset, u "hoja":
+// varios assets en una sola imagen en grilla, que se corta sola.
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const LAST = 'fyf.arte.ultimo';
-const MODE = 'fyf.arte.modo';
+const MODE = 'fyf.arte.modo.v2';
+const SKIPPED = 'fyf.arte.salteadas';
+
+type Mode = 'pedidos' | 'una' | 'hoja';
 
 const entries = buildAssetList(CONTENT);
 let current: AssetEntry | null = null;
 let source: Img | null = null;
 let dir: FileSystemDirectoryHandle | null = null;
 let sheetMode = false;
+let mode: Mode = 'pedidos';
 /** Lo que se va a guardar: un resultado por asset (en modo hoja, cada celda; se puede desmarcar). */
 let results: { entry: AssetEntry; img: Img; keep: boolean }[] = [];
 
@@ -102,13 +107,19 @@ function showPrompt() {
   $<HTMLTextAreaElement>('prompt').value = sheetPromptFor(list, cols, rows);
 }
 
-function setMode(sheet: boolean) {
+function setMode(m: Mode) {
+  mode = m;
+  const sheet = m !== 'una';
   sheetMode = sheet;
-  try { localStorage.setItem(MODE, sheet ? 'hoja' : 'una'); } catch { /* sin almacenamiento */ }
-  $('mode-one').classList.toggle('on', !sheet);
-  $('mode-sheet').classList.toggle('on', sheet);
-  for (const id of ['sheetopts', 'sheetlist', 'cells', 'saveall']) $(id).hidden = !sheet;
+  try { localStorage.setItem(MODE, m); } catch { /* sin almacenamiento */ }
+  $('mode-queue').classList.toggle('on', m === 'pedidos');
+  $('mode-one').classList.toggle('on', m === 'una');
+  $('mode-sheet').classList.toggle('on', m === 'hoja');
+  $('queue').hidden = m !== 'pedidos';
+  $('sheetopts').hidden = m !== 'hoja';
+  for (const id of ['sheetlist', 'cells', 'saveall']) $(id).hidden = !sheet;
   for (const id of ['single', 'save']) $(id).hidden = sheet;
+  if (m === 'pedidos') return nextSheet();
   if (sheet && current) {
     const [c, r] = SHEET_GRID[current.type];
     $<HTMLInputElement>('cols').value = String(c);
@@ -117,6 +128,42 @@ function setMode(sheet: boolean) {
   showPrompt();
   renderList();
   run();
+}
+
+// ───────────────────────── Pedidos en orden ─────────────────────────
+
+const skipped = (): string[] => {
+  try { return JSON.parse(localStorage.getItem(SKIPPED) ?? '[]'); } catch { return []; }
+};
+
+/** Muestra la primera hoja que falta (sin las salteadas), con su grilla y su pedido. */
+function nextSheet() {
+  const sheets = pendingSheets(entries, (key) => !!ART[key]);
+  const skip = skipped();
+  const sheet = sheets.find((x) => !skip.includes(x.entries[0].key));
+  const done = entries.filter((e) => ART[e.key]).length;
+  $('unskip').hidden = !skip.length;
+  $('qbar').style.width = `${Math.round((done / entries.length) * 100)}%`;
+  if (!sheet) {
+    $('qtitle').textContent = sheets.length ? 'Solo quedan las hojas salteadas.' : '¡No falta nada! Todo el arte está en el juego.';
+    $('qcount').textContent = '';
+    $('title').textContent = '';
+    $<HTMLTextAreaElement>('prompt').value = '';
+    $('sheetlist').innerHTML = '';
+    return;
+  }
+  current = sheet.entries[0];
+  $<HTMLInputElement>('cols').value = String(sheet.cols);
+  $<HTMLInputElement>('rows').value = String(sheet.rows);
+  $('qtitle').textContent = `Hoja ${sheet.n} de ${sheets.length} · ${sheet.group}`;
+  $('qcount').textContent = `· faltan ${sheets.reduce((n, x) => n + x.entries.length, 0)} imágenes en total`;
+  source = null;
+  results = [];
+  $('cells').innerHTML = '';
+  $('saved').textContent = '';
+  updateSaveAll();
+  showPrompt();
+  renderList();
 }
 
 // ───────────────────────── Imagen ─────────────────────────
@@ -211,7 +258,7 @@ function runSheet() {
 function updateSaveAll() {
   const n = results.filter((r) => r.keep).length;
   const b = $<HTMLButtonElement>('saveall');
-  b.textContent = `💾 Guardar todos (${n})`;
+  b.textContent = mode === 'pedidos' ? `💾 Guardar y seguir (${n})` : `💾 Guardar todos (${n})`;
   b.disabled = n === 0;
 }
 
@@ -276,6 +323,34 @@ async function write(entry: AssetEntry, img: Img) {
   }
 }
 
+/** La carpeta elegida se recuerda entre visitas (el navegador pide confirmar el permiso al guardar). */
+const DB = { name: 'fyf-arte', store: 'carpeta' };
+function idb<T>(fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T | undefined> {
+  return new Promise((ok) => {
+    const open = indexedDB.open(DB.name, 1);
+    open.onupgradeneeded = () => open.result.createObjectStore(DB.store);
+    open.onerror = () => ok(undefined);
+    open.onsuccess = () => {
+      const req = fn(open.result.transaction(DB.store, 'readwrite').objectStore(DB.store));
+      req.onsuccess = () => ok(req.result);
+      req.onerror = () => ok(undefined);
+    };
+  });
+}
+
+type Permissioned = FileSystemDirectoryHandle & {
+  queryPermission?: (o: object) => Promise<string>;
+  requestPermission?: (o: object) => Promise<string>;
+};
+
+/** Antes de escribir: confirma que se puede escribir en la carpeta recordada. */
+async function folderReady(): Promise<boolean> {
+  if (!dir) return false;
+  const h = dir as Permissioned;
+  if ((await h.queryPermission?.({ mode: 'readwrite' })) === 'granted') return true;
+  return (await h.requestPermission?.({ mode: 'readwrite' })) === 'granted';
+}
+
 async function pickFolder(): Promise<boolean> {
   const pick = (window as unknown as { showDirectoryPicker?: (o: object) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker;
   if (!pick) {
@@ -288,10 +363,12 @@ async function pickFolder(): Promise<boolean> {
     return false;
   }
   $('dirname').textContent = `Carpeta: ${dir.name}${dir.name === 'arte' ? '' : ' (¿seguro que es src/assets/arte?)'}`;
+  await idb((st) => st.put(dir, 'arte'));
   return true;
 }
 
 async function save(only: typeof results) {
+  if (dir && !(await folderReady())) dir = null;
   // Varias descargas seguidas las bloquea el navegador: con más de una, primero se pide la carpeta.
   if (!dir && only.length > 1 && !(await pickFolder())) {
     $('saved').textContent = 'Para guardar varias juntas elegí la carpeta src/assets/arte (el navegador no deja descargar muchas de una).';
@@ -302,6 +379,8 @@ async function save(only: typeof results) {
   $('saved').textContent = dir
     ? `Guardados ${names.length}: ${names.join(', ')}. El juego los toma solo al recargar.`
     : `Descargados ${names.length}: copialos a src/assets/arte/ (cada uno en su carpeta: ${[...new Set(only.map((r) => r.entry.folder))].join(', ')}).`;
+  // En pedidos en orden, se recarga para tomar lo guardado y mostrar la hoja siguiente.
+  if (dir && mode === 'pedidos') setTimeout(() => location.reload(), 600);
 }
 
 // ───────────────────────── Eventos ─────────────────────────
@@ -311,8 +390,18 @@ $('pending').onchange = renderList;
 $('tol').oninput = run;
 $('pal').onchange = run;
 for (const id of ['cols', 'rows']) $(id).oninput = () => { showPrompt(); renderList(); run(); };
-$('mode-one').onclick = () => setMode(false);
-$('mode-sheet').onclick = () => setMode(true);
+$('mode-queue').onclick = () => setMode('pedidos');
+$('mode-one').onclick = () => setMode('una');
+$('mode-sheet').onclick = () => setMode('hoja');
+$('skip').onclick = () => {
+  if (!current) return;
+  try { localStorage.setItem(SKIPPED, JSON.stringify([...skipped(), current.key])); } catch { /* sin almacenamiento */ }
+  nextSheet();
+};
+$('unskip').onclick = () => {
+  try { localStorage.removeItem(SKIPPED); } catch { /* sin almacenamiento */ }
+  nextSheet();
+};
 /**
  * Imagen de referencia para las espaldas: los dibujos de frente en la misma grilla y el mismo orden que el pedido,
  * agrandados y sobre magenta, para adjuntarla en ChatGPT junto con el pedido.
@@ -380,10 +469,16 @@ $('save').onclick = () => save(results);
 $('saveall').onclick = () => save(results.filter((r) => r.keep));
 
 let last: string | null = null;
-let mode: string | null = null;
+let saved: string | null = null;
 try {
   last = localStorage.getItem(LAST);
-  mode = localStorage.getItem(MODE);
+  saved = localStorage.getItem(MODE);
 } catch { /* sin almacenamiento */ }
 current = entries.find((e) => e.key === last) ?? null;
-setMode(mode === 'hoja');
+// Antes se guardaba "hoja" o "una"; sin nada guardado arranca en pedidos en orden.
+setMode(saved === 'hoja' || saved === 'una' ? saved : 'pedidos');
+idb<FileSystemDirectoryHandle>((st) => st.get('arte')).then((h) => {
+  if (!h || dir) return;
+  dir = h;
+  $('dirname').textContent = `Carpeta: ${h.name} (recordada)`;
+});

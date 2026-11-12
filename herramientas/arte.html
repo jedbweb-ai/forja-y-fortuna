@@ -46,6 +46,10 @@
       .cell { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px; display: grid; gap: 6px; justify-items: center; }
       .cell.off { opacity: 0.4; }
       .cell label { font-size: 12px; text-align: center; }
+      .queue { border-color: var(--accent); }
+      .bar { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+      .bar div { height: 100%; background: var(--accent); }
+      .steps { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
       [hidden] { display: none !important; }
     </style>
   </head>
@@ -61,9 +65,23 @@
     </aside>
     <main>
       <div class="modes">
+        <button id="mode-queue">📦 Pedidos en orden</button>
         <button id="mode-one" class="on">Una por una</button>
         <button id="mode-sheet">🗂️ Hoja: varias en una imagen</button>
       </div>
+      <section id="queue" class="queue" hidden>
+        <div class="row"><b id="qtitle"></b><span id="qcount" class="muted"></span></div>
+        <div class="bar"><div id="qbar"></div></div>
+        <ol class="steps">
+          <li>Tocá <b>📋 Copiar pedido</b> y pegalo en ChatGPT. Si aparece <b>🖼️ Bajar la referencia</b>, bajala y adjuntala en el mismo mensaje.</li>
+          <li>Cuando ChatGPT te dé la imagen, copiala (clic derecho → Copiar imagen) y pegala acá con <b>Ctrl+V</b>.</li>
+          <li>Revisá cómo quedó cada una y tocá <b>💾 Guardar y seguir</b>: se guarda en el juego y pasa sola a la hoja siguiente.</li>
+        </ol>
+        <div class="row">
+          <button id="skip">⏭️ Saltear esta hoja</button>
+          <button id="unskip" hidden>↺ Volver a mostrar las salteadas</button>
+        </div>
+      </section>
       <section>
         <h2 id="title">Elegí un asset de la lista</h2>
         <div id="sheetopts" class="row grid-inputs" hidden>

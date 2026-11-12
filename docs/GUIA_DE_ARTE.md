@@ -101,6 +101,16 @@ Con `npm run dev` corriendo, abrir la **herramienta de arte**: http://localhost:
 5. **Guardar.** La primera vez se elige la carpeta `src/assets/arte`, y después cada imagen va sola a su subcarpeta. Si el navegador no permite elegir carpetas, se descarga y se copia a mano.
 6. El juego la usa al recargar. Lo que no tiene imagen sigue con el gráfico provisorio, así se puede reemplazar de a poco.
 
+### Pedidos en orden (lo más rápido)
+
+Es el modo con el que abre la herramienta. Te lleva por todo lo que falta, hoja por hoja, en orden de prioridad:
+
+1. **📋 Copiar pedido** y pegarlo en ChatGPT. Si aparece **🖼️ Bajar la referencia** (las espaldas), adjuntarla en el mismo mensaje.
+2. Copiar la imagen que da ChatGPT y pegarla en la herramienta con **Ctrl+V**.
+3. Revisar las vistas previas (se puede destildar lo que salió mal) y tocar **💾 Guardar y seguir**: se guarda en el juego y aparece la hoja siguiente.
+
+La primera vez pide elegir la carpeta `src/assets/arte`; después la recuerda (el navegador puede pedir confirmar el permiso). Con **⏭️ Saltear** una hoja queda para después.
+
 ### Modo hoja: varios assets en una sola imagen
 
 Es lo más rápido para íconos, retratos, monstruos, texturas y personajes.

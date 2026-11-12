@@ -2,6 +2,8 @@
 
 Todo lo que falta dibujar: **102 imágenes en 18 hojas**, en orden de prioridad (primero lo que más se ve).
 
+> **Lo más rápido es la herramienta de arte**, en modo **📦 Pedidos en orden** (`npm run dev` y abrir http://localhost:5173/herramientas/arte.html): te lleva hoja por hoja, copiás el pedido, pegás ahí mismo la imagen de ChatGPT y se guarda sola en el juego. Este archivo tiene los mismos pedidos, por si los querés ver todos juntos.
+
 ## Cómo usarlo
 
 1. **Una hoja por mensaje** en ChatGPT: copiá el bloque completo de la hoja y pegalo tal cual.
