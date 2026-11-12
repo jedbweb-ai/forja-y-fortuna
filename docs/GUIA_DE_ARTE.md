@@ -147,3 +147,55 @@ El dibujo de frente mira abajo a la izquierda y el de espalda, arriba a la derec
    - diez íconos de materiales y el retrato del herrero.
 2. Revisar juntos cómo se ve, y ajustar esta guía si hace falta.
 3. Producción por tandas: personajes y retratos de la ciudad, monstruos por familia, íconos, terrenos y escenarios por región, y el mapa del mundo.
+
+## 7. Ciudades ilustradas
+
+Cada ciudad es **una sola ilustración isométrica completa**, con calles, plaza, río, árboles y todos sus edificios dibujados. Reemplaza al mapa armado con edificios sueltos. Yo marco sobre la imagen dónde se toca cada edificio y pongo encima los nombres, el brillo de las puertas, la gente que camina, el humo y la luz de cada hora.
+
+**Cómo pedirla:**
+
+1. En ChatGPT, **adjuntá las hojas de edificios de esa ciudad** (están en `arte/originales/edificios/`) para que los dibuje parecidos a los que ya tenemos.
+2. Pegá el pedido de la ciudad (abajo).
+3. Si un edificio sale repetido, falta o tiene letras, pedile que lo corrija sobre la misma imagen.
+4. Guardala en `arte/originales/ciudades/<ciudad>.png` (o mandámela por el chat).
+
+**Formato**: horizontal 3:2. El juego la muestra en 16:9, así que se recorta un poco arriba y abajo: por eso el pedido deja una franja de campo en esos bordes.
+
+### Valdebrasa
+
+Adjuntar: `hoja54.webp` (herrería, mercado, taberna, alquimista), `hoja53.webp` (curtiembre, aserradero, joyería, librería) y `hoja58.webp` (gremio, tablón, subastas, mercado de esclavos).
+
+```
+Pixel art para un videojuego táctico isométrico de fantasía, estilo anime, muy detallado y pulido, con el mismo estilo que los edificios de las imágenes adjuntas: paleta terrosa con acentos de color, 3 o 4 tonos por color, contorno de color oscuro (no negro puro), luz desde arriba a la izquierda, planos de color limpios y sin tramado de puntos.
+
+Una sola ilustración horizontal de una ciudad entera vista desde arriba en diagonal, en vista isométrica (el piso es una grilla de rombos 2:1). Es Valdebrasa, un pueblo de valle medieval, próspero y acogedor. La imagen se llena por completo con la escena: sin fondo magenta, sin marco y sin bordes vacíos.
+
+Usá los edificios de las imágenes adjuntas como referencia: misma forma, color de techo y carteles. Cada edificio aparece una sola vez, bien separado de los demás, con su puerta hacia el frente y un espacio libre de calle delante (debajo) para poner su nombre encima en el juego. Ubicación de los 12 edificios, mirando la imagen:
+
+Arriba, de izquierda a derecha:
+1. Curtiembre de Tanino (techo marrón claro, cueros secándose afuera), en el extremo izquierdo.
+2. La Retorta de Bastián, la tienda del alquimista (techo violeta, alambique de cobre y frascos).
+3. Casa de subastas (techo dorado, columnas, alfombra roja y escalinata), arriba al centro: el edificio más elegante del pueblo.
+4. Joyería Engaste (techo azul, vidriera con gemas).
+5. Librería Pliegue (techo bordó, estantes de libros y enredaderas), a la derecha.
+
+En el medio, de izquierda a derecha:
+6. Tu herrería (techo rojo oscuro, fragua de piedra con brasas, yunque y armas apoyadas afuera), a la izquierda: es la casa del protagonista, que se note acogedora y trabajada.
+7. El Mercado, en el centro, sobre una plaza grande de adoquines: varios puestos con toldos a rayas rojos, crema y azules, cajones de frutas, telas y barriles.
+8. Taberna El Fuelle Roto (techo verde musgo, mesas afuera con jarras), a la derecha del mercado.
+9. Gremio de aventureros (techo azul, estandartes con espadas cruzadas), en el extremo derecho.
+
+Abajo, de izquierda a derecha:
+10. Aserradero Duela (techo oliva, rueda de sierra y pilas de troncos), abajo a la izquierda, cerca del río y del bosque.
+11. Tablón de anuncios (un tablero techado con papeles clavados y banderines), abajo al centro, en una placita al lado del camino.
+12. Mercado de esclavos (techo marrón oscuro, rejas, cadenas y antorchas), abajo a la derecha, más apartado y sombrío.
+
+El pueblo:
+- Un río azul baja de arriba hacia abajo, un poco a la izquierda del centro, entre la herrería y el mercado, con juncos y piedras en las orillas. Lo cruza un puente de madera.
+- Un camino principal de tierra atraviesa el pueblo de izquierda a derecha por el medio y pasa por el puente. Otro camino baja desde la casa de subastas, cruza la plaza del mercado y llega al tablón. Senderos más chicos llevan a la puerta de cada edificio.
+- Muchos detalles chicos: un pozo de piedra, faroles en las calles, cercas de madera, canteros con flores, huertas, barriles, cajones, una carreta, pilas de leña, muros bajos de piedra, arbustos y árboles frondosos entre las casas.
+- Alrededor del pueblo, campo y bosque. Dejá una franja de campo y árboles arriba y abajo de la imagen, sin edificios, porque se recorta un poco.
+
+Luz pareja de mediodía (sin atardecer ni noche: el juego cambia la luz según la hora). Chimeneas sin humo (el juego lo agrega animado).
+Sin personas ni animales (el juego los agrega caminando). Sin texto, letras, números ni carteles con palabras.
+```
