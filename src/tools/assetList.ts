@@ -5,7 +5,7 @@ import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../game/render/variants';
 // Cada entrada trae su clave (nombre del archivo), carpeta, medida del dibujo y el pedido para ChatGPT.
 // Medidas y estilo: docs/GUIA_DE_ARTE.md.
 
-export type AssetType = 'personaje' | 'monstruo' | 'jefe' | 'espalda' | 'espalda_monstruo' | 'espalda_jefe' | 'icono' | 'retrato' | 'textura' | 'lado' | 'escenario' | 'edificio' | 'mapa';
+export type AssetType = 'personaje' | 'monstruo' | 'jefe' | 'espalda' | 'espalda_monstruo' | 'espalda_jefe' | 'icono' | 'retrato' | 'textura' | 'lado' | 'escenario' | 'edificio' | 'mapa' | 'marcador' | 'animal';
 
 export interface AssetEntry {
   key: string;
@@ -39,6 +39,8 @@ const TEMPLATE: Record<AssetType, string> = {
   textura: 'Textura cuadrada vista desde arriba, que se pueda repetir sin costuras en los cuatro lados, con poco contraste para que no distraiga, pensada para verse a 32×32 píxeles. Sin fondo magenta: la textura ocupa todo el cuadro.',
   lado: 'Textura cuadrada de la pared lateral de un escalón de terreno, vista de frente, que se pueda repetir sin costuras a los costados, pensada para verse a 32×32 píxeles. Sin fondo magenta: la textura ocupa todo el cuadro.',
   escenario: 'Un solo objeto de escenario en vista isométrica (rombo de piso de 2:1), centrado, apoyado sobre una casilla.',
+  marcador: 'Un solo marcador del mapa del mundo: un dibujito chico y muy legible del lugar, como una maqueta en vista isométrica, apoyado sobre una base de pasto o tierra con forma de rombo, centrado.',
+  animal: 'Un solo animal chico de pueblo, de cuerpo entero, en vista isométrica de frente en diagonal (mirando hacia abajo a la izquierda), parado, centrado.',
   edificio: 'Un solo edificio pequeño en vista isométrica, visto desde arriba en diagonal, centrado, con la puerta hacia el frente.',
   mapa: 'Mapa de fantasía en pixel art visto desde muy arriba, levemente inclinado. Colores vivos pero naturales, bosques en manchas espesas, montañas, ríos y caminos de tierra. Sin texto. Sin fondo magenta: el mapa ocupa todo el cuadro.',
 };
@@ -54,7 +56,7 @@ export function promptFor(e: AssetEntry): string {
 /** Grilla por defecto (columnas × filas) para cada tipo. */
 export const SHEET_GRID: Record<AssetType, [number, number]> = {
   personaje: [3, 3], monstruo: [3, 2], jefe: [2, 1], espalda: [3, 3], espalda_monstruo: [3, 2], espalda_jefe: [2, 1], icono: [4, 4], retrato: [3, 3],
-  textura: [3, 2], lado: [3, 2], escenario: [3, 3], edificio: [2, 2], mapa: [1, 1],
+  textura: [3, 2], lado: [3, 2], escenario: [3, 3], edificio: [2, 2], mapa: [1, 1], marcador: [4, 3], animal: [3, 1],
 };
 
 const SHEET_ITEMS: Record<AssetType, string> = {
@@ -69,6 +71,8 @@ const SHEET_ITEMS: Record<AssetType, string> = {
   textura: 'texturas cuadradas distintas vistas desde arriba, cada una repetible sin costuras y con poco contraste, pensadas para verse a 32×32 píxeles. Cada textura llena por completo su cuadrado y entre los cuadrados queda una franja magenta',
   lado: 'texturas cuadradas distintas de paredes laterales de escalones de terreno, vistas de frente y repetibles a los costados, pensadas para verse a 32×32 píxeles. Cada textura llena por completo su cuadrado y entre los cuadrados queda una franja magenta',
   escenario: 'objetos de escenario distintos en vista isométrica (rombo de piso de 2:1), cada uno apoyado sobre su casilla',
+  marcador: 'marcadores distintos del mapa del mundo: dibujitos chicos y muy legibles de cada lugar, como maquetas en vista isométrica, cada uno apoyado sobre una base de pasto o tierra con forma de rombo',
+  animal: 'animales chicos de pueblo distintos, de cuerpo entero, en vista isométrica de frente en diagonal (mirando hacia abajo a la izquierda), parados',
   edificio: 'edificios pequeños distintos en vista isométrica, vistos desde arriba en diagonal, con la puerta hacia el frente',
   mapa: 'mapas',
 };
@@ -165,6 +169,27 @@ const PROPS: Record<string, [number, number, string]> = {
   key: [14, 10, 'Una llave de hierro antigua en el piso.'],
   cryptdoor: [32, 28, 'Una puerta de cripta de piedra con relieves.'],
   basalt: [20, 28, 'Una columna de basalto oscuro con una grieta de brasa.'],
+};
+
+/** Cómo se ve cada lugar en su marcador del mapa del mundo. */
+const MARKERS: Record<string, string> = {
+  valdebrasa: 'un pueblo chico amurallado, con techos de teja roja alrededor de una plaza y un río con un puente.',
+  puertoseco: 'un puerto chico: casas blancas de techos naranjas junto al agua, un muelle con un barco de vela y un faro.',
+  fuerte_ceniza: 'una fortaleza chica de piedra gris en forma de estrella, con torres y un estandarte rojo.',
+  linde_brezal: 'una pradera verde con árboles frondosos al borde de un bosque y un sendero de tierra.',
+  montanas_grises: 'dos picos de roca gris con nieve en la punta y un paso entre ellos.',
+  pantano_niebla: 'un pantano: agua verdosa, árboles secos retorcidos, hongos que brillan y un poco de niebla.',
+  ruinas_vigia: 'las ruinas de una torre de piedra con arcos rotos y una grieta violeta brillante en el suelo.',
+  tierras_dragon: 'un volcán chico con lava naranja y un nido de huesos al pie.',
+  cripta_vigia: 'la entrada a una cripta: una puerta de piedra en la ladera de una colina, entre dos columnas.',
+  cuevas_eco: 'la boca de una cueva oscura en una pared de roca, con cristales azules brillando adentro.',
+};
+
+/** Animales (animal.<nombre>), con su medida de dibujo y descripción. */
+const ANIMALS: Record<string, [number, number, string]> = {
+  gallina: [16, 14, 'Una gallina blanca de cresta roja.'],
+  gato: [20, 12, 'Un gato gris atigrado, caminando.'],
+  perro: [22, 16, 'Un perro marrón de pueblo, de orejas caídas.'],
 };
 
 /**
@@ -268,6 +293,19 @@ export function buildAssetList(c: Content): AssetEntry[] {
     key: 'world.mapa', type: 'mapa', folder: 'mapa', w: 620, h: 340, name: 'Mapa del mundo', group: 'Mapa del mundo',
     detail: 'Un valle con una ciudad en el centro, bosques al noreste, montañas nevadas arriba a la derecha, un pantano a la izquierda, la costa con un puerto abajo a la izquierda, una fortaleza arriba a la izquierda, ruinas abajo a la derecha y tierras volcánicas en la esquina de arriba a la derecha. Sin pueblos dibujados: el juego pone encima las ciudades y las regiones.',
   });
+  // Marcadores de cada lugar sobre el mapa del mundo (reemplazan a los círculos y triángulos dibujados).
+  const places = [
+    ...Object.values(c.cities).map((x) => ({ id: x.id, name: x.name })),
+    ...Object.values(c.regions).filter((r) => !r.hidden).map((r) => ({ id: r.id, name: r.name })),
+    ...Object.values(c.dungeons).map((d) => ({ id: d.id, name: d.name })),
+  ];
+  for (const p of places) {
+    add({ key: `world.${p.id}`, type: 'marcador', folder: 'mapa', w: 40, h: 36, name: p.name, group: 'Marcadores del mapa del mundo', detail: `${p.name}: ${MARKERS[p.id] ?? 'un lugar de aventura.'}` });
+  }
+
+  // Animales que andan por los interiores y las calles
+  for (const [id, [w, h, text]] of Object.entries(ANIMALS)) add({ key: `animal.${id}`, type: 'animal', folder: 'personajes', w, h, name: id, group: 'Animales', detail: text });
+
   // Agrupado por tipo, en el orden en que aparece cada grupo.
   const order = [...new Set(out.map((e) => e.group))];
   return out.sort((x, y) => order.indexOf(x.group) - order.indexOf(y.group));

@@ -18,7 +18,10 @@ export class WorldMapScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(0x2a2230);
     // Con arte definitivo, la ilustración del mapa (world.mapa) reemplaza al pergamino dibujado.
     this.art = this.textures.exists('world.mapa') && isRealArt('world.mapa');
-    if (this.art) this.add.image(20, 20, 'world.mapa').setOrigin(0, 0).setDisplaySize(W - 40, H - 40);
+    if (this.art) {
+      this.add.image(20, 20, 'world.mapa').setOrigin(0, 0).setDisplaySize(W - 40, H - 40).setDepth(-20);
+      this.ambient();
+    }
     const g = this.add.graphics();
     if (!this.art) this.drawParchment(g);
     this.label(W / 2, 30, 'El Valle y más allá', { fontFamily: 'Georgia, serif', fontSize: '34px', color: '#5a3a24' });
@@ -26,6 +29,78 @@ export class WorldMapScene extends Phaser.Scene {
   }
 
   private art = false;
+
+  /**
+   * Marcador dibujado de un lugar (world.<id>), si existe: apoyado sobre su punto, con el nombre debajo.
+   * Los lugares abiertos se mueven un poco; los cerrados quedan grises.
+   */
+  private marker(id: string, x: number, y: number, open: boolean): boolean {
+    const key = `world.${id}`;
+    if (!isRealArt(key)) return false;
+    const img = this.add.image(x, y + 18, key).setOrigin(0.5, 1);
+    if (!open) img.setTint(0x8a8270);
+    else this.tweens.add({ targets: img, y: img.y - 4, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.inOut', delay: (x * 7) % 900 });
+    return true;
+  }
+
+  /** Vida sobre la ilustración: nubes que pasan, humo del volcán y brillos en el agua. */
+  private ambient() {
+    if (!this.textures.exists('fx.cloud')) {
+      // Nube en pixel: círculos blancos superpuestos, dibujada a la mitad y mostrada al doble.
+      const g = this.make.graphics({}, false);
+      for (const [cx, cy, r] of [[18, 14, 9], [30, 10, 11], [43, 14, 9], [26, 17, 8], [37, 18, 7]]) g.fillStyle(0xffffff, 1).fillCircle(cx, cy, r);
+      g.generateTexture('fx.cloud', 56, 28);
+      g.destroy();
+    }
+    // Lo que hay debajo de cada punto del dibujo: tierra, agua o nada (afuera de la isla).
+    const src = this.textures.get('world.mapa').getSourceImage() as HTMLCanvasElement;
+    const data = src.getContext?.('2d')?.getImageData(0, 0, src.width, src.height).data;
+    const sx = src.width / (W - 40), sy = src.height / (H - 40);
+    const pixel = (x: number, y: number) => {
+      const px = Math.floor((x - 20) * sx), py = Math.floor((y - 20) * sy);
+      if (!data || px < 0 || py < 0 || px >= src.width || py >= src.height) return null;
+      const i = (py * src.width + px) * 4;
+      return data[i + 3] ? [data[i], data[i + 1], data[i + 2]] : null;
+    };
+    // Nubes que pasan despacio. Afuera de la isla se desvanecen (sobre el fondo oscuro parecerían manchas).
+    for (let i = 0; i < 5; i++) {
+      const base = 0.14 + Math.random() * 0.1;
+      const c = this.add.image(Phaser.Math.Between(0, W), 130 + i * 100 + Phaser.Math.Between(-20, 20), 'fx.cloud')
+        .setScale(2 + Math.random() * 1.5).setAlpha(0).setDepth(-11);
+      const drift = () => {
+        const speed = 18 + Math.random() * 14; // píxeles por segundo
+        this.tweens.add({
+          targets: c, x: W + 150, duration: ((W + 150 - c.x) / speed) * 1000,
+          onUpdate: () => c.setAlpha(Phaser.Math.Linear(c.alpha, pixel(c.x, c.y) ? base : 0, 0.03)),
+          onComplete: () => { c.x = -150; drift(); },
+        });
+      };
+      drift();
+    }
+    // Humo que sale del volcán de las Tierras del Dragón
+    this.time.addEvent({
+      delay: 700, loop: true, callback: () => {
+        const puff = this.add.image(1030 + Phaser.Math.Between(-4, 4), 88, 'fx.cloud').setScale(0.25).setTint(0x8a8a92).setAlpha(0.6).setDepth(-12);
+        this.tweens.add({ targets: puff, x: puff.x + 24, y: puff.y - 50, scale: 0.55, alpha: 0, duration: 2800, onComplete: () => puff.destroy() });
+      },
+    });
+    // Brillos sobre el agua: se buscan los puntos azules del dibujo y titilan algunos al azar.
+    const water: { x: number; y: number }[] = [];
+    for (let y = 20; y < H - 20; y += 8) {
+      for (let x = 20; x < W - 20; x += 8) {
+        const c = pixel(x, y);
+        if (c && c[2] > c[0] + 40 && c[2] > c[1]) water.push({ x, y });
+      }
+    }
+    if (!water.length) return;
+    this.time.addEvent({
+      delay: 250, loop: true, callback: () => {
+        const p = Phaser.Utils.Array.GetRandom(water);
+        const glint = this.add.rectangle(p.x, p.y, 6, 2, 0xe8f8ff).setAlpha(0).setDepth(-15);
+        this.tweens.add({ targets: glint, alpha: 0.9, yoyo: true, duration: 500, onComplete: () => glint.destroy() });
+      },
+    });
+  }
 
   /** Texto del mapa. Sobre el arte definitivo lleva fondo oscuro y letra clara para que se lea encima del dibujo. */
   private label(x: number, y: number, text: string, style: Phaser.Types.GameObjects.Text.TextStyle, dim = false) {
@@ -64,8 +139,10 @@ export class WorldMapScene extends Phaser.Scene {
         const road = this.add.graphics();
         road.lineStyle(5, 0x8a6a42, 0.8).lineBetween(HOME.x, HOME.y, x, y);
       }
-      g.fillStyle(0x7a3b2e, 1).fillRect(x - 22, y - 10, 44, 24);
-      g.fillStyle(mine ? 0xc0563b : 0x5a6a8a, 1).fillTriangle(x - 28, y - 10, x, y - 34, x + 28, y - 10);
+      if (!this.marker(city.id, x, y, true)) {
+        g.fillStyle(0x7a3b2e, 1).fillRect(x - 22, y - 10, 44, 24);
+        g.fillStyle(mine ? 0xc0563b : 0x5a6a8a, 1).fillTriangle(x - 28, y - 10, x, y - 34, x + 28, y - 10);
+      }
       this.label(x, y + 22, mine ? `${city.name}\n(estás acá)` : route ? `${city.name}\n${route.slots} franjas` : city.name, {
         fontFamily: 'Georgia, serif', fontSize: '22px', color: '#3a2418', fontStyle: 'bold', align: 'center',
       });
@@ -94,8 +171,10 @@ export class WorldMapScene extends Phaser.Scene {
         const b = (i + 1) / steps;
         path.lineBetween(HOME.x + (x - HOME.x) * a, HOME.y + (y - HOME.y) * a, HOME.x + (x - HOME.x) * b, HOME.y + (y - HOME.y) * b);
       }
-      const marker = this.add.circle(x, y, 18, open ? 0xc0392b : 0x8a8270).setStrokeStyle(4, 0x3a2418);
-      if (open) this.tweens.add({ targets: marker, scale: 1.15, yoyo: true, repeat: -1, duration: 700 });
+      if (!this.marker(region.id, x, y, open)) {
+        const marker = this.add.circle(x, y, 18, open ? 0xc0392b : 0x8a8270).setStrokeStyle(4, 0x3a2418);
+        if (open) this.tweens.add({ targets: marker, scale: 1.15, yoyo: true, repeat: -1, duration: 700 });
+      }
       this.label(x, y + 24, `${region.name}\n${'★'.repeat(Math.min(region.danger, 9))}${locked ? `\n(${locked})` : ''}`, {
         fontFamily: 'system-ui, sans-serif', fontSize: '18px', color: open ? '#3a2418' : '#7a6e5a', align: 'center',
         fontStyle: open ? 'bold' : 'normal',
@@ -113,9 +192,11 @@ export class WorldMapScene extends Phaser.Scene {
       // Una entrada escondida que no se encontró todavía no aparece en el mapa.
       if (!open && d.unlock.flag) continue;
       const { x, y } = d.world;
-      const g2 = this.add.graphics();
-      g2.fillStyle(open ? 0x3a2a4a : 0x6a6470, 1).fillTriangle(x - 26, y + 14, x, y - 24, x + 26, y + 14);
-      g2.fillStyle(0x0c0a10, 1).fillTriangle(x - 10, y + 14, x, y - 4, x + 10, y + 14);
+      if (!this.marker(d.id, x, y, open)) {
+        const g2 = this.add.graphics();
+        g2.fillStyle(open ? 0x3a2a4a : 0x6a6470, 1).fillTriangle(x - 26, y + 14, x, y - 24, x + 26, y + 14);
+        g2.fillStyle(0x0c0a10, 1).fillTriangle(x - 10, y + 14, x, y - 4, x + 10, y + 14);
+      }
       const p = s?.dungeons.progress[d.id];
       this.label(x, y + 20, `${d.name}\n${'★'.repeat(Math.min(d.danger, 9))} · ${d.floors} pisos${open ? (p?.clears ? ` · ✔ ${p.clears}` : '') : '\n(cerrada)'}`, {
         fontFamily: 'system-ui, sans-serif', fontSize: '17px', color: open ? '#3a2418' : '#7a6e5a', align: 'center', fontStyle: open ? 'bold' : 'normal',

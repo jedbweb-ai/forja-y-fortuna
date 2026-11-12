@@ -21,7 +21,7 @@ let results: { entry: AssetEntry; img: Img; keep: boolean }[] = [];
 
 const FIT: Record<AssetType, Fit> = {
   personaje: 'figura', monstruo: 'figura', jefe: 'figura', espalda: 'figura', espalda_monstruo: 'figura', espalda_jefe: 'figura', escenario: 'figura', edificio: 'figura',
-  icono: 'centro', retrato: 'centro', textura: 'llenar', lado: 'llenar', mapa: 'llenar',
+  icono: 'centro', retrato: 'centro', textura: 'llenar', lado: 'llenar', mapa: 'llenar', marcador: 'figura', animal: 'figura',
 };
 
 // ───────────────────────── Lista ─────────────────────────
