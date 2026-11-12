@@ -5,6 +5,7 @@ import { slotName } from '../../core/time';
 import type { CityLocation } from '../../core/types';
 import { artScale, facing, isRealArt } from '../render/assets';
 import { AMBIENT_VARIANTS } from '../render/placeholders';
+import { drawWalledTown } from '../render/townMap';
 import { SLOT_LIGHT } from './lighting';
 
 const MAP_W = 1280;
@@ -26,10 +27,11 @@ export class CityMapScene extends Phaser.Scene {
     const light = SLOT_LIGHT[slot];
     this.cameras.main.setBackgroundColor(light.bg);
 
-    this.drawGround(city.ground);
+    const plaza = city.ground === 'valle' ? this.drawTown(city.locations) : null;
+    if (!plaza) this.drawGround(city.ground);
     const doors: { x: number; y: number }[] = [];
     for (const loc of city.locations) doors.push(this.drawBuilding(loc));
-    this.spawnWalkers(doors, slot === 'noche' ? 2 : 6);
+    this.spawnWalkers(doors, slot === 'noche' ? 2 : 6, plaza);
 
     this.add.text(MAP_W / 2, 26, city.name, {
       fontFamily: 'Georgia, serif', fontSize: '34px', color: '#fff4dc', stroke: '#3a2418', strokeThickness: 6,
@@ -56,6 +58,26 @@ export class CityMapScene extends Phaser.Scene {
     const zoom = Math.min(width / MAP_W, (height - 60) / MAP_H);
     cam.setZoom(zoom);
     cam.centerOn(MAP_W / 2, MAP_H / 2 - 10 / zoom);
+  }
+
+  /**
+   * Pueblo amurallado visto desde el aire (Valdebrasa): muralla, río, calles desde la plaza del mercado y casas
+   * entre los edificios. Devuelve la plaza, por donde pasa la gente que camina.
+   */
+  private drawTown(locations: CityLocation[]) {
+    const market = locations.find((l) => l.kind === 'mercado') ?? locations[0];
+    const plaza = { x: market.map.x, y: market.map.y + market.map.h * 0.5 };
+    drawWalledTown(this, {
+      key: 'town.valdebrasa', w: MAP_W, h: MAP_H, plaza, seed: 7,
+      wall: { cx: MAP_W / 2, cy: 370, rx: 600, ry: 330 },
+      river: [{ x: 600, y: -140 }, { x: 590, y: 0 }, { x: 540, y: 90 }, { x: 570, y: 170 }, { x: 530, y: 250 }, { x: 490, y: 330 }, { x: 500, y: 400 }, { x: 455, y: 460 }, { x: 470, y: 540 }, { x: 530, y: 610 }, { x: 520, y: 700 }, { x: 560, y: 860 }],
+      buildings: locations.map(({ name, map: { x, y, w, h } }) => {
+        // La imagen del edificio y su nombre debajo quedan libres de casas.
+        const half = Math.max((w + 20) / 2, name.length * 5.5 + 8) + 6;
+        return { door: { x, y: y + h * 0.4 + 8 }, box: { x0: x - half, x1: x + half, y0: y - h * 0.6 - 6, y1: y + h * 0.5 + 40 } };
+      }),
+    });
+    return plaza;
   }
 
   private drawGround(ground: 'valle' | 'puerto' | 'fortaleza') {
@@ -187,21 +209,24 @@ export class CityMapScene extends Phaser.Scene {
     return { x, y: y + h * 0.4 };
   }
 
-  /** Gente caminando entre las puertas de los edificios. */
-  private spawnWalkers(doors: { x: number; y: number }[], count: number) {
+  /** Gente caminando entre las puertas de los edificios. Si hay plaza, van por las calles, pasando por ella. */
+  private spawnWalkers(doors: { x: number; y: number }[], count: number, plaza: { x: number; y: number } | null) {
     for (let i = 0; i < count; i++) {
       const key = `char.amb.${i % AMBIENT_VARIANTS}`;
       const start = Phaser.Utils.Array.GetRandom(doors);
       const s = this.add.sprite(start.x, start.y, key).setScale(artScale(key, 1.6)).setOrigin(0.5, 1);
-      const walk = () => {
-        const to = Phaser.Utils.Array.GetRandom(doors);
+      const leg = (to: { x: number; y: number }, delay: number, next: () => void) => {
         const dist = Phaser.Math.Distance.Between(s.x, s.y, to.x, to.y);
         const f = facing(key, to.x - s.x, to.y - s.y);
         s.play(`${f.key}.walk`, true).setFlipX(f.flip);
-        this.tweens.add({
-          targets: s, x: to.x, y: to.y, duration: dist * 22, delay: Phaser.Math.Between(300, 2500),
-          onUpdate: () => s.setDepth(s.y), onComplete: walk,
-        });
+        this.tweens.add({ targets: s, x: to.x, y: to.y, duration: dist * 22, delay, onUpdate: () => s.setDepth(s.y), onComplete: next });
+      };
+      const walk = () => {
+        const to = Phaser.Utils.Array.GetRandom(doors);
+        const delay = Phaser.Math.Between(300, 2500);
+        if (!plaza) return leg(to, delay, walk);
+        const mid = { x: plaza.x + Phaser.Math.Between(-90, 90), y: plaza.y + Phaser.Math.Between(-20, 30) };
+        leg(mid, delay, () => leg(to, 0, walk));
       };
       walk();
     }
