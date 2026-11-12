@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { GameStore } from '../../bridge/GameStore';
 import { currentCity } from '../../core/state';
 import { slotName } from '../../core/time';
-import type { CityLocation } from '../../core/types';
+import type { City, CityLocation } from '../../core/types';
 import { artScale, facing, isRealArt } from '../render/assets';
 import { AMBIENT_VARIANTS } from '../render/placeholders';
 import { drawWalledTown } from '../render/townMap';
@@ -27,8 +27,7 @@ export class CityMapScene extends Phaser.Scene {
     const light = SLOT_LIGHT[slot];
     this.cameras.main.setBackgroundColor(light.bg);
 
-    const plaza = city.ground === 'valle' ? this.drawTown(city.locations) : null;
-    if (!plaza) this.drawGround(city.ground);
+    const plaza = this.drawTown(city);
     const doors: { x: number; y: number }[] = [];
     for (const loc of city.locations) doors.push(this.drawBuilding(loc));
     this.spawnWalkers(doors, slot === 'noche' ? 2 : 6, plaza);
@@ -61,16 +60,25 @@ export class CityMapScene extends Phaser.Scene {
   }
 
   /**
-   * Pueblo amurallado visto desde el aire (Valdebrasa): muralla, río, calles desde la plaza del mercado y casas
-   * entre los edificios. Devuelve la plaza, por donde pasa la gente que camina.
+   * La ciudad vista desde el aire: muralla, calles desde la plaza y casas entre los edificios (render/townMap.ts).
+   * Valdebrasa es un pueblo de valle con río; Puertoseco, un puerto sobre una bahía; Fuerte Ceniza, una fortaleza
+   * en estrella. Devuelve la plaza, por donde pasa la gente que camina.
    */
-  private drawTown(locations: CityLocation[]) {
-    const market = locations.find((l) => l.kind === 'mercado') ?? locations[0];
-    const plaza = { x: market.map.x, y: market.map.y + market.map.h * 0.5 };
+  private drawTown(city: City) {
+    const kind = city.ground;
+    const { locations } = city;
+    const square = locations.find((l) => l.kind === (kind === 'fortaleza' ? 'tablon' : 'mercado')) ?? locations[0];
+    const plaza = kind === 'puerto' ? { x: MAP_W / 2, y: 430 } : { x: square.map.x, y: square.map.y + square.map.h * 0.5 };
+    const shape = {
+      valle: { wall: { cx: MAP_W / 2, cy: 370, rx: 600, ry: 330 }, gates: [180, 0, 90, 270] },
+      puerto: { wall: { cx: MAP_W / 2, cy: 640, rx: 660, ry: 610 }, gates: [270, 215, 325], shore: { center: 575, edge: 615 } },
+      fortaleza: { wall: { cx: MAP_W / 2, cy: 380, rx: 610, ry: 330 }, gates: [90, 150] },
+    }[kind];
     drawWalledTown(this, {
-      key: 'town.valdebrasa', w: MAP_W, h: MAP_H, plaza, seed: 7,
-      wall: { cx: MAP_W / 2, cy: 370, rx: 600, ry: 330 },
-      river: [{ x: 600, y: -140 }, { x: 590, y: 0 }, { x: 540, y: 90 }, { x: 570, y: 170 }, { x: 530, y: 250 }, { x: 490, y: 330 }, { x: 500, y: 400 }, { x: 455, y: 460 }, { x: 470, y: 540 }, { x: 530, y: 610 }, { x: 520, y: 700 }, { x: 560, y: 860 }],
+      key: `town.${city.id}`, kind, w: MAP_W, h: MAP_H, plaza, seed: 7, ...shape,
+      river: kind === 'valle'
+        ? [{ x: 600, y: -140 }, { x: 590, y: 0 }, { x: 540, y: 90 }, { x: 570, y: 170 }, { x: 530, y: 250 }, { x: 490, y: 330 }, { x: 500, y: 400 }, { x: 455, y: 460 }, { x: 470, y: 540 }, { x: 530, y: 610 }, { x: 520, y: 700 }, { x: 560, y: 860 }]
+        : undefined,
       buildings: locations.map(({ name, map: { x, y, w, h } }) => {
         // La imagen del edificio y su nombre debajo quedan libres de casas.
         const half = Math.max((w + 20) / 2, name.length * 5.5 + 8) + 6;
@@ -78,82 +86,6 @@ export class CityMapScene extends Phaser.Scene {
       }),
     });
     return plaza;
-  }
-
-  private drawGround(ground: 'valle' | 'puerto' | 'fortaleza') {
-    if (ground === 'puerto') return this.drawPort();
-    if (ground === 'fortaleza') return this.drawFortress();
-    const g = this.add.graphics();
-    g.fillStyle(0x7cb35a, 1).fillRect(-200, -200, MAP_W + 400, MAP_H + 400);
-    g.fillStyle(0x6aa84f, 1);
-    for (let i = 0; i < 60; i++) g.fillCircle((i * 197) % MAP_W, (i * 113) % MAP_H, 18 + (i % 4) * 6);
-    // Río con puente
-    g.fillStyle(0x4a90c8, 1);
-    g.fillPoints([
-      new Phaser.Math.Vector2(520, -40), new Phaser.Math.Vector2(580, -40), new Phaser.Math.Vector2(560, 200),
-      new Phaser.Math.Vector2(520, 420), new Phaser.Math.Vector2(560, 760), new Phaser.Math.Vector2(500, 760),
-      new Phaser.Math.Vector2(460, 420), new Phaser.Math.Vector2(500, 200),
-    ], true);
-    // Caminos
-    g.lineStyle(26, 0xc9a66b, 1);
-    g.lineBetween(120, 470, 1240, 470);
-    g.lineBetween(640, 120, 640, 640);
-    g.lineBetween(300, 470, 210, 300);
-    g.lineBetween(980, 470, 1060, 260);
-    g.lineBetween(640, 300, 860, 220);
-    g.lineBetween(980, 470, 1150, 640);
-    g.lineBetween(300, 470, 200, 620);
-    g.fillStyle(0x8b5a2b, 1).fillRect(470, 456, 110, 28);
-    g.lineStyle(2, 0x5e3a1e, 1);
-    for (let x = 476; x < 580; x += 10) g.lineBetween(x, 456, x, 484);
-    // Árboles
-    for (let i = 0; i < 26; i++) {
-      const x = 40 + ((i * 263) % (MAP_W - 80));
-      const y = 80 + ((i * 151) % (MAP_H - 120));
-      if (Math.abs(y - 470) < 40 || Math.abs(x - 640) < 40) continue;
-      this.add.image(x, y, 'prop.tree').setScale(artScale('prop.tree', 0.7)).setDepth(y);
-    }
-  }
-
-  /** Puerto: arena, mar al sur y un muelle de madera. */
-  private drawPort() {
-    const g = this.add.graphics();
-    g.fillStyle(0xe8d6a8, 1).fillRect(-200, -200, MAP_W + 400, MAP_H + 400);
-    g.fillStyle(0xd9c18a, 1);
-    for (let i = 0; i < 40; i++) g.fillCircle((i * 197) % MAP_W, (i * 113) % 470, 14 + (i % 4) * 5);
-    g.fillStyle(0x3a7ab8, 1).fillRect(-200, 610, MAP_W + 400, 400);
-    g.fillStyle(0x5a9ad0, 1);
-    for (let i = 0; i < 20; i++) g.fillRect((i * 151) % MAP_W, 640 + (i % 4) * 20, 40, 3);
-    g.fillStyle(0x8b5a2b, 1).fillRect(560, 600, 160, 30).fillRect(620, 600, 40, 120);
-    g.lineStyle(26, 0xc9a66b, 1);
-    g.lineBetween(120, 470, 1200, 470);
-    g.lineBetween(640, 140, 640, 600);
-    g.lineBetween(220, 470, 220, 250);
-    g.lineBetween(1050, 470, 1050, 230);
-    for (let i = 0; i < 6; i++) {
-      const x = 80 + i * 220;
-      this.add.image(x, 120, 'prop.tree').setScale(artScale('prop.tree', 0.6)).setTint(0x9acb6a).setDepth(120);
-    }
-  }
-
-  /** Fortaleza: tierra, muralla de piedra alrededor y torres en las esquinas. */
-  private drawFortress() {
-    const g = this.add.graphics();
-    g.fillStyle(0x9a8a6a, 1).fillRect(-200, -200, MAP_W + 400, MAP_H + 400);
-    g.fillStyle(0x8a7a5a, 1);
-    for (let i = 0; i < 50; i++) g.fillCircle((i * 197) % MAP_W, (i * 113) % MAP_H, 12 + (i % 4) * 6);
-    g.lineStyle(34, 0x6a6a72, 1).strokeRect(70, 80, MAP_W - 140, MAP_H - 130);
-    g.lineStyle(4, 0x4a4a52, 1).strokeRect(53, 63, MAP_W - 106, MAP_H - 96);
-    for (const [x, y] of [[70, 80], [MAP_W - 70, 80], [70, MAP_H - 50], [MAP_W - 70, MAP_H - 50]]) {
-      g.fillStyle(0x5a5a62, 1).fillCircle(x, y, 34);
-      g.fillStyle(0x7a7a82, 1).fillCircle(x, y, 26);
-    }
-    g.fillStyle(0x3a2a1a, 1).fillRect(MAP_W / 2 - 40, MAP_H - 66, 80, 34);
-    g.lineStyle(24, 0xb89a6b, 1);
-    g.lineBetween(160, 460, 1120, 460);
-    g.lineBetween(640, 180, 640, 650);
-    g.lineBetween(300, 460, 300, 330);
-    g.lineBetween(1000, 460, 1000, 260);
   }
 
   private drawBuilding(loc: CityLocation): { x: number; y: number } {
