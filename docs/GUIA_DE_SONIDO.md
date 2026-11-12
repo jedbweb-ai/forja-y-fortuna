@@ -8,8 +8,18 @@ Cómo suena Forja & Fortuna: música orquestal suave para cada lugar (generada c
 - **Lugares sin tema propio** usan el de su grupo: un local de la ciudad usa el de la ciudad, una mazmorra usa `mazmorra`, el combate contra un jefe usa `combate`, una región usa `mundo`. Si no hay ninguno, silencio.
 - **Celular**: la música arranca con el primer toque (los navegadores no dejan sonar nada antes) y se pausa al cambiar de app.
 - **Peso**: la música no entra en la carga inicial. Cada tema se baja la primera vez que suena y queda guardado.
+- **Preparación automática** (`src/audio/loop.ts`): al cargar un tema, el juego le saca el silencio de relleno del mp3, **iguala su volumen** con el de los demás y **funde el final con el principio** para que al repetirse no se note el corte (más largo si termina mucho más fuerte de lo que empieza). No hace falta retocar los archivos.
 - **Volumen**: en Ajustes, música y efectos por separado, y silenciar todo. Se guarda en el dispositivo.
 - Código: `src/audio/` (`musicKey.ts` decide qué tema suena, `music.ts` lo reproduce, `sfx.ts` arma los efectos, `director.ts` los conecta con el juego).
+
+## Estado
+
+| | Temas |
+|---|---|
+| ✅ Hechos (16) | `titulo`, `herreria`, `valdebrasa`, `puertoseco`, `fuerte_ceniza`, `mundo`, `linde_brezal`, `montanas_grises`, `pantano_niebla`, `ruinas_vigia`, `tierras_dragon`, `mazmorra`, `combate`, `jefe`, `victoria`, `derrota` |
+| ⏳ Pendientes (opcionales) | `taberna`, `ps_taberna`, `fc_cantina`, `cripta_vigia`, `cuevas_eco`, `subastas` |
+
+Mientras falten, las tabernas y la casa de subastas usan el tema de su ciudad, y cada mazmorra usa `mazmorra`.
 
 ## Cómo generar los temas con ChatGPT
 
@@ -272,16 +282,16 @@ Sin voces ni letra.
 Entregámelo como archivo MP3 descargable.
 ```
 
-## Temas opcionales
+## Temas opcionales (⏳ pendientes)
 
 Un lugar puede tener su propio tema con su clave; sin archivo, usa el de su grupo. Para estos, usá cualquiera de los pedidos de arriba como modelo y cambiá solo el lugar, el clima, los instrumentos y el tempo:
 
 | Archivo | Lugar | Clima e instrumentos |
 |---|---|---|
-| `taberna.mp3` · `ps_taberna.mp3` · `fc_cantina.mp3` | Tabernas | Animado, folk de taberna: violín, tambores de mano, palmas, 120 BPM en Re mayor |
-| `cripta_vigia.mp3` | Cripta del Vigía | Solemne, cripta real olvidada: cuerdas lentas como un órgano, campanas tenues, 65 BPM en Si menor |
-| `cuevas_eco.mp3` | Cuevas del Eco | Cuevas profundas: láminas metálicas con mucho eco, notas graves sostenidas, 70 BPM en Re menor |
-| `subastas.mp3` | Casa de subastas | Elegante con algo de suspenso: clave (clavecín) y cuerdas, 110 BPM en Si bemol mayor |
+| ⏳ `taberna.mp3` · `ps_taberna.mp3` · `fc_cantina.mp3` | Tabernas (Valdebrasa, Puertoseco, Fuerte Ceniza) | Animado, folk de taberna: violín, tambores de mano, palmas, 120 BPM en Re mayor |
+| ⏳ `cripta_vigia.mp3` | Cripta del Vigía | Solemne, cripta real olvidada: cuerdas lentas como un órgano, campanas tenues, 65 BPM en Si menor |
+| ⏳ `cuevas_eco.mp3` | Cuevas del Eco | Cuevas profundas: láminas metálicas con mucho eco, notas graves sostenidas, 70 BPM en Re menor |
+| ⏳ `subastas.mp3` | Casa de subastas | Elegante con algo de suspenso: clave (clavecín) y cuerdas, 110 BPM en Si bemol mayor |
 
 ## Efectos de sonido
 
