@@ -7,7 +7,7 @@ import { dungeonInteract, expMap, isSeen } from '../../core/dungeon/dungeon';
 import type { DungeonDef } from '../../core/dungeon/types';
 import { adjacent, heightAt, isWalkable, regionSize, tileAt, zoneAt } from '../../core/world/region';
 import type { ExpeditionState, MonsterGroup, RegionDef } from '../../core/world/types';
-import { artScale, facing, monsterLook } from '../render/assets';
+import { artScale, facing, installWalkBob, monsterLook } from '../render/assets';
 import { isoBounds, screenToIso } from '../render/iso';
 import { drawGround, standDepth, tilePos } from '../render/terrain';
 import { SLOT_LIGHT } from './lighting';
@@ -39,6 +39,7 @@ export class RegionScene extends Phaser.Scene {
   }
 
   create() {
+    installWalkBob(this);
     const e = this.exp!;
     this.region = expMap(this.store.content, e);
     this.dungeon = e.dungeon ? this.store.content.dungeons[e.dungeon.id] : null;

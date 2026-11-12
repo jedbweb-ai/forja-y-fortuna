@@ -3,7 +3,7 @@ import type { GameStore } from '../../bridge/GameStore';
 import { currentCity } from '../../core/state';
 import { slotName } from '../../core/time';
 import type { City, CityLocation } from '../../core/types';
-import { artScale, facing, isRealArt } from '../render/assets';
+import { artScale, facing, installWalkBob, isRealArt } from '../render/assets';
 import { AMBIENT_VARIANTS } from '../render/placeholders';
 import { drawWalledTown } from '../render/townMap';
 import { SLOT_LIGHT } from './lighting';
@@ -20,6 +20,7 @@ export class CityMapScene extends Phaser.Scene {
   }
 
   create() {
+    installWalkBob(this);
     // También es el fondo de la pantalla de título, cuando todavía no hay partida.
     const state = this.store.getSnapshot().state;
     const city = this.store.content.cities[state ? currentCity(state) : 'valdebrasa'];

@@ -1,4 +1,4 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 import { LEVEL_H, TILE_H, TILE_W } from './iso';
 
 // Arte definitivo. Cada PNG de src/assets/arte/ (en cualquier subcarpeta) se carga con su nombre como clave:
@@ -68,6 +68,43 @@ export function facing(key: string, dx: number, dy: number): { key: string; flip
 
 /** Vector en pantalla de cada dirección del combate (+x, +y, -x, -y en la grilla isométrica). */
 export const DIR_SCREEN: Record<0 | 1 | 2 | 3, [number, number]> = { 0: [1, 1], 1: [-1, 1], 2: [-1, -1], 3: [1, -1] };
+
+/** Rebote (píxeles) y balanceo (radianes) del paso, y cuánto dura un paso (ms). */
+const STEP = { lift: 3, sway: 0.06, ms: 300 };
+
+/**
+ * Paso al caminar: mientras una figura se desplaza, rebota un poco y se balancea de un pie al otro, así no se
+ * desliza quieta aunque tenga un solo dibujo. Se mide el movimiento real (de la figura o del contenedor que la
+ * lleva), así que los enemigos quietos en combate no saltan. Llamar en el create de cada escena.
+ */
+export function installWalkBob(scene: Phaser.Scene) {
+  const last = new WeakMap<Phaser.GameObjects.Sprite, { x: number; y: number; originY: number; offset: number }>();
+  const step = (s: Phaser.GameObjects.Sprite, time: number) => {
+    if (!/^(char|mon|animal)\./.test(s.texture.key)) return;
+    const px = s.x + (s.parentContainer?.x ?? 0);
+    const py = s.y + (s.parentContainer?.y ?? 0);
+    let st = last.get(s);
+    if (!st) last.set(s, (st = { x: px, y: py, originY: s.originY, offset: Math.random() * STEP.ms }));
+    const moving = Math.abs(px - st.x) + Math.abs(py - st.y) > 0.05;
+    st.x = px;
+    st.y = py;
+    if (!moving) {
+      if (s.rotation) s.setRotation(0).setOrigin(s.originX, st.originY);
+      return;
+    }
+    const phase = ((time + st.offset) / STEP.ms) * Math.PI;
+    const lift = Math.abs(Math.sin(phase)) * STEP.lift;
+    s.setOrigin(s.originX, st.originY + lift / Math.max(1, s.displayHeight)).setRotation(Math.sin(phase) * STEP.sway);
+  };
+  const update = (time: number) => {
+    for (const o of scene.children.list) {
+      if (o instanceof Phaser.GameObjects.Sprite) step(o, time);
+      else if (o instanceof Phaser.GameObjects.Container) for (const c of o.list) if (c instanceof Phaser.GameObjects.Sprite) step(c, time);
+    }
+  };
+  scene.events.on('update', update);
+  scene.events.once('shutdown', () => scene.events.off('update', update));
+}
 
 /** Animación de caminar para las figuras con arte propio que no tienen placeholder (por ejemplo mon.<jefe>). */
 export function ensureWalkAnims(scene: Phaser.Scene) {

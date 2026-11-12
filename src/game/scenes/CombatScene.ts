@@ -8,7 +8,7 @@ import type { Affinity } from '../../core/types';
 import { slotName } from '../../core/time';
 import { sfx, type SfxId } from '../../audio/sfx';
 import type { GameEvent } from '../../core/types';
-import { artScale, DIR_SCREEN, facing, monsterLook } from '../render/assets';
+import { artScale, DIR_SCREEN, facing, installWalkBob, monsterLook } from '../render/assets';
 import { isoBounds, screenToIso } from '../render/iso';
 import { drawGround, standDepth, tilePos } from '../render/terrain';
 import { SLOT_LIGHT } from './lighting';
@@ -72,6 +72,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   create() {
+    installWalkBob(this);
     const cs = this.cs!;
     const c = this.store.content;
     this.arena = c.arenas[cs.arenaId];

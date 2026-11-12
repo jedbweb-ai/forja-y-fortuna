@@ -5,7 +5,7 @@ import { pickDialogue } from '../../core/dialogue';
 import { slotName } from '../../core/time';
 import type { HotspotDef, LiveSceneDef, TimeSlot } from '../../core/types';
 import { isoBounds, isoDepth, isoToScreen, TILE_H } from '../render/iso';
-import { artScale, facing } from '../render/assets';
+import { artScale, facing, installWalkBob } from '../render/assets';
 import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../render/placeholders';
 import { SLOT_LIGHT } from './lighting';
 
@@ -34,6 +34,7 @@ export class LiveScene extends Phaser.Scene {
   }
 
   create() {
+    installWalkBob(this);
     const loc = cityLocation(this.store.content, this.locId);
     if (!loc?.scene) throw new Error(`Lugar sin escena: ${this.locId}`);
     this.def = loc.scene;
