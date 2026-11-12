@@ -9,7 +9,7 @@ import { DemandTag } from '../components/DemandTag';
 import { Panel, Tabs } from '../components/Panel';
 import { MATERIAL_TYPE_LABEL, money } from '../format';
 import { store, useGame } from '../hooks';
-import { Swatch, itemIcon } from '../components/Swatch';
+import { Portrait, Swatch, itemIcon } from '../components/Swatch';
 
 export function MarketPanel() {
   const s = useGame();
@@ -33,7 +33,8 @@ export function MarketPanel() {
         options={canSellHere ? [{ id: 'buy', label: 'Comprar materiales' }, { id: 'sell', label: 'Venta rápida' }] : [{ id: 'buy', label: 'Comprar' }]}
       />
       {owner && (
-        <p className={`small ${refuse ? 'bad-text' : 'muted'}`}>
+        <p className={`small owner-line ${refuse ? 'bad-text' : 'muted'}`}>
+          <Portrait id={owner} look={c.npcs[owner].look} size="tiny" />
           {refuse ?? `${c.npcs[owner].name} · relación ${npcLevel(s, owner)}${mult !== 1 ? ` · precios ${mult < 1 ? '−' : '+'}${Math.round(Math.abs(1 - mult) * 100)}%` : ''}`}
         </p>
       )}

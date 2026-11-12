@@ -11,6 +11,7 @@ import { abandonQuest, acceptQuest, deliverQuest, questGiverName, questProgress 
 import type { QuestDef, QuestObjective } from '../../core/town/types';
 import type { Content } from '../../core/content';
 import { Panel, Tabs } from '../components/Panel';
+import { Portrait } from '../components/Swatch';
 import { store, useGame } from '../hooks';
 
 type Tab = 'news' | 'offers' | 'contracts' | 'journal';
@@ -141,7 +142,7 @@ function Contracts() {
           const have = unitsAvailable(s, def.item);
           return (
             <article key={ac.uid} className="quest-card">
-              <header><b>{def.title}</b> <small className="muted">· {c.npcs[def.merchant].name}</small></header>
+              <header><Portrait id={def.merchant} look={c.npcs[def.merchant].look} size="tiny" /><b>{def.title}</b> <small className="muted">· {c.npcs[def.merchant].name}</small></header>
               <p className="small">📦 {def.item.qty} × {describeSpec(c, def.item)} cada {def.everyDays} días · 🪙 {def.pricePerUnit} c/u</p>
               <div className="meter thin"><span style={{ width: `${(ac.delivered / total) * 100}%` }} /></div>
               <p className="small">Entregado {ac.delivered}/{total} · tener {next.required} entregadas para el día {next.day} ({days(next.day - s.day)})</p>
@@ -163,7 +164,7 @@ function Contracts() {
             const def = c.contracts[o.id];
             return (
               <article key={o.id} className="quest-card">
-                <header><b>{def.title}</b> <small className="muted">· {c.npcs[def.merchant].name}</small></header>
+                <header><Portrait id={def.merchant} look={c.npcs[def.merchant].look} size="tiny" /><b>{def.title}</b> <small className="muted">· {c.npcs[def.merchant].name}</small></header>
                 <p className="small">{def.text}</p>
                 <p className="small">📦 {def.item.qty} × {describeSpec(c, def.item)} cada {def.everyDays} días, {def.deliveries} entregas</p>
                 <p className="small good-text">🪙 {def.pricePerUnit} por unidad · premio final {def.bonus.gold ?? 0} de oro</p>

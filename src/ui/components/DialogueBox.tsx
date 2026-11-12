@@ -2,11 +2,7 @@ import { visibleOptions } from '../../core/dialogue';
 import { relationLevel } from '../../core/state';
 import { canGiftToday } from '../../core/town/relations';
 import { store, useSnapshot } from '../hooks';
-import { portraitUrl } from './Swatch';
-
-function hex(n: number) {
-  return `#${n.toString(16).padStart(6, '0')}`;
-}
+import { Portrait } from './Swatch';
 
 export function DialogueBox() {
   const { state, ui } = useSnapshot();
@@ -22,9 +18,7 @@ export function DialogueBox() {
   return (
     <div className="dialogue-wrap">
       <section className="dialogue" aria-live="polite">
-        <div className="portrait" style={{ background: hex(npc.look.body), borderColor: hex(npc.look.accent) }}>
-          {portraitUrl(d.npcId) ? <img className="art-portrait" src={portraitUrl(d.npcId)} alt="" /> : <span style={{ background: hex(npc.look.hair) }} />}
-        </div>
+        <Portrait id={d.npcId} look={npc.look} />
         <div className="dialogue-main">
           <header>
             <b>{speaker}</b>

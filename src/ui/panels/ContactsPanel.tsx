@@ -8,14 +8,10 @@ import { RELATION_LEVELS, type GiftTaste } from '../../core/types';
 import { Panel } from '../components/Panel';
 import { RARITY_CLASS } from '../format';
 import { store, useGame, useSnapshot } from '../hooks';
-import { Swatch, itemIcon } from '../components/Swatch';
+import { Portrait, Swatch, itemIcon } from '../components/Swatch';
 
 const TASTE_LABEL: Record<GiftTaste, string> = { ama: '❤️ ama', gusta: '🙂 le gusta', indiferente: '😐', disgusta: '😖 no le gusta' };
 const LEVEL_ICON: Record<string, string> = { hostil: '😠', desconfiado: '🤨', neutral: '😐', conocido: '🙂', amigo: '😊', aliado: '🤝' };
-
-function hex(n: number) {
-  return `#${n.toString(16).padStart(6, '0')}`;
-}
 
 /** Relaciones: a quién conocés, qué le gusta, qué te da y regalos. */
 export function ContactsPanel() {
@@ -37,7 +33,7 @@ export function ContactsPanel() {
             return (
               <li key={id}>
                 <button className={`contact ${id === sel ? 'on' : ''}`} onClick={() => setSel(id)}>
-                  <span className="portrait small" style={{ background: hex(c.npcs[id].look.body), borderColor: hex(c.npcs[id].look.accent) }} />
+                  <Portrait id={id} look={c.npcs[id].look} size="small" />
                   <span className="grow">
                     <b>{c.npcs[id].name}</b>
                     <small className="muted block">{LEVEL_ICON[npcLevel(s, id)]} {npcLevel(s, id)} ({rel})</small>
@@ -67,7 +63,10 @@ function ContactDetail({ npcId }: { npcId: string }) {
 
   return (
     <section className="contact-detail">
-      <h3>{npc.name} <small className="muted">· {npc.role}</small></h3>
+      <header className="contact-head">
+        <Portrait id={npcId} look={npc.look} />
+        <h3>{npc.name} <small className="muted">· {npc.role}</small></h3>
+      </header>
       <p className="small">{npc.description}</p>
       {npc.personality.length > 0 && <p className="small muted">Carácter: {npc.personality.join(', ')}</p>}
       <div className="rel-bar" aria-label={`Relación ${rel}`}>

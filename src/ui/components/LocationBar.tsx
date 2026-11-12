@@ -8,6 +8,7 @@ import { talentPoints } from '../../core/progress/progress';
 import type { SkillId } from '../../core/types';
 import { isAuctionDay } from '../../core/town/auction';
 import { store, useSnapshot } from '../hooks';
+import { Portrait } from './Swatch';
 
 /** Barra inferior con las acciones del lugar. Todo lo tocable en la escena también está acá. */
 export function LocationBar() {
@@ -88,7 +89,7 @@ export function LocationBar() {
         {loc.kind === 'subastas' && <button className="btn primary" onClick={() => store.openPanel('auction')}>🔨 Subasta{isAuctionDay(state) ? ' (¡hoy!)' : ''}</button>}
         {loc.kind === 'esclavos' && <button className="btn primary" onClick={() => store.openPanel('servants')}>⛓️ Tratos</button>}
         {npcs.map((id) => (
-          <button key={id} className="btn" onClick={() => store.talkTo(id)}>💬 {c.npcs[id].name.split(' ')[0]}</button>
+          <button key={id} className="btn talk" onClick={() => store.talkTo(id)}><Portrait id={id} look={c.npcs[id].look} size="tiny" /> {c.npcs[id].name.split(' ')[0]}</button>
         ))}
         {loc.id !== 'herreria' && currentCity(state) !== homeCity() && <button className="btn" data-key="x" onClick={() => store.showWorld()}>🧭 Viajar</button>}
         <button className="btn" data-key="m" onClick={() => store.showMap()}>🗺️ Ciudad</button>

@@ -4,6 +4,7 @@ import { refusesTrade } from '../../core/town/relations';
 import { buyServant, freeServant, ownedServants, servantPrice } from '../../core/town/servants';
 import { relationLevel } from '../../core/state';
 import { Panel } from '../components/Panel';
+import { Portrait } from '../components/Swatch';
 import { store, useGame } from '../hooks';
 
 const SPECIALTY: Record<string, string> = { guerrero: 'guerrero', arquero: 'arquero', explorador: 'explorador', porteador: 'porteador' };
@@ -33,7 +34,7 @@ export function ServantsPanel() {
           return (
             <article key={m.id} className="merc-card">
               <header>
-                <span className="portrait small" style={{ background: `#${m.look.body.toString(16).padStart(6, '0')}` }} />
+                <Portrait id={m.id} look={m.look} size="small" />
                 <div>
                   <b>{m.name}</b>
                   <small className="muted block">{SPECIALTY[m.specialty]} · nivel {m.level} · lealtad {relationLevel(s.npcs[m.id]?.relation ?? 0)}</small>
@@ -64,6 +65,7 @@ export function ServantsPanel() {
               const lvl = relationLevel(s.npcs[ch.id]?.relation ?? 0);
               return (
                 <li key={ch.id}>
+                  <Portrait id={ch.id} look={c.mercenaries[ch.id]?.look} size="small" />
                   <span className="grow">
                     <b>{ch.name}</b>
                     <small className="muted block">

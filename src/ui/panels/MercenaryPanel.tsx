@@ -3,6 +3,7 @@ import { maxPartySize } from '../../core/progress/progress';
 import { availableMercenaries, dailyWages, hireMercenary } from '../../core/party/mercenaries';
 import { relationLevel } from '../../core/state';
 import { Panel } from '../components/Panel';
+import { Portrait } from '../components/Swatch';
 import { store, useGame } from '../hooks';
 
 const SPECIALTY_PERK: Record<string, string> = {
@@ -31,7 +32,7 @@ export function MercenaryPanel() {
           return (
             <article key={m.id} className="merc-card">
               <header>
-                <span className="portrait small" style={{ background: `#${m.look.body.toString(16).padStart(6, '0')}` }} />
+                <Portrait id={m.id} look={m.look} size="small" />
                 <div>
                   <b>{m.name}</b>
                   <small className="muted block">{m.specialty} · nivel {m.level} · relación {relationLevel(rel)}</small>

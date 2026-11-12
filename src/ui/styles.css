@@ -236,9 +236,15 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 
 /* ── Tienda ── */
 .customer-head { display: flex; gap: 10px; align-items: center; }
-.portrait { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--accent-2); position: relative; flex: none; overflow: hidden; }
+.portrait { display: inline-block; width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--accent-2); position: relative; flex: none; overflow: hidden; }
 .portrait span { position: absolute; left: 0; right: 0; top: 0; height: 40%; }
 .portrait.small { width: 44px; height: 44px; border-width: 2px; display: inline-block; }
+.portrait.tiny { width: 26px; height: 26px; border-width: 2px; display: inline-block; vertical-align: middle; }
+.btn.talk { display: inline-flex; align-items: center; gap: 6px; padding-left: 6px; }
+.contact-head { display: flex; align-items: center; gap: 12px; }
+.contact-head h3 { margin: 0; }
+.quest-card header .portrait.tiny { margin-right: 6px; }
+.owner-line { display: flex; align-items: center; gap: 8px; }
 .patience { font-size: 0.85rem; color: var(--accent-2); letter-spacing: 2px; }
 .speech { margin: 10px 0; padding: 10px 14px; background: #f6ecdc; color: #2a1a14; border-radius: 12px; font-size: 1rem; position: relative; }
 .haggle { display: grid; gap: 6px; }

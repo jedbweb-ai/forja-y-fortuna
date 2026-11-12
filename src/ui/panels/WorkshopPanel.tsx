@@ -4,6 +4,7 @@ import {
 } from '../../core/progress/progress';
 import { relationLevel } from '../../core/state';
 import { Panel } from '../components/Panel';
+import { Portrait } from '../components/Swatch';
 import { store, useGame } from '../hooks';
 
 /** La herrería: mejoras con niveles y el ayudante que atiende la tienda. */
@@ -26,7 +27,8 @@ export function WorkshopPanel() {
       </p>
       {assistant ? (
         <div className="row">
-          <span className="grow">🧑‍🔧 <b>{assistant.name}</b> atiende la tienda.</span>
+          <Portrait id={assistant.id} look={c.mercenaries[assistant.id]?.look ?? c.npcs[assistant.id]?.look} size="small" />
+          <span className="grow"><b>{assistant.name}</b> atiende la tienda.</span>
           <button className="btn" onClick={() => store.run(removeAssistant)}>Sacarlo de la tienda</button>
         </div>
       ) : (
@@ -35,6 +37,7 @@ export function WorkshopPanel() {
             const block = assistantBlock(c, s, ch.id);
             return (
               <li key={ch.id}>
+                <Portrait id={ch.id} look={c.mercenaries[ch.id]?.look ?? c.npcs[ch.id]?.look} size="small" />
                 <span className="grow">
                   <b>{ch.name}</b> <small className="muted">relación {relationLevel(s.npcs[ch.id]?.relation ?? 0)}{ch.bond === 'liberado' ? ' · libre' : ''}</small>
                   {block && <small className="muted block">{block}</small>}
