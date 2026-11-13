@@ -289,3 +289,7 @@ El pedido está en la herramienta (modo "📦 Pedidos en orden", grupo "Interior
   edificios sueltos; los nombres y las zonas tocables van donde dice el mapa de cada lugar, o donde se marque en
   `CITY_PLACES` (`render/illustrated.ts`) si en la ilustración un edificio quedó corrido. Este pedido reemplaza al de §7.
 - Los planos se sacan del juego, con la escena armada sin carteles ni personas, recortada al lugar y en 16:9.
+- **Formato**: las ilustraciones van en **WebP** (`hd/interiores/interior.<lugar>.webp`, `hd/ciudades/ciudad.<id>.webp`),
+  unas 10 veces más livianas que en PNG. No se bajan al arrancar: cada una se baja al entrar a su lugar.
+  Las calibraciones están en `src/game/render/illustratedPlaces.ts` (la herrería, en `illustrated.ts`).
+- Si ChatGPT deja un fondo liso (blanco o el violeta del plano) en las esquinas, se vuelve transparente.

@@ -3,7 +3,7 @@ import type { GameStore } from '../../bridge/GameStore';
 import { currentCity } from '../../core/state';
 import { slotName } from '../../core/time';
 import type { City, CityLocation } from '../../core/types';
-import { artScale, facing, installWalkBob, isRealArt } from '../render/assets';
+import { artScale, facing, installWalkBob, isRealArt, queueLazyArt, smoothArt } from '../render/assets';
 import { AMBIENT_VARIANTS } from '../render/placeholders';
 import { CITY_PLACES } from '../render/illustrated';
 import { drawWalledTown } from '../render/townMap';
@@ -21,6 +21,12 @@ export class CityMapScene extends Phaser.Scene {
     super('CityMap');
   }
 
+  /** La ilustración de la ciudad se baja recién al mostrarla. */
+  preload() {
+    const state = this.store.getSnapshot().state;
+    queueLazyArt(this, `ciudad.${state ? currentCity(state) : 'valdebrasa'}`);
+  }
+
   create() {
     installWalkBob(this);
     // También es el fondo de la pantalla de título, cuando todavía no hay partida.
@@ -32,7 +38,8 @@ export class CityMapScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(light.bg);
 
     // Con ilustración de la ciudad, la imagen entera reemplaza al pueblo dibujado y a los edificios sueltos.
-    const illustrated = isRealArt(`ciudad.${city.id}`);
+    const illustrated = isRealArt(`ciudad.${city.id}`) && this.textures.exists(`ciudad.${city.id}`);
+    if (illustrated) smoothArt(this, `ciudad.${city.id}`);
     if (illustrated) this.add.image(0, 0, `ciudad.${city.id}`).setOrigin(0, 0).setDisplaySize(MAP_W, MAP_H).setDepth(-100);
     const plaza = this.drawTown(city, !illustrated);
     const doors: { x: number; y: number }[] = [];
@@ -99,7 +106,7 @@ export class CityMapScene extends Phaser.Scene {
   /** Un lugar de la ciudad: su edificio, su nombre y la zona tocable. Sobre una ilustración (at), solo nombre y zona. */
   private drawBuilding(loc: CityLocation, at?: { x: number; y: number }): { x: number; y: number } {
     const { w, h, roof } = loc.map;
-    const illustrated = !!at || isRealArt(`ciudad.${this.cityId}`);
+    const illustrated = !!at || (isRealArt(`ciudad.${this.cityId}`) && this.textures.exists(`ciudad.${this.cityId}`));
     const { x, y } = at ?? loc.map;
     const roofColor = parseInt(roof.slice(1), 16);
     const wall = loc.available ? 0xf0e0c0 : 0xb8b0a0;

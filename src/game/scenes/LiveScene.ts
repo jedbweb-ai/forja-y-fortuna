@@ -6,7 +6,7 @@ import { slotName } from '../../core/time';
 import type { HotspotDef, LiveSceneDef, LocationKind, TimeSlot } from '../../core/types';
 import { ILLUSTRATED, ILLUSTRATION, projectOnFloor, type IllustratedInterior } from '../render/illustrated';
 import { isoBounds, isoDepth, isoToScreen, TILE_H } from '../render/iso';
-import { artScale, facing, installWalkBob, isRealArt } from '../render/assets';
+import { artScale, facing, installWalkBob, isRealArt, queueLazyArt, smoothArt } from '../render/assets';
 import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../render/placeholders';
 import { drawInteriorWalls, drawWindowLight, isIndoor, WALL_H } from '../render/interior';
 import { SLOT_LIGHT } from './lighting';
@@ -45,8 +45,13 @@ export class LiveScene extends Phaser.Scene {
     return this.def.rows + lane;
   }
 
+  /** Puertas del lugar (una ilustración puede tenerlas en otro lado). */
+  private get doors(): Tile[] {
+    return this.ill?.doors ? this.ill.doors.map(([x, y]) => ({ x, y })) : this.def.doors;
+  }
+
   private isDoor(t: Tile) {
-    return this.def.doors.some((d) => d.x === t.x && d.y === t.y);
+    return this.doors.some((d) => d.x === t.x && d.y === t.y);
   }
 
   /** Orden de dibujo: en una ilustración, por la altura en pantalla; si no, por la diagonal isométrica. */
@@ -93,6 +98,12 @@ export class LiveScene extends Phaser.Scene {
     this.customer = undefined;
   }
 
+  /** La ilustración del lugar se baja recién al entrar. */
+  preload() {
+    const ill = ILLUSTRATED[this.locId];
+    if (ill) queueLazyArt(this, ill.image);
+  }
+
   create() {
     installWalkBob(this);
     const loc = cityLocation(this.store.content, this.locId);
@@ -103,7 +114,8 @@ export class LiveScene extends Phaser.Scene {
     this.cols = this.def.cols;
     this.rows = this.def.rows + this.streetW;
     const ill = ILLUSTRATED[this.locId];
-    this.ill = ill && isRealArt(ill.image) ? ill : null;
+    this.ill = ill && isRealArt(ill.image) && this.textures.exists(ill.image) ? ill : null;
+    if (this.ill) smoothArt(this, this.ill.image);
     this.k = this.ill?.charScale ?? 1;
     const state = this.store.state;
     const slot = slotName(state);
@@ -391,8 +403,8 @@ export class LiveScene extends Phaser.Scene {
       if (steps?.length) return this.walk(s, steps, () => this.nextAction(s));
     } else if (r < 0.88) {
       if (this.chat(s)) return this.later(s, () => this.nextAction(s));
-    } else if (this.def.doors.length) {
-      const door = Phaser.Utils.Array.GetRandom(this.def.doors);
+    } else if (this.doors.length) {
+      const door = Phaser.Utils.Array.GetRandom(this.doors);
       const steps = this.path(tile, door);
       if (steps?.length) {
         // Con calle: sale por la puerta, se va caminando por la calle y al rato vuelve a entrar.
@@ -403,7 +415,7 @@ export class LiveScene extends Phaser.Scene {
             targets: s, alpha: 0, duration: 300, onComplete: () => {
               this.time.delayedCall(Phaser.Math.Between(1500, 5000), () => {
                 if (!s.active) return;
-                const back = Phaser.Utils.Array.GetRandom(this.def.doors);
+                const back = Phaser.Utils.Array.GetRandom(this.doors);
                 const pos = this.at(back.x, back.y);
                 s.setPosition(pos.x, pos.y + 6).setData('tile', back).setDepth(this.depth(back.x, back.y, 7));
                 this.tweens.add({ targets: s, alpha: 1, duration: 300, onComplete: () => this.nextAction(s) });
@@ -504,7 +516,7 @@ export class LiveScene extends Phaser.Scene {
     this.exitStreet(s, () => this.time.delayedCall(Phaser.Math.Between(3000, 9000), () => {
       if (!s.active) return;
       this.enterStreet(s, () => {
-        const door = Phaser.Utils.Array.GetRandom(this.def.doors);
+        const door = Phaser.Utils.Array.GetRandom(this.doors);
         const steps = this.path(s.getData('tile'), door) ?? [];
         this.walk(s, steps, () => this.nextAction(s));
       });
@@ -611,7 +623,7 @@ export class LiveScene extends Phaser.Scene {
     const counter = this.def.hotspots.find((h) => h.action === 'shop')!;
     const c = this.ill?.spots?.customer;
     const spot = c ? { x: c[0], y: c[1] } : { x: counter.x, y: counter.y + 1 };
-    const door = this.def.doors[0];
+    const door = this.doors[0];
     const tex = `char.amb.${(shop!.index * 7 + current.name.length) % AMBIENT_VARIANTS}`;
     // En el mostrador queda mirando hacia él (hacia -y en la grilla).
     const atCounter = facing(tex, 1, -1);

@@ -7,8 +7,8 @@ import { LEVEL_H, TILE_H, TILE_W } from './iso';
 // colores de ChatGPT y bordes suaves; tiene prioridad sobre el de pixel art. Los originales no se cargan.
 // Ver docs/GUIA_DE_ARTE.md (medidas, escala 2x y nombres).
 
-const FILES = import.meta.glob(['/src/assets/arte/**/*.png', '!/src/assets/arte/originales/**'], { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
-const FOUND = Object.entries(FILES).map(([path, url]) => ({ key: path.split('/').pop()!.replace(/\.png$/, ''), url, hd: path.includes('/arte/hd/') }));
+const FILES = import.meta.glob(['/src/assets/arte/**/*.png', '/src/assets/arte/**/*.webp', '!/src/assets/arte/originales/**'], { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const FOUND = Object.entries(FILES).map(([path, url]) => ({ key: path.split('/').pop()!.replace(/\.(png|webp)$/, ''), url, hd: path.includes('/arte/hd/') }));
 
 /** Clave → URL de cada imagen de arte que existe (la de alta calidad, si la hay). */
 export const ART: Record<string, string> = Object.fromEntries([...FOUND.filter((f) => !f.hd), ...FOUND.filter((f) => f.hd)].map((f) => [f.key, f.url]));
@@ -23,7 +23,13 @@ const hdFactor = (key: string) => (key === 'world.mapa' || key.startsWith('inter
  * Los placeholders de escenario, terreno y mapa están dibujados en píxeles de pantalla; el arte se dibuja a la mitad
  * (escala 2x), así que al cargarlo se agranda al doble. Personajes y monstruos se agrandan en la escena.
  */
-const UPSCALED = ['prop.', 'deco.', 'build.', 'world.', 'fx.', 'cart', 'interior.', 'ciudad.'];
+const UPSCALED = ['prop.', 'deco.', 'build.', 'world.', 'fx.', 'cart'];
+/**
+ * Ilustraciones grandes (interiores y ciudades, 1280×720, en WebP): no se bajan al arrancar, sino cuando se entra al
+ * lugar (queueLazyArt en el preload de la escena), y se muestran suavizadas a su tamaño.
+ */
+const LAZY = ['interior.', 'ciudad.'];
+const isLazy = (key: string) => LAZY.some((p) => key.startsWith(p));
 const isUpscaled = (key: string) => UPSCALED.some((p) => key.startsWith(p));
 const SRC = '@src';
 
@@ -124,7 +130,17 @@ export function ensureWalkAnims(scene: Phaser.Scene) {
 
 /** En el preload de BootScene: pide todas las imágenes. */
 export function loadArt(scene: Phaser.Scene) {
-  for (const [key, url] of Object.entries(ART)) scene.load.image(isUpscaled(key) || key.startsWith('tex.') ? key + SRC : key, url);
+  for (const [key, url] of Object.entries(ART)) if (!isLazy(key)) scene.load.image(isUpscaled(key) || key.startsWith('tex.') ? key + SRC : key, url);
+}
+
+/** En el preload de una escena: pide una ilustración grande si todavía no se bajó. */
+export function queueLazyArt(scene: Phaser.Scene, key: string) {
+  if (ART[key] && !scene.textures.exists(key)) scene.load.image(key, ART[key]);
+}
+
+/** Ya bajada: se muestra suavizada (no es pixel art). */
+export function smoothArt(scene: Phaser.Scene, key: string) {
+  if (scene.textures.exists(key)) scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
 }
 
 /** Agranda al doble sin suavizar (para que siga siendo pixel art). */
@@ -256,6 +272,10 @@ export function prepareArt(scene: Phaser.Scene) {
   }
   for (const key of Object.keys(ART)) {
     if (key.startsWith('tex.')) continue;
+    if (isLazy(key)) {
+      real.add(key);
+      continue;
+    }
     if (isUpscaled(key)) upscale(scene, key);
     else if (HD.has(key)) scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
     real.add(key);

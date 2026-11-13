@@ -10,6 +10,8 @@
 //   frente, "detrás del mostrador" es arriba del mueble y no al costado).
 // Quién se dibuja delante se decide por la altura en pantalla: sirve para ilustraciones isométricas y de frente.
 
+import { ILLUSTRATED_PLACES } from './illustratedPlaces';
+
 type Pt = { x: number; y: number };
 
 export interface IllustratedInterior {
@@ -22,6 +24,8 @@ export interface IllustratedInterior {
   floor: [Pt, Pt, Pt, Pt];
   charScale: number;
   blocked: [number, number][];
+  /** Por dónde se entra desde la calle, si no coincide con la puerta del lugar (la imagen la dibujó en otro lado). */
+  doors?: [number, number][];
   labels?: Record<string, Pt>;
   spots?: { spawn?: [number, number]; npc?: Record<string, [number, number]>; customer?: [number, number]; staff?: Partial<Record<'vendedor' | 'encargado' | 'aprendiz', [number, number][]>> };
 }
@@ -31,6 +35,7 @@ export const ILLUSTRATION = { w: 1280, h: 720 };
 
 /** Interiores que tienen ilustración (se usan solo si la imagen existe; si no, el lugar se arma como siempre). */
 export const ILLUSTRATED: Record<string, IllustratedInterior> = {
+  ...ILLUSTRATED_PLACES,
   // La herrería en isométrica: columnas a lo largo de la pared derecha, filas a lo largo de la izquierda; las filas 9 a 11
   // son la calle de afuera (la 9 es la vereda, donde están los postes de la entrada y un barril).
   herreria: {
@@ -86,4 +91,11 @@ export function projectOnFloor(def: IllustratedInterior, cols: number, rows: num
  * zonas tocables de cada lugar. Por defecto van donde dice el mapa del lugar (map.x, map.y, como en el plano que se
  * adjunta al pedido); si en la ilustración un edificio quedó corrido, acá se marca dónde está (el centro del edificio).
  */
-export const CITY_PLACES: Record<string, Record<string, Pt>> = {};
+export const CITY_PLACES: Record<string, Record<string, Pt>> = {
+  // Valdebrasa: la ilustración respetó el plano; algunos edificios quedaron un poco corridos.
+  valdebrasa: {
+    herreria: { x: 300, y: 401 }, mercado: { x: 635, y: 327 }, taberna: { x: 915, y: 446 }, alquimista: { x: 450, y: 204 },
+    curtidor: { x: 145, y: 266 }, maderero: { x: 145, y: 588 }, joyero: { x: 815, y: 171 }, libreria: { x: 1020, y: 224 },
+    gremio: { x: 1125, y: 405 }, tablon: { x: 640, y: 511 }, subastas: { x: 640, y: 127 }, esclavos: { x: 1100, y: 573 },
+  },
+};
