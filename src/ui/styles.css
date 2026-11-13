@@ -381,6 +381,14 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .turn-chip.party { background: rgba(111, 207, 106, 0.18); }
 .turn-chip.enemy { background: rgba(255, 107, 90, 0.18); }
 .turn-chip.now { border-color: var(--accent-2); font-weight: 800; box-shadow: 0 0 0 2px rgba(255, 195, 90, 0.3); }
+/* Giro y encuadre de la arena: columna chica a la derecha, debajo del orden de turnos. */
+.camera-tools {
+  position: absolute; top: 48px; right: calc(10px + var(--safe-r)); display: flex; flex-direction: column; gap: 6px;
+}
+.cam-btn {
+  width: 44px; height: 44px; padding: 0; font-size: 1.35rem; line-height: 1; display: grid; place-items: center;
+  background: rgba(20, 12, 20, 0.75); border-radius: 12px;
+}
 .combat-bar {
   position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
   padding: 8px calc(10px + var(--safe-r)) 10px calc(10px + var(--safe-l));

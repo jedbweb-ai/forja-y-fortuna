@@ -11,6 +11,7 @@ export const SHORTCUTS: { keys: string; text: string }[] = [
   { keys: 'X · M', text: 'Mapa del mundo y mapa de la ciudad' },
   { keys: 'B · V', text: 'Bolsa y volver (de expedición)' },
   { keys: 'M · 1-9 · T', text: 'En combate: mover, acciones y terminar turno' },
+  { keys: 'Q · E · R', text: 'En combate: girar la arena y verla entera (arrastrar mueve la vista; rueda o dos dedos acercan)' },
   { keys: '1-9 · Enter', text: 'Elegir respuesta y continuar en diálogos' },
   { keys: 'Enter · Esc', text: 'Confirmar y cerrar o cancelar' },
 ];

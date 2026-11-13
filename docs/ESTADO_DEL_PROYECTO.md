@@ -38,7 +38,11 @@ Resumen para retomar en un chat nuevo. El diseño completo está en `docs/GAME_D
 
 - Ilustraciones de los dos talleres de las sucursales: los pedidos, con su plano, ya están en la herramienta. Cuando lleguen, se calibran como los demás interiores (`src/game/render/illustratedPlaces.ts`).
 - **Darles más vida a los lugares ilustrados.** El estilo está bien, pero falta lo que hace que se sientan naturales: árboles, plantas y faroles afuera de cada tienda, gente y cosas en la calle (bancos, macetas, carros, perros) y bordes que no terminen en vacío. Se puede resolver pidiendo nuevas versiones de las ilustraciones (sumando eso al pedido de interiores en `src/tools/assetList.ts`) o agregando adornos por código sobre la imagen.
-- **Próximo tema que propone el usuario: rehacer cómo funcionan las expediciones y las batallas.** Abajo está cómo funcionan hoy.
+- **En curso: rehacer cómo funcionan las expediciones y las batallas.** Abajo está cómo funcionan hoy. Plan aprobado en 4 etapas:
+  1. **Cámara giratoria en combate (hecha).** La arena gira de a 90° con transición (⟲ ⟳ o Q/E), se arrastra, se acerca con dos dedos o la rueda, ⤢/R alterna entre la arena entera y la vista cercana, y lo que tapa a una figura se vuelve transparente. Todo pasa por `IsoView` (`src/game/render/view.ts`); la interfaz le habla a la escena por `src/bridge/combatView.ts`.
+  2. **Arenas nuevas:** unas 16×16 casillas, alturas de hasta 6, rampas, muros, puentes, cobertura, línea de visión y enemigos por varios lados. Se rehacen las 24 arenas y se rebalancea.
+  3. **Expediciones, dos formatos a prueba en Linde de Brezal:** A, mapa de rutas con paradas; B, exploración libre mejorada (caminar solo hasta donde se toca, mapa más lleno, recolectar en una acción). El usuario elige uno y se extiende a todas las regiones.
+  4. **Arte nuevo** para lo anterior, pedido desde `herramientas/arte.html`.
 
 ## Expediciones y combate hoy
 

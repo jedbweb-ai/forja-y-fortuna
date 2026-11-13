@@ -8,10 +8,33 @@ import type { Affinity } from '../../core/types';
 import { slotName } from '../../core/time';
 import { sfx, type SfxId } from '../../audio/sfx';
 import type { GameEvent } from '../../core/types';
-import { artScale, DIR_SCREEN, facing, installWalkBob, monsterLook } from '../render/assets';
-import { isoBounds, screenToIso } from '../render/iso';
-import { drawGround, standDepth, tilePos } from '../render/terrain';
+import { combatView, type CameraRequest } from '../../bridge/combatView';
+import { artScale, facing, installWalkBob, monsterLook } from '../render/assets';
+import { LEVEL_H, TILE_H, TILE_W } from '../render/iso';
+import { drawGround, type GroundPiece } from '../render/terrain';
+import { IsoView } from '../render/view';
 import { SLOT_LIGHT } from './lighting';
+
+/** Algo fijo sobre una casilla (pasto, obstáculo, llama): se reubica al girar la vista. */
+interface Prop {
+  obj: Phaser.GameObjects.Image;
+  x: number;
+  y: number;
+  /** Corrimiento vertical en píxeles desde el centro de la casilla. */
+  oy: number;
+  bias: number;
+  /** Si tapa a una figura, se vuelve transparente. */
+  occludes?: boolean;
+}
+
+/** Vector de la grilla de cada orientación del combate (+x, +y, -x, -y). */
+const DIR_GRID: Record<0 | 1 | 2 | 3, [number, number]> = { 0: [1, 0], 1: [0, 1], 2: [-1, 0], 3: [0, -1] };
+const ROTATE_MS = 420;
+const MAX_ZOOM = 3;
+/** Zoom cómodo para jugar en el celular: cada casilla mide unos 80 píxeles de ancho. */
+const CLOSE_ZOOM = 80 / TILE_W;
+/** Opacidad de lo que tapa a una figura. */
+const SEE_THROUGH = 0.35;
 
 interface UnitView {
   box: Phaser.GameObjects.Container;
@@ -54,8 +77,18 @@ export class CombatScene extends Phaser.Scene {
   private units = new Map<string, UnitView>();
   private highlight!: Phaser.GameObjects.Graphics;
   private terrainLayer!: Phaser.GameObjects.Graphics;
-  private flames = new Map<string, Phaser.GameObjects.Image>();
+  private flames = new Map<string, Prop>();
   private grass = new Map<string, Phaser.GameObjects.Image>();
+  private view!: IsoView;
+  private ground: GroundPiece[] = [];
+  private props = new Set<Prop>();
+  private rotating = false;
+  /** Zoom que encuadra la arena entera; el mínimo se calcula a partir de él. */
+  private fitZoom = 1;
+  private drag = { down: false, dragging: false, x: 0, y: 0 };
+  private pinch: { dist: number; zoom: number } | null = null;
+  /** Unidad a la que se llevó la cámara por última vez (para seguir el turno). */
+  private followed: string | null = null;
   /** Flecha del turno: el contenedor sigue a la unidad y la flecha rebota adentro. */
   private marker!: Phaser.GameObjects.Container;
   private markerArrow!: Phaser.GameObjects.Image;
@@ -79,13 +112,19 @@ export class CombatScene extends Phaser.Scene {
     this.units.clear();
     this.flames.clear();
     this.grass.clear();
+    this.props.clear();
     this.queue = [];
     this.animating = false;
+    this.rotating = false;
+    this.followed = null;
+    this.pinch = null;
     const a = this.arena;
     const { cols, rows } = arenaSize(a);
+    this.view = new IsoView(cols, rows);
+    this.view.angle = combatView.quarter * (Math.PI / 2);
     this.cameras.main.setBackgroundColor(0x141018);
 
-    drawGround(this, {
+    this.ground = drawGround(this, {
       cols, rows,
       height: (x, y) => heightAt(a, x, y),
       tile: (x, y) => (terrainAt(a, x, y) === 'w' ? 'tile.water' : terrainAt(a, x, y) === 'l' ? 'tile.lava' : FLOOR[a.look ?? a.biome]),
@@ -94,14 +133,18 @@ export class CombatScene extends Phaser.Scene {
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
         const t = terrainAt(a, x, y);
-        const p = tilePos(x, y, heightAt(a, x, y));
         if (t === ',') {
           // Bajo tierra, la cobertura son escombros en vez de pasto.
-          const img = this.add.image(p.x, p.y + 6, 'deco.tallgrass').setOrigin(0.5, 1).setDepth(standDepth(x, y, 3));
+          const img = this.add.image(0, 0, 'deco.tallgrass').setOrigin(0.5, 1);
           if (['cripta', 'cueva', 'jefe'].includes(a.look ?? a.biome)) img.setTint(0x8a8494);
           this.grass.set(`${x},${y}`, img);
+          this.props.add({ obj: img, x, y, oy: 6, bias: 3 });
         }
-        if (t === '#') this.add.image(p.x, p.y + 12, OBSTACLE[a.look ?? a.biome]).setOrigin(0.5, 1).setScale(artScale(OBSTACLE[a.look ?? a.biome], a.biome === 'bosque' ? 0.75 : 1)).setDepth(standDepth(x, y, 5));
+        if (t === '#') {
+          const key = OBSTACLE[a.look ?? a.biome];
+          const img = this.add.image(0, 0, key).setOrigin(0.5, 1).setScale(artScale(key, a.biome === 'bosque' ? 0.75 : 1));
+          this.props.add({ obj: img, x, y, oy: 12, bias: 5, occludes: true });
+        }
       }
     }
 
@@ -111,54 +154,288 @@ export class CombatScene extends Phaser.Scene {
     this.marker = this.add.container(0, 0, [this.markerArrow]).setDepth(9500);
     this.tweens.add({ targets: this.markerArrow, y: -6, yoyo: true, repeat: -1, duration: 400 });
 
+    // Luz de la franja del día: un velo que cubre la arena en cualquier giro.
     const s = this.store.state;
     const light = SLOT_LIGHT[slotName(s)];
-    const b = isoBounds(cols, rows);
-    this.add.rectangle((b.left + b.right) / 2, (b.top + b.bottom) / 2, b.width * 3, b.height * 4, light.color, light.alpha * 0.7).setDepth(9000);
+    const reach = (cols + rows) * TILE_W;
+    this.add.rectangle(0, 0, reach * 4, reach * 4, light.color, light.alpha * 0.7).setDepth(9000);
 
     for (const u of cs.units) this.makeUnit(u);
-    this.syncAll();
+    this.layout();
+    this.setupCamera();
     this.fit();
-    this.scale.on('resize', this.fit, this);
+    this.closeUp(currentUnit(cs));
+    // La primera vista muestra la arena entera: no se corre hacia quien empieza.
+    this.followed = currentUnit(cs)?.id ?? null;
+    this.syncAll();
+    this.scale.on('resize', this.refit, this);
+    this.setupInput();
 
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
-      if (this.animating) return;
-      const tile = screenToIso(p.worldX, p.worldY, (x, y) => (x >= 0 && y >= 0 && x < cols && y < rows ? heightAt(a, x, y) : null), 3);
-      if (tile) combatTap(this.store, tile.x, tile.y);
-    });
-
+    this.unsubs.push(combatView.listen((r) => this.onCameraRequest(r)));
     this.unsubs.push(this.store.subscribe(() => {
       // Se espera un cuadro: si llega un evento con animaciones, la sincronización la hace la cola.
-      this.time.delayedCall(0, () => { if (!this.animating && this.sys.isActive() && this.cs) this.syncAll(); });
+      this.time.delayedCall(0, () => { if (!this.animating && !this.rotating && this.sys.isActive() && this.cs) this.syncAll(); });
     }));
     this.unsubs.push(this.store.onEvent((ev: GameEvent) => {
       if (ev.type === 'combatFx' && ev.fx.length) {
         this.queue.push(...ev.fx);
-        if (!this.animating) this.runQueue();
+        if (!this.animating && !this.rotating) this.runQueue();
       }
     }));
     this.events.once('shutdown', () => {
-      this.scale.off('resize', this.fit, this);
+      this.scale.off('resize', this.refit, this);
       this.unsubs.forEach((u) => u());
       this.unsubs = [];
     });
   }
 
+  update() {
+    if (this.sys.isActive() && this.view) this.seeThrough();
+  }
+
+  // ── Vista: giro, cámara y transparencias ──
+
+  /** Ubica todo lo fijo de la arena según el ángulo de la vista (suelo, pasto, obstáculos, llamas). */
+  private layout() {
+    const v = this.view;
+    // A mitad de un giro las baldosas (que no cambian de forma) dejan huecos: se agrandan lo justo para taparlos.
+    const off = v.angle % (Math.PI / 2);
+    const k = Math.abs(Math.cos(off)) + Math.abs(Math.sin(off));
+    for (const g of this.ground) {
+      if (g.lvl === undefined) {
+        const p = v.pos(g.c, g.r, g.h);
+        g.img.setPosition(p.x, p.y).setDepth(-10000 + v.depth(g.c, g.r)).setScale(k);
+      } else {
+        const p = v.pos(g.c, g.r, g.lvl + 1);
+        g.img.setOrigin(0.5, 0).setPosition(p.x, p.y).setDepth(-10000 + v.depth(g.c, g.r) - 1).setScale(k, 1);
+      }
+    }
+    for (const pr of this.props) {
+      const p = v.pos(pr.x, pr.y, heightAt(this.arena, pr.x, pr.y));
+      pr.obj.setPosition(p.x, p.y + pr.oy).setDepth(v.depth(pr.x, pr.y, pr.bias));
+    }
+  }
+
+  /** Lleva figuras y flecha del turno a su lugar en la vista actual (sin animar). */
+  private placeUnits() {
+    const cs = this.cs;
+    if (!cs) return;
+    for (const u of cs.units) {
+      const v = this.units.get(u.id);
+      if (!v) continue;
+      const p = this.unitPos(u);
+      v.box.setPosition(p.x, p.y).setDepth(this.view.depth(u.x, u.y, 8));
+      this.face(v, u, ...this.view.dirScreen(...DIR_GRID[u.facing]));
+    }
+    const cur = !cs.outcome ? currentUnit(cs) : undefined;
+    const cv = cur && this.units.get(cur.id);
+    if (cur && cv) {
+      const p = this.unitPos(cur);
+      this.marker.setPosition(p.x, p.y - cv.sprite.displayHeight - 30);
+    }
+  }
+
+  private onCameraRequest(r: CameraRequest) {
+    if (r.kind === 'fit') return this.toggleOverview();
+    this.rotate(r.dir);
+  }
+
+  /** Gira la arena un cuarto de vuelta (1 = horario), manteniendo en el centro lo que se estaba mirando. */
+  private rotate(dir: 1 | -1) {
+    if (this.rotating || !this.sys.isActive()) return;
+    this.rotating = true;
+    const cam = this.cameras.main;
+    const focus = this.unproject(cam.midPoint.x, cam.midPoint.y);
+    const from = this.view.angle;
+    const to = (Math.round(from / (Math.PI / 2)) + dir) * (Math.PI / 2);
+    this.highlight.clear();
+    this.terrainLayer.clear();
+    const t = { a: from };
+    this.tweens.add({
+      targets: t, a: to, duration: ROTATE_MS, ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        this.view.angle = t.a;
+        this.layout();
+        this.placeUnits();
+        const f = this.view.pos(focus.x, focus.y);
+        cam.centerOn(f.x, f.y);
+      },
+      onComplete: () => {
+        // Se normaliza el ángulo para que no crezca sin fin.
+        const q = ((Math.round(to / (Math.PI / 2)) % 4) + 4) % 4;
+        this.view.angle = q * (Math.PI / 2);
+        combatView.quarter = q;
+        this.layout();
+        this.rotating = false;
+        this.syncAll();
+        if (this.queue.length && !this.animating) this.runQueue();
+      },
+    });
+  }
+
+  /** Punto de la grilla (fraccionario, a altura 0) bajo un punto del mundo. */
+  private unproject(wx: number, wy: number) {
+    const dx = (wx / (TILE_W / 2) + wy / (TILE_H / 2)) / 2;
+    const dy = (wy / (TILE_H / 2) - wx / (TILE_W / 2)) / 2;
+    const cos = Math.cos(-this.view.angle);
+    const sin = Math.sin(-this.view.angle);
+    const { cols, rows } = this.view;
+    return { x: dx * cos - dy * sin + (cols - 1) / 2, y: dx * sin + dy * cos + (rows - 1) / 2 };
+  }
+
+  /** Límites de la cámara: un cuadrado que contiene la arena en cualquier giro, con margen para alturas. */
+  private setupCamera() {
+    const { cols, rows } = this.view;
+    const half = Math.hypot(cols, rows) / 2 + 1;
+    const w = half * TILE_W * 1.05;
+    const top = half * TILE_H + 8 * LEVEL_H + 120;
+    const bottom = half * TILE_H + 140;
+    this.cameras.main.setBounds(-w, -top, w * 2, top + bottom);
+  }
+
+  private maxHeight() {
+    return Math.max(0, ...this.arena.heights.flatMap((r) => [...r].map(Number)));
+  }
+
+  /** Encuadra la arena entera, dejando lugar para el orden de turnos arriba y las acciones abajo. */
   private fit() {
-    const { cols, rows } = arenaSize(this.arena);
-    const b = isoBounds(cols, rows);
+    const b = this.view.bounds();
     const { width, height } = this.scale.gameSize;
-    const top = b.top - 50;
-    // Se deja lugar arriba para el orden de turnos y abajo para las acciones.
-    const zoom = Phaser.Math.Clamp(Math.min(width / (b.width + 20), (height - 130) / (b.bottom - top)), 0.5, 2.4);
-    this.cameras.main.setZoom(zoom);
-    this.cameras.main.centerOn((b.left + b.right) / 2, (top + b.bottom) / 2 + 30 / zoom);
+    const top = b.top - this.maxHeight() * LEVEL_H - 40;
+    const zoom = Phaser.Math.Clamp(Math.min(width / (b.width + 10), (height - 96) / (b.bottom - top)), 0.4, MAX_ZOOM);
+    this.fitZoom = zoom;
+    const cam = this.cameras.main;
+    cam.setZoom(zoom);
+    cam.centerOn((b.left + b.right) / 2, (top + b.bottom) / 2 + 20 / zoom);
+  }
+
+  /**
+   * Si la arena entera se ve chica (en el celular), se acerca a un zoom cómodo, centrado entre la figura que
+   * juega y el medio de la arena. Con pantallas grandes se queda el encuadre completo.
+   */
+  private closeUp(u?: CombatUnit) {
+    if (this.fitZoom >= CLOSE_ZOOM) return this.fit();
+    const cam = this.cameras.main;
+    cam.setZoom(CLOSE_ZOOM);
+    const mid = this.view.pos((this.view.cols - 1) / 2, (this.view.rows - 1) / 2);
+    const at = u ? this.unitPos(u) : mid;
+    cam.centerOn((at.x + mid.x) / 2, (at.y + mid.y) / 2 - 20);
+  }
+
+  /** Al cambiar el tamaño de la pantalla se recalcula el encuadre. */
+  private refit() {
+    const cs = this.cs;
+    this.fit();
+    this.closeUp(cs && !cs.outcome ? currentUnit(cs) : undefined);
+  }
+
+  /** Botón de encuadre: alterna entre la arena entera y la vista cercana sobre quien juega. */
+  private toggleOverview() {
+    const cs = this.cs;
+    const cam = this.cameras.main;
+    if (Math.abs(cam.zoom - this.fitZoom) < 0.01 && cs) this.closeUp(!cs.outcome ? currentUnit(cs) : undefined);
+    else this.fit();
+  }
+
+  /** Zoom alrededor de un punto de la pantalla (para que lo que está bajo el dedo quede quieto). */
+  private zoomAt(zoom: number, sx: number, sy: number) {
+    const cam = this.cameras.main;
+    const z = Phaser.Math.Clamp(zoom, this.fitZoom * 0.8, MAX_ZOOM);
+    const before = cam.getWorldPoint(sx, sy);
+    cam.setZoom(z);
+    cam.preRender();
+    const after = cam.getWorldPoint(sx, sy);
+    cam.scrollX += before.x - after.x;
+    cam.scrollY += before.y - after.y;
+  }
+
+  /** Tocar elige casilla; arrastrar mueve la vista; dos dedos o la rueda acercan. */
+  private setupInput() {
+    const a = this.arena;
+    const { cols, rows } = this.view;
+    const maxH = this.maxHeight();
+    const pointers = () => [this.input.pointer1, this.input.pointer2].filter((p) => p?.isDown);
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      const down = pointers();
+      if (down.length >= 2) {
+        this.pinch = { dist: Phaser.Math.Distance.Between(down[0].x, down[0].y, down[1].x, down[1].y), zoom: this.cameras.main.zoom };
+        this.drag.dragging = true;
+        return;
+      }
+      this.drag = { down: true, dragging: false, x: p.x, y: p.y };
+    });
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      const down = pointers();
+      if (this.pinch && down.length >= 2) {
+        const d = Phaser.Math.Distance.Between(down[0].x, down[0].y, down[1].x, down[1].y);
+        this.zoomAt(this.pinch.zoom * (d / Math.max(1, this.pinch.dist)), (down[0].x + down[1].x) / 2, (down[0].y + down[1].y) / 2);
+        return;
+      }
+      if (!this.drag.down || !p.isDown) return;
+      const dx = p.x - this.drag.x;
+      const dy = p.y - this.drag.y;
+      if (!this.drag.dragging && Math.hypot(dx, dy) > 10) this.drag.dragging = true;
+      if (this.drag.dragging) {
+        const cam = this.cameras.main;
+        cam.scrollX -= dx / cam.zoom;
+        cam.scrollY -= dy / cam.zoom;
+        this.drag.x = p.x;
+        this.drag.y = p.y;
+      }
+    });
+    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
+      if (this.pinch) {
+        // Al levantar los dos dedos termina el pellizco; no cuenta como toque.
+        if (!pointers().length) this.pinch = null;
+        this.drag.down = false;
+        return;
+      }
+      const wasDrag = this.drag.dragging;
+      this.drag.down = false;
+      this.drag.dragging = false;
+      if (wasDrag || this.animating || this.rotating) return;
+      const tile = this.view.pick(p.worldX, p.worldY, (x, y) => (x >= 0 && y >= 0 && x < cols && y < rows ? heightAt(a, x, y) : null), maxH);
+      if (tile) combatTap(this.store, tile.x, tile.y);
+    });
+    this.input.on('wheel', (p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => {
+      this.zoomAt(this.cameras.main.zoom * (dy > 0 ? 0.9 : 1.1), p.x, p.y);
+    });
+  }
+
+  /** Al empezar un turno, si la figura queda fuera del centro de la pantalla, la cámara va hacia ella. */
+  private follow(u: CombatUnit) {
+    if (this.followed === u.id) return;
+    this.followed = u.id;
+    const v = this.units.get(u.id);
+    if (!v) return;
+    const cam = this.cameras.main;
+    const view = cam.worldView;
+    const x = v.box.x;
+    const y = v.box.y - v.sprite.displayHeight / 2;
+    // Abajo se deja más margen porque ahí está la barra de acciones.
+    const inside = x > view.x + view.width * 0.12 && x < view.right - view.width * 0.12 && y > view.y + view.height * 0.15 && y < view.bottom - view.height * 0.28;
+    if (!inside) cam.pan(x, y, 350, 'Sine.easeInOut');
+  }
+
+  /** Lo que queda adelante de una figura y la tapa (obstáculos u otras figuras) se vuelve transparente. */
+  private seeThrough() {
+    const cs = this.cs;
+    if (!cs) return;
+    const figures = cs.units.filter((u) => u.alive).map((u) => ({ u, v: this.units.get(u.id) })).filter((f) => f.v && f.v.box.visible);
+    const boxes = figures.map((f) => ({ depth: f.v!.box.depth, rect: f.v!.sprite.getBounds() }));
+    const covers = (depth: number, rect: Phaser.Geom.Rectangle) =>
+      boxes.some((b) => b.depth < depth && Phaser.Geom.Rectangle.Overlaps(rect, Phaser.Geom.Rectangle.Inflate(Phaser.Geom.Rectangle.Clone(b.rect), -6, -6)));
+    for (const pr of this.props) {
+      if (!pr.occludes) continue;
+      pr.obj.setAlpha(covers(pr.obj.depth, pr.obj.getBounds()) ? SEE_THROUGH : 1);
+    }
+    for (const f of figures) f.v!.sprite.setAlpha(covers(f.v!.box.depth, f.v!.sprite.getBounds()) ? 0.55 : 1);
   }
 
   // ── Unidades ──
 
   private unitPos(u: { x: number; y: number }) {
-    const p = tilePos(u.x, u.y, heightAt(this.arena, u.x, u.y));
+    const p = this.view.pos(u.x, u.y, heightAt(this.arena, u.x, u.y));
     return { x: p.x, y: p.y + 6 };
   }
 
@@ -206,8 +483,8 @@ export class CombatScene extends Phaser.Scene {
       this.makeUnit(u);
       const v = this.units.get(u.id)!;
       const p = this.unitPos(u);
-      v.box.setPosition(p.x, p.y).setDepth(standDepth(u.x, u.y, 8)).setVisible(u.alive).setAlpha(1);
-      this.face(v, u, ...DIR_SCREEN[u.facing]);
+      v.box.setPosition(p.x, p.y).setDepth(this.view.depth(u.x, u.y, 8)).setVisible(u.alive).setAlpha(1);
+      this.face(v, u, ...this.view.dirScreen(...DIR_GRID[u.facing]));
       this.drawHp(v, u);
     }
     const cur = !cs.outcome ? currentUnit(cs) : undefined;
@@ -216,6 +493,7 @@ export class CombatScene extends Phaser.Scene {
       const v = this.units.get(cur.id)!;
       this.marker.setVisible(true).setPosition(p.x, p.y - v.sprite.displayHeight - 30);
       this.markerArrow.setTint(cur.side === 'party' ? 0xffd04d : 0xff6b5a);
+      this.follow(cur);
     } else {
       this.marker.setVisible(false);
     }
@@ -224,7 +502,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private diamond(g: Phaser.GameObjects.Graphics, x: number, y: number, color: number, alpha: number, stroke = false) {
-    const p = tilePos(x, y, heightAt(this.arena, x, y));
+    const p = this.view.pos(x, y, heightAt(this.arena, x, y));
     const pts = [new Phaser.Math.Vector2(p.x - 30, p.y), new Phaser.Math.Vector2(p.x, p.y - 15), new Phaser.Math.Vector2(p.x + 30, p.y), new Phaser.Math.Vector2(p.x, p.y + 15)];
     if (stroke) {
       g.lineStyle(3, color, 1);
@@ -249,14 +527,17 @@ export class CombatScene extends Phaser.Scene {
       if (fx.kind !== 'llamas') continue;
       burning.add(k);
       if (this.flames.has(k)) continue;
-      const p = tilePos(x, y, heightAt(this.arena, x, y));
-      const flame = this.add.image(p.x, p.y + 4, 'fx.flame').setOrigin(0.5, 1).setScale(1.4).setDepth(standDepth(x, y, 4));
+      const p = this.view.pos(x, y, heightAt(this.arena, x, y));
+      const flame = this.add.image(p.x, p.y + 4, 'fx.flame').setOrigin(0.5, 1).setScale(1.4).setDepth(this.view.depth(x, y, 4));
       this.tweens.add({ targets: flame, scaleY: 1.7, alpha: 0.75, yoyo: true, repeat: -1, duration: 260 + ((x * 31 + y * 17) % 140) });
-      this.flames.set(k, flame);
+      const prop: Prop = { obj: flame, x, y, oy: 4, bias: 4 };
+      this.props.add(prop);
+      this.flames.set(k, prop);
     }
     for (const [k, flame] of this.flames) {
       if (burning.has(k)) continue;
-      flame.destroy();
+      flame.obj.destroy();
+      this.props.delete(flame);
       this.flames.delete(k);
     }
     for (const k of cs.burnt) this.grass.get(k)?.setTint(0x3a2a20).setAlpha(0.6);
@@ -323,7 +604,7 @@ export class CombatScene extends Phaser.Scene {
           }
           const p = this.unitPos(fx.path[i]);
           if (unit) this.face(v, unit, p.x - v.box.x, p.y - v.box.y, true);
-          v.box.setDepth(standDepth(fx.path[i].x, fx.path[i].y, 8));
+          v.box.setDepth(this.view.depth(fx.path[i].x, fx.path[i].y, 8));
           this.tweens.add({ targets: v.box, x: p.x, y: p.y, duration: 160, onComplete: () => step(i + 1) });
         };
         return step(0);
@@ -427,7 +708,7 @@ export class CombatScene extends Phaser.Scene {
         // El rayo corre por el agua de casilla en casilla.
         const g = this.add.graphics().setDepth(9650);
         g.lineStyle(3, 0xfff07a, 1);
-        const pts = fx.tiles.map((t) => tilePos(t.x, t.y, heightAt(this.arena, t.x, t.y)));
+        const pts = fx.tiles.map((t) => this.view.pos(t.x, t.y, heightAt(this.arena, t.x, t.y)));
         for (let i = 1; i < pts.length; i++) {
           const a = pts[i - 1];
           const b = pts[i];
@@ -447,7 +728,7 @@ export class CombatScene extends Phaser.Scene {
           this.makeUnit(u);
           const v = view(u.id)!;
           const p = this.unitPos(u);
-          v.box.setPosition(p.x, p.y).setDepth(standDepth(u.x, u.y, 8)).setScale(0.2);
+          v.box.setPosition(p.x, p.y).setDepth(this.view.depth(u.x, u.y, 8)).setScale(0.2);
           this.drawHp(v, u);
           this.tweens.add({ targets: v.box, scale: 1, duration: 300, ease: 'Back.out' });
         }

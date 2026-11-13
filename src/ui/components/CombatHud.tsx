@@ -1,5 +1,6 @@
 import { isHd } from '../../game/render/assets';
 import { activePartyUnit, attackPreview, effectiveMode, selectPotion, selectSkill } from '../../bridge/combatInput';
+import { combatView } from '../../bridge/combatView';
 import { ammoBonus } from '../../core/combat/damage';
 import { canUseSkill, currentUnit, fleeChance } from '../../core/combat/engine';
 import type { CombatUnit } from '../../core/combat/types';
@@ -35,6 +36,12 @@ export function CombatHud() {
         {upcoming.map((u, i) => (
           <span key={u!.id} className={`turn-chip ${u!.side} ${i === 0 ? 'now' : ''}`}>{u!.name}</span>
         ))}
+      </div>
+
+      <div className="camera-tools" aria-label="Cámara">
+        <button className="btn cam-btn" data-key="q" title="Girar a la izquierda (Q)" aria-label="Girar a la izquierda" onClick={() => combatView.request({ kind: 'rotate', dir: -1 })}>⟲</button>
+        <button className="btn cam-btn" data-key="e" title="Girar a la derecha (E)" aria-label="Girar a la derecha" onClick={() => combatView.request({ kind: 'rotate', dir: 1 })}>⟳</button>
+        <button className="btn cam-btn" data-key="r" title="Ver la arena entera (R)" aria-label="Ver la arena entera" onClick={() => combatView.request({ kind: 'fit' })}>⤢</button>
       </div>
 
       <div className="combat-bar">

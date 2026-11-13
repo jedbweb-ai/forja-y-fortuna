@@ -15,8 +15,19 @@ export function tilePos(c: number, r: number, h: number) {
   return { x: p.x, y: p.y - h * LEVEL_H };
 }
 
-/** Dibuja el suelo isométrico con alturas (tapas de casillas + caras laterales). */
-export function drawGround(scene: Phaser.Scene, g: GroundSpec) {
+/** Una imagen del suelo: la tapa de una casilla o un escalón de su pared (`lvl`). */
+export interface GroundPiece {
+  img: Phaser.GameObjects.Image;
+  c: number;
+  r: number;
+  /** Escalón de la pared (0 = el de abajo); undefined en la tapa. */
+  lvl?: number;
+  h: number;
+}
+
+/** Dibuja el suelo isométrico con alturas (tapas de casillas + caras laterales). Devuelve las piezas por si hay que moverlas. */
+export function drawGround(scene: Phaser.Scene, g: GroundSpec): GroundPiece[] {
+  const pieces: GroundPiece[] = [];
   for (let r = 0; r < g.rows; r++) {
     for (let c = 0; c < g.cols; c++) {
       const h = g.height(c, r);
@@ -31,12 +42,14 @@ export function drawGround(scene: Phaser.Scene, g: GroundSpec) {
         const img = scene.add.image(base.x - 32, base.y - (lvl + 1) * LEVEL_H, key)
           .setOrigin(0, 0).setDepth(-10000 + isoDepth(c, r) - 1);
         if (!ownSide) img.setTint(g.sideTint(c, r));
+        pieces.push({ img, c, r, lvl, h });
       }
       const top = tilePos(c, r, h);
       const variant = (c * 7 + r * 3) % 5 === 0 && scene.textures.exists(`${g.tile(c, r)}.1`) ? `${g.tile(c, r)}.1` : g.tile(c, r);
-      scene.add.image(top.x, top.y, variant).setOrigin(0.5, 16 / 34).setDepth(-10000 + isoDepth(c, r));
+      pieces.push({ img: scene.add.image(top.x, top.y, variant).setOrigin(0.5, 16 / 34).setDepth(-10000 + isoDepth(c, r)), c, r, h });
     }
   }
+  return pieces;
 }
 
 /** Depth para algo parado sobre una casilla (personajes, props). */
