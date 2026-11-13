@@ -37,6 +37,11 @@ export default defineConfig({
           urlPattern: /\.(?:mp3|ogg|m4a)$/,
           handler: 'CacheFirst',
           options: { cacheName: 'musica', rangeRequests: true, cacheableResponse: { statuses: [200] } },
+        }, {
+          // Las ilustraciones de los lugares y las ciudades tampoco: cada una se guarda la primera vez que se ve.
+          urlPattern: /\.webp$/,
+          handler: 'CacheFirst',
+          options: { cacheName: 'ilustraciones', cacheableResponse: { statuses: [200] } },
         }],
       },
     }),
