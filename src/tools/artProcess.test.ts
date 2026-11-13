@@ -150,7 +150,7 @@ describe('preparación de arte', () => {
     for (const npc of Object.keys(CONTENT.npcs)) expect(keys).toContain(`retrato.${npc}`);
     // Todo va sobre magenta, salvo los interiores, que son una escena entera.
     for (const e of list) {
-      if (e.type === 'interior') expect(promptFor(e)).not.toContain('#FF00FF');
+      if (e.type === 'interior' || e.type === 'ciudad') expect(promptFor(e)).not.toContain('#FF00FF');
       else expect(promptFor(e)).toContain('#FF00FF');
     }
   });

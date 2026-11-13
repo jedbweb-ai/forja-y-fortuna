@@ -31,7 +31,7 @@ let results: { entry: AssetEntry; img: Img; keep: boolean }[] = [];
 
 const FIT: Record<AssetType, Fit> = {
   personaje: 'figura', monstruo: 'figura', jefe: 'figura', espalda: 'figura', espalda_monstruo: 'figura', espalda_jefe: 'figura', escenario: 'figura', edificio: 'figura',
-  icono: 'centro', retrato: 'centro', textura: 'llenar', lado: 'llenar', mapa: 'llenar', marcador: 'figura', animal: 'figura', muro: 'llenar', decoracion: 'figura', interior: 'llenar',
+  icono: 'centro', retrato: 'centro', textura: 'llenar', lado: 'llenar', mapa: 'llenar', marcador: 'figura', animal: 'figura', muro: 'llenar', decoracion: 'figura', interior: 'llenar', ciudad: 'llenar',
 };
 
 // ───────────────────────── Lista ─────────────────────────
@@ -90,7 +90,7 @@ function select(e: AssetEntry) {
 function showPrompt() {
   if (!current) return;
   const refList = sheetMode ? sheetEntries() : [current];
-  const plan = current.type === 'interior' ? planFor(current.key) : undefined;
+  const plan = current.type === 'interior' || current.type === 'ciudad' ? planFor(current.key) : undefined;
   $('ref').hidden = !plan && !refList.some((e) => ART[frontKey(e.key)]);
   $('ref').textContent = plan ? '🖼️ Bajar el plano del lugar (adjuntalo con el pedido)' : isBack(current.type) ? '🖼️ Bajar la referencia de frente (adjuntala con el pedido)' : '🖼️ Bajar la referencia: cómo se ve hoy (adjuntala con el pedido)';
   if (!sheetMode) {
@@ -205,7 +205,7 @@ function bitmap(img: Img): HTMLCanvasElement {
 
 /** Alta calidad (lo normal ahora): 4 píxeles por píxel de arte, colores de ChatGPT y bordes suaves. */
 const hdOn = () => $<HTMLInputElement>('hdq').checked;
-const hdFactor = (e: AssetEntry) => (e.type === 'mapa' || e.type === 'interior' ? 2 : 4);
+const hdFactor = (e: AssetEntry) => (e.type === 'mapa' || e.type === 'interior' || e.type === 'ciudad' ? 2 : 4);
 /** ¿Ya está hecho? En alta calidad, solo cuenta lo que ya tiene su versión en alta. */
 // Las texturas del terreno el juego las usa en su medida de arte: en alta no ganan nada, alcanza con que existan.
 const done = (key: string) => (hdOn() && !key.startsWith('tex.') ? isHd(key) : !!ART[key]);
@@ -308,7 +308,7 @@ function drawScene(canvas: HTMLCanvasElement, entry: AssetEntry, img: Img) {
     for (const [c, r] of [[0, 0], [1, 0], [0, 1], [1, 1], [2, 1], [1, 2]]) diamond(W / 2 + (c - r) * 32, 24 + (c + r) * 16, at);
     return;
   }
-  if (entry.type === 'interior' || entry.type === 'lado' || entry.type === 'muro' || entry.type === 'decoracion' || entry.type === 'icono' || entry.type === 'retrato' || entry.type === 'mapa') {
+  if (entry.type === 'interior' || entry.type === 'ciudad' || entry.type === 'lado' || entry.type === 'muro' || entry.type === 'decoracion' || entry.type === 'icono' || entry.type === 'retrato' || entry.type === 'mapa') {
     // Sin casilla: la imagen sola, ampliada.
     const fitZ = Math.min((W - 8) / img.w, (H - 8) / img.h);
     const z = ps < 2 ? Math.min(1, fitZ) : Math.max(1, Math.floor(fitZ));
@@ -439,11 +439,11 @@ $('unskip').onclick = () => {
  */
 $('ref').onclick = async () => {
   if (!current) return;
-  const plan = current.type === 'interior' ? planFor(current.key) : undefined;
+  const plan = current.type === 'interior' || current.type === 'ciudad' ? planFor(current.key) : undefined;
   if (plan) {
     const a = document.createElement('a');
     a.href = plan;
-    a.download = `plano-${current.key.replace('interior.', '')}.png`;
+    a.download = `plano-${current.key.replace(/^(interior|ciudad)\./, '')}.png`;
     a.click();
     return;
   }

@@ -5,7 +5,7 @@ import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../game/render/variants';
 // Cada entrada trae su clave (nombre del archivo), carpeta, medida del dibujo y el pedido para ChatGPT.
 // Medidas y estilo: docs/GUIA_DE_ARTE.md.
 
-export type AssetType = 'personaje' | 'monstruo' | 'jefe' | 'espalda' | 'espalda_monstruo' | 'espalda_jefe' | 'icono' | 'retrato' | 'textura' | 'lado' | 'escenario' | 'edificio' | 'mapa' | 'marcador' | 'animal' | 'muro' | 'decoracion' | 'interior';
+export type AssetType = 'personaje' | 'monstruo' | 'jefe' | 'espalda' | 'espalda_monstruo' | 'espalda_jefe' | 'icono' | 'retrato' | 'textura' | 'lado' | 'escenario' | 'edificio' | 'mapa' | 'marcador' | 'animal' | 'muro' | 'decoracion' | 'interior' | 'ciudad';
 
 export interface AssetEntry {
   key: string;
@@ -52,15 +52,27 @@ const TEMPLATE: Record<AssetType, string> = {
     + 'Te adjunto un plano sacado del juego: respetá la misma vista, el mismo ángulo y dónde va cada mueble, la puerta y la calle, pero dibujalo con mucho más detalle y nitidez. '
     + 'La escena llena toda la imagen: sin fondo magenta y sin marco. Sin personas ni animales. Sin texto, letras ni números. Luz cálida de día.',
   edificio: 'Un solo edificio pequeño en vista isométrica, visto desde arriba en diagonal, centrado, con la puerta hacia el frente.',
+  ciudad: 'Una sola ilustración horizontal, apaisada (16:9): una ciudad entera vista desde el aire, desde bastante arriba y en diagonal, como el mapa de una ciudad en un RPG, con el mismo estilo detallado y pulido que los interiores del juego. '
+    + 'Te adjunto un plano sacado del juego: respetá la forma de la muralla, el río, las calles y, sobre todo, dónde está cada edificio importante, pero dibujalo todo con mucho más detalle y nitidez. '
+    + 'La ciudad llena toda la imagen: sin fondo magenta y sin marco. Luz pareja de mediodía (sin atardecer ni noche: el juego cambia la luz según la hora), sin rayos de sol ni destellos. Chimeneas sin humo (el juego lo agrega animado). '
+    + 'Sin personas ni animales grandes. Sin texto, letras, números ni carteles con palabras.',
   mapa: 'Mapa de fantasía en pixel art visto desde muy arriba, levemente inclinado. Colores vivos pero naturales, bosques en manchas espesas, montañas, ríos y caminos de tierra. Sin texto. Sin fondo magenta: el mapa ocupa todo el cuadro.',
 };
+
+/** Pedido de un lugar al aire libre (plaza, mercado, muelle): como un interior, pero abierto y sin paredes. */
+const OUTDOOR_TEMPLATE = 'Una sola ilustración horizontal, apaisada (16:9), de un lugar al aire libre en vista isométrica de verdad, como la maqueta cortada de un juego táctico isométrico: '
+  + 'la cámara mira desde arriba en diagonal y el piso es un rombo el doble de ancho que de alto, con sus cuatro lados en diagonal. NO es una vista de frente ni desde arriba derecha: las líneas del piso nunca son horizontales. '
+  + 'Es un espacio abierto, sin techo: lo que lo rodea (fachadas, muros, árboles o agua) queda atrás y a los costados, bajo, sin tapar nada de adentro. '
+  + 'Te adjunto un plano sacado del juego: respetá la misma vista, el mismo ángulo y dónde va cada cosa, pero dibujalo con mucho más detalle y nitidez. Dejá libre el piso entre las cosas, para que camine la gente. '
+  + 'La escena llena toda la imagen: sin fondo magenta y sin marco. Sin personas ni animales. Sin texto, letras ni números. Luz cálida de día.';
 
 /** El pedido completo para copiar en ChatGPT. */
 export function promptFor(e: AssetEntry): string {
   const tail = e.key.endsWith('_b') ? ' Es el segundo cuadro de la caminata: la misma figura con un pie adelante.' : '';
   // Un interior es una escena entera: sin el fondo magenta ni la regla de la sombra de las figuras sueltas.
-  const base = e.type === 'interior' ? BASE_PROMPT.replace(' Fondo plano de un solo color magenta #FF00FF.', '').replace(', sin sombra en el piso', '') : BASE_PROMPT;
-  return `${base}\n\n${TEMPLATE[e.type]} ${e.detail}${tail}`;
+  const base = e.type === 'interior' || e.type === 'ciudad' ? BASE_PROMPT.replace(' Fondo plano de un solo color magenta #FF00FF.', '').replace(', sin sombra en el piso', '') : BASE_PROMPT;
+  const template = e.type === 'interior' && OUTDOOR.has(e.key) ? OUTDOOR_TEMPLATE : TEMPLATE[e.type];
+  return `${base}\n\n${template} ${e.detail}${tail}`;
 }
 
 // ───────────────────────── Modo hoja: varios assets en una sola imagen ─────────────────────────
@@ -68,7 +80,7 @@ export function promptFor(e: AssetEntry): string {
 /** Grilla por defecto (columnas × filas) para cada tipo. */
 export const SHEET_GRID: Record<AssetType, [number, number]> = {
   personaje: [3, 3], monstruo: [3, 2], jefe: [2, 1], espalda: [3, 3], espalda_monstruo: [3, 2], espalda_jefe: [2, 1], icono: [4, 4], retrato: [3, 3],
-  textura: [3, 2], lado: [3, 2], escenario: [3, 3], edificio: [2, 2], mapa: [1, 1], marcador: [4, 3], animal: [3, 1], muro: [2, 1], decoracion: [4, 3], interior: [1, 1],
+  textura: [3, 2], lado: [3, 2], escenario: [3, 3], edificio: [2, 2], mapa: [1, 1], marcador: [4, 3], animal: [3, 1], muro: [2, 1], decoracion: [4, 3], interior: [1, 1], ciudad: [1, 1],
 };
 
 const SHEET_ITEMS: Record<AssetType, string> = {
@@ -88,6 +100,7 @@ const SHEET_ITEMS: Record<AssetType, string> = {
   muro: 'texturas cuadradas distintas de paredes interiores vistas de frente, sin perspectiva, cada una repetible sin costuras y con poco contraste, pensadas para verse a 32×32 píxeles. Cada textura llena por completo su cuadrado y entre los cuadrados queda una franja magenta',
   decoracion: 'objetos distintos colgados en una pared, cada uno dibujado de frente y plano, sin perspectiva (como si se los mirara de frente pegados a la pared)',
   interior: 'interiores',
+  ciudad: 'ciudades',
   edificio: 'edificios pequeños distintos en vista isométrica, vistos desde arriba en diagonal, con la puerta hacia el frente',
   mapa: 'mapas',
 };
@@ -112,7 +125,7 @@ export const isBack = (t: AssetType) => t === 'espalda' || t === 'espalda_monstr
 export const frontKey = (key: string) => key.replace(/\.espalda$/, '');
 
 /** Orden en que conviene generar lo que falta: primero lo que más se ve. */
-const PRIORITY: AssetType[] = ['interior', 'muro', 'decoracion', 'escenario', 'marcador', 'animal', 'espalda', 'espalda_monstruo', 'espalda_jefe'];
+const PRIORITY: AssetType[] = ['ciudad', 'interior', 'muro', 'decoracion', 'escenario', 'marcador', 'animal', 'espalda', 'espalda_monstruo', 'espalda_jefe'];
 
 export interface PendingSheet {
   /** Número de hoja, de 1 en adelante, en el orden de PRIORITY. */
@@ -269,7 +282,84 @@ const INTERIORS: Record<string, string> = {
     + 'adelante al centro, el mostrador de la tienda, largo y de madera, con algunas armas a la venta. '
     + 'Adelante, frente al mostrador, la entrada del taller, abierta, que da a la calle. '
     + 'El centro del piso queda libre para caminar entre los muebles.',
+  // Los demás lugares: dónde va cada cosa lo muestra el plano adjunto; acá va cómo es cada lugar y qué es cada mueble.
+  taberna: 'La taberna El Fuelle Roto, de pueblo, cálida y ruidosa. Piso de tablones oscuros y paredes de madera oscura con vigas, faroles, jarras colgadas y un escudo viejo. '
+    + 'Muebles, como en el plano: contra la pared del fondo derecha, cerca de la esquina, una barra larga de madera con canillas, jarras y botellas, y en la esquina barriles apilados; '
+    + 'en la otra punta de esa pared, un hogar de piedra encendido con leña al lado y una alfombra delante; en el salón, mesas de madera con bancos, jarras y platos de guiso; adelante a la derecha, un farol de pie. '
+    + 'La entrada, adelante al centro, da a la calle.',
+  alquimista: 'La Retorta de Bastián, la tienda del alquimista: misteriosa y llena de cosas. Piso de baldosas de piedra y paredes de piedra con manojos de hierbas secas colgando, frascos y un mapa de estrellas. '
+    + 'Muebles, como en el plano: contra la pared del fondo derecha, dos estantes altos llenos de pociones de colores y un barril en la punta; contra la pared izquierda, sacos de hierbas y un cajón; '
+    + 'a la derecha, un caldero grande burbujeando sobre el fuego, con vapor verde; un poco a la izquierda del centro, el mostrador de hierbas, una mesa con morteros, una balanza y manojos de hierbas; adelante a la derecha, un farol de pie. '
+    + 'La entrada, adelante al centro, da a la calle.',
+  curtidor: 'La curtiembre de Tanino: un local de cueros, rústico y trabajado. Piso de tablones y paredes de madera clara con cueros y pieles estirados en bastidores. '
+    + 'Muebles, como en el plano: contra la pared del fondo derecha, dos percheros con cueros, pieles y correas colgando; atrás al centro, el mostrador de madera con cueros doblados, tijeras y punzones; '
+    + 'contra la pared izquierda, un cajón con pieles enrolladas; adelante a la derecha, un farol de pie. La entrada, adelante al centro, da a la calle.',
+  maderero: 'El aserradero Duela: un local de maderas, con aserrín en el piso. Piso de tablones y paredes de madera clara con sierras y hachas colgadas. '
+    + 'Muebles, como en el plano: contra la pared del fondo derecha, dos pilas de tablones y troncos de maderas de distintos colores; atrás al centro, el mostrador, un banco de carpintero con cepillos y una sierra; '
+    + 'contra la pared izquierda, un cajón con listones; adelante a la derecha, un farol de pie. La entrada, adelante al centro, da a la calle.',
+  joyero: 'La joyería Engaste: un local fino y ordenado. Piso de tablones lustrados y paredes claras con paños de terciopelo azul, espejos y apliques. '
+    + 'Muebles, como en el plano: contra la pared del fondo derecha, dos vitrinas con gemas, anillos y lingotes finos; atrás al centro, el mostrador de vidrio con una lupa, una balanza y gemas brillantes sobre terciopelo; '
+    + 'contra la pared izquierda, un cofre; adelante a la derecha, un farol de pie. La entrada, adelante al centro, da a la calle.',
+  libreria: 'La librería Pliegue: libros viejos, polvo y grimorios raros. Piso de tablones oscuros y paredes de madera oscura. '
+    + 'Muebles, como en el plano: contra la pared del fondo derecha, estantes altos repletos de libros, pergaminos y rollos; sobre el lado derecho, dos estantes más; cerca del fondo a la derecha, el mostrador con una pila de grimorios, una vela y una pluma; '
+    + 'al centro, una mesa de lectura con libros abiertos; adelante, una alfombra; adelante a la izquierda, un farol de pie. La entrada, adelante al centro, da a la calle.',
+  gremio: 'El gremio de aventureros: un salón amplio y animado. Piso de tablones y paredes de madera clara con estandartes, mapas, trofeos de caza y escudos. '
+    + 'Muebles, como en el plano: atrás al centro, el mostrador de contratos con papeles, sellos y una bolsa de monedas; en la punta derecha de la pared del fondo, un tablero grande lleno de encargos clavados (sin letras legibles); '
+    + 'en la pared del fondo, un estandarte del gremio; contra la pared izquierda, un armero con espadas y lanzas; en el salón, dos mesas largas con bancos; una alfombra al centro; un barril en la esquina derecha; adelante a la derecha, un farol de pie. '
+    + 'La entrada, adelante al centro, da a la calle.',
+  subastas: 'La casa de subastas: elegante y solemne. Piso de madera oscura lustrada y paredes de madera oscura con cortinados bordó, cuadros y candelabros. '
+    + 'Muebles, como en el plano: atrás al centro, un estrado con un atril para el subastador; una alfombra roja larga que baja del estrado por el pasillo del medio; a los dos lados del pasillo, filas de bancos para el público; '
+    + 'a la derecha, la mesa de consignaciones con cajas y etiquetas; en la esquina del fondo, un estante con objetos raros; un estandarte en la otra punta; adelante, dos faroles de pie. La entrada, adelante al centro, da a la calle.',
+  ps_taberna: 'La taberna La Ballena Seca, de puerto: marineros y canciones. Piso de tablones oscuros gastados y paredes de madera oscura con redes, remos, un timón y una mandíbula de ballena colgada. '
+    + 'Muebles, como en el plano: contra la pared del fondo derecha, cerca de la esquina, una barra con botellas y un barril; en la otra punta de esa pared, un hogar con leña; en el salón, mesas con bancos y jarras. '
+    + 'La entrada, adelante al centro, da a la calle.',
+  ps_gremio: 'La Casa de los Navegantes, el gremio del puerto. Piso de tablones y paredes de madera clara con cartas náuticas, un timón, sogas y faroles de barco. '
+    + 'Muebles, como en el plano: atrás al centro, el mostrador con un catalejo, cartas y una brújula; a la derecha de la pared del fondo, un tablero de encargos; en la pared, un estandarte con una estrella; '
+    + 'a la izquierda, una mesa con un mapa desplegado; adelante a la derecha, un farol. La entrada, adelante al centro, da a la calle.',
+  ps_posada: 'La Posada del Faro: limpia, luminosa y con vista al mar. Piso de tablones claros y paredes blancas con vigas, ventanas al mar y cuadros de barcos; al fondo, una escalera que sube a los cuartos. '
+    + 'Muebles, como en el plano: atrás, el mostrador de recepción con un libro de huéspedes, una campanita y llaves colgadas; a la izquierda, una mesa con sillas; a la derecha, un banco; al centro, una alfombra; adelante a la derecha, un farol. '
+    + 'La entrada, adelante al centro, da a la calle.',
+  fc_intendencia: 'La intendencia del Fuerte Ceniza: una oficina militar austera. Piso de tablones oscuros y paredes de piedra gris con vigas, estandartes rojos del ejército y escudos. '
+    + 'Muebles, como en el plano: atrás al centro, el mostrador con papeles, sellos y una bolsa de monedas; a la derecha de la pared del fondo, un tablero de encargos; contra la pared izquierda, un armero con lanzas; '
+    + 'a la izquierda, un cofre militar con herrajes; adelante a la derecha, un farol. La entrada, adelante al centro, da a la calle.',
+  fc_cantina: 'La cantina El Escudo Roto, de soldados: ruda y gastada. Piso de tablones oscuros y paredes de piedra y madera con escudos rotos, cascos y un mapa de batallas. '
+    + 'Muebles, como en el plano: contra la pared del fondo derecha, cerca de la esquina, una barra con jarras; más a la derecha, un hogar con leña y un barril; en el salón, una mesa larga con bancos. '
+    + 'La entrada, adelante al centro, da a la calle.',
+  fc_posada: 'El cuartel de huéspedes del fuerte: sencillo y ordenado. Piso de tablones y paredes de piedra con mantas de lana dobladas en estantes y una fila de catres contra la pared izquierda. '
+    + 'Muebles, como en el plano: atrás, un mostrador con un libro de registro y llaves; dos bancos de madera; una alfombra gastada al centro; adelante a la derecha, un farol. La entrada, adelante al centro, da a la calle.',
+  // Lugares al aire libre (ver OUTDOOR).
+  mercado: 'El mercado de Valdebrasa, en la plaza central: una plaza de adoquines animada. Puestos de madera con toldos a rayas, como en el plano: tres atrás (rojo, azul al centro, que es el de materiales para el taller con lingotes, cueros y maderas, y verde) '
+    + 'y dos más adelante (azul a la izquierda y rojo a la derecha), con frutas, telas, herramientas y cacharros; un aljibe de piedra en el centro; cajones y barriles en los bordes; un árbol adelante a la izquierda; dos faroles adelante. '
+    + 'Al fondo, fachadas de casas de techos de teja roja. Adelante, la calle de tierra por donde pasan las carretas.',
+  tablon: 'El tablón de anuncios: una placita de adoquines. Como en el plano: atrás al centro, un tablero grande de madera con techito, lleno de papeles clavados (sin letras legibles); dos faroles altos; dos bancos de plaza; un árbol a la izquierda; unos cajones a la derecha. '
+    + 'Al fondo, fachadas de casas. Adelante, la calle de tierra.',
+  esclavos: 'El mercado de esclavos: un patio de piedra apartado, sombrío y serio (sin crueldad explícita). Como en el plano: atrás, dos carpas oscuras de lona (la de la derecha es donde se hacen los tratos, con una mesa y un cofre); '
+    + 'más adelante, rejas y corrales de madera y hierro; cajones y un barril; antorchas en postes. Muros altos de piedra alrededor.',
+  ps_muelle: 'El muelle de Puertoseco: una plataforma de tablones sobre el agua, rodeada de mar turquesa con reflejos. Como en el plano: atrás al centro, un puesto con toldo azul con la mercadería de los barcos (ébano, coral, perlas); cajones y barriles apilados a los costados; dos faroles. '
+    + 'Alrededor, botes amarrados, la proa de un barco grande, sogas, redes y bolardos. Adelante, la orilla de la rambla.',
+  ps_mercado: 'El mercado de la Rambla, en Puertoseco: una plaza de adoquines junto al mar. Como en el plano: tres puestos con toldos (rojo, verde al centro y azul) con pescado, sal, especias y telas; un aljibe al centro; cajones; un farol. '
+    + 'Al fondo, casas blancas con techos naranja y, asomando, el mar. Adelante, la calle.',
+  fc_plaza: 'La plaza de armas del Fuerte Ceniza: un patio de piedra gris para formar la tropa. Como en el plano: atrás al centro, el tablón de avisos techado; dos estandartes rojos altos; armeros con lanzas a los costados; un farol. '
+    + 'Alrededor, los muros de piedra oscura de la fortaleza. Adelante, la calle.',
+  fc_mercado: 'El mercado de la guarnición del Fuerte Ceniza: un patio de piedra con puestos. Como en el plano: dos puestos con toldos rojos (el de la izquierda, con acero y cueros para armaduras); al centro, un yunque de herrero de campaña; cajones y barriles; un farol. '
+    + 'Alrededor, los muros del fuerte. Adelante, la calle.',
 };
+
+/** Lugares al aire libre: se piden como plaza o muelle abierto, sin paredes (los demás son interiores con su calle). */
+const OUTDOOR = new Set(['mercado', 'tablon', 'esclavos', 'ps_muelle', 'ps_mercado', 'fc_plaza', 'fc_mercado'].map((id) => `interior.${id}`));
+
+/** Ciudades ilustradas (ciudad.<id>): cómo es cada una; dónde va cada edificio lo muestra el plano adjunto. */
+const CITY_ART: Record<string, string> = {
+  valdebrasa: 'La ciudad de Valdebrasa: un pueblo grande de valle, próspero y acogedor, rodeado por una muralla baja de piedra clara con forma redondeada, con portones de madera donde entran los caminos. '
+    + 'Adentro, cientos de casas comunes chicas y apretadas con techos de teja roja y naranja (algunos más oscuros para variar), patios con árboles y huertitas. Las calles de tierra clara y adoquines salen como rayos desde la plaza central y se cruzan con una calle en anillo. '
+    + 'Un río azul entra por arriba, serpentea un poco a la izquierda del centro y sale por abajo, cruzado por puentes de piedra. Afuera de la muralla, campos de cultivo en parcelas de distintos verdes, caminos de tierra y manchas de bosque. '
+    + 'Los 12 edificios del juego, en el mismo lugar que en el plano y dibujados más grandes que las casas comunes (unas tres o cuatro veces), bien reconocibles y parecidos a los del plano: '
+    + 'arriba, la curtiembre (techo marrón claro, cueros secándose), la tienda del alquimista (techo violeta, alambique de cobre), la casa de subastas (techo dorado, columnas y escalinata: el edificio más elegante), la joyería (techo azul, vidriera con gemas) y la librería (techo bordó, enredaderas); '
+    + 'en el medio, la herrería del protagonista (techo rojo oscuro, fragua de piedra y yunque afuera, del otro lado del río), el mercado en la plaza central (puestos con toldos a rayas), la taberna (techo verde musgo, mesas afuera) y el gremio de aventureros (techo azul, estandartes); '
+    + 'abajo, el aserradero (techo oliva, troncos y una rueda de sierra, junto al río), el tablón de anuncios (un tablero techado en una placita) y el mercado de esclavos (techo marrón oscuro, rejas y antorchas, más apartado y sombrío). '
+    + 'Cada edificio aparece una sola vez, sin quedar tapado, con un lugar libre delante (calle, patio o placita) para poner su nombre encima en el juego.',
+};
+
 
 /** Animales (animal.<nombre>), con su medida de dibujo y descripción. */
 const ANIMALS: Record<string, [number, number, string]> = {
@@ -362,6 +452,7 @@ export function buildAssetList(c: Content): AssetEntry[] {
   for (const [id, text] of Object.entries(SIDES)) add({ key: `tex.${id}.lado`, type: 'lado', folder: 'texturas', w: 32, h: 32, name: `Pared de escalón: ${id}`, group: 'Terreno', detail: text });
 
   // Interiores ilustrados (se muestran a 1280×720)
+  for (const [id, text] of Object.entries(CITY_ART)) add({ key: `ciudad.${id}`, type: 'ciudad', folder: 'ciudades', w: 640, h: 360, name: `Ciudad: ${id}`, group: 'Ciudades ilustradas', detail: text });
   for (const [id, text] of Object.entries(INTERIORS)) add({ key: `interior.${id}`, type: 'interior', folder: 'interiores', w: 640, h: 360, name: `Interior: ${id}`, group: 'Interiores ilustrados', detail: text });
 
   // Paredes y decoración de los interiores

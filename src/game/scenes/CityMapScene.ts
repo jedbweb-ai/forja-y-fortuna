@@ -5,6 +5,7 @@ import { slotName } from '../../core/time';
 import type { City, CityLocation } from '../../core/types';
 import { artScale, facing, installWalkBob, isRealArt } from '../render/assets';
 import { AMBIENT_VARIANTS } from '../render/placeholders';
+import { CITY_PLACES } from '../render/illustrated';
 import { drawWalledTown } from '../render/townMap';
 import { SLOT_LIGHT } from './lighting';
 
@@ -14,6 +15,7 @@ const MAP_H = 720;
 /** Mapa ilustrado de la ciudad con edificios tocables. */
 export class CityMapScene extends Phaser.Scene {
   private unsubs: (() => void)[] = [];
+  private cityId = '';
 
   constructor(private store: GameStore) {
     super('CityMap');
@@ -24,13 +26,17 @@ export class CityMapScene extends Phaser.Scene {
     // También es el fondo de la pantalla de título, cuando todavía no hay partida.
     const state = this.store.getSnapshot().state;
     const city = this.store.content.cities[state ? currentCity(state) : 'valdebrasa'];
+    this.cityId = city.id;
     const slot = state ? slotName(state) : 'mañana';
     const light = SLOT_LIGHT[slot];
     this.cameras.main.setBackgroundColor(light.bg);
 
-    const plaza = this.drawTown(city);
+    // Con ilustración de la ciudad, la imagen entera reemplaza al pueblo dibujado y a los edificios sueltos.
+    const illustrated = isRealArt(`ciudad.${city.id}`);
+    if (illustrated) this.add.image(0, 0, `ciudad.${city.id}`).setOrigin(0, 0).setDisplaySize(MAP_W, MAP_H).setDepth(-100);
+    const plaza = this.drawTown(city, !illustrated);
     const doors: { x: number; y: number }[] = [];
-    for (const loc of city.locations) doors.push(this.drawBuilding(loc));
+    for (const loc of city.locations) doors.push(this.drawBuilding(loc, illustrated ? CITY_PLACES[city.id]?.[loc.id] : undefined));
     this.spawnWalkers(doors, slot === 'noche' ? 2 : 6, plaza);
 
     this.add.text(MAP_W / 2, 26, city.name, {
@@ -65,7 +71,7 @@ export class CityMapScene extends Phaser.Scene {
    * Valdebrasa es un pueblo de valle con río; Puertoseco, un puerto sobre una bahía; Fuerte Ceniza, una fortaleza
    * en estrella. Devuelve la plaza, por donde pasa la gente que camina.
    */
-  private drawTown(city: City) {
+  private drawTown(city: City, draw = true) {
     const kind = city.ground;
     const { locations } = city;
     const square = locations.find((l) => l.kind === (kind === 'fortaleza' ? 'tablon' : 'mercado')) ?? locations[0];
@@ -75,6 +81,7 @@ export class CityMapScene extends Phaser.Scene {
       puerto: { wall: { cx: MAP_W / 2, cy: 640, rx: 660, ry: 610 }, gates: [270, 215, 325], shore: { center: 575, edge: 615 } },
       fortaleza: { wall: { cx: MAP_W / 2, cy: 380, rx: 610, ry: 330 }, gates: [90, 150] },
     }[kind];
+    if (!draw) return plaza;
     drawWalledTown(this, {
       key: `town.${city.id}`, kind, w: MAP_W, h: MAP_H, plaza, seed: 7, ...shape,
       river: kind === 'valle'
@@ -89,13 +96,18 @@ export class CityMapScene extends Phaser.Scene {
     return plaza;
   }
 
-  private drawBuilding(loc: CityLocation): { x: number; y: number } {
-    const { x, y, w, h, roof } = loc.map;
+  /** Un lugar de la ciudad: su edificio, su nombre y la zona tocable. Sobre una ilustración (at), solo nombre y zona. */
+  private drawBuilding(loc: CityLocation, at?: { x: number; y: number }): { x: number; y: number } {
+    const { w, h, roof } = loc.map;
+    const illustrated = !!at || isRealArt(`ciudad.${this.cityId}`);
+    const { x, y } = at ?? loc.map;
     const roofColor = parseInt(roof.slice(1), 16);
     const wall = loc.available ? 0xf0e0c0 : 0xb8b0a0;
     const c = this.add.container(x, y).setDepth(y + h);
     const g = this.add.graphics();
-    if (isRealArt(`build.${loc.id}`)) {
+    if (illustrated) {
+      // El edificio ya está en la ilustración.
+    } else if (isRealArt(`build.${loc.id}`)) {
       // Arte definitivo del edificio: apoyado sobre la misma base que el dibujado.
       g.fillStyle(0x000000, 0.18).fillEllipse(0, h * 0.42, w * 1.1, h * 0.35);
       c.add(g);

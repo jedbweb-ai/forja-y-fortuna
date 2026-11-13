@@ -17,13 +17,13 @@ const HD = new Set(FOUND.filter((f) => f.hd).map((f) => f.key));
 /** ¿Esta clave tiene arte en alta calidad? */
 export const isHd = (key: string) => HD.has(key);
 /** Píxeles de imagen por píxel de arte en alta calidad (el mapa del mundo ya viene al tamaño de pantalla). */
-const hdFactor = (key: string) => (key === 'world.mapa' || key.startsWith('interior.') ? 2 : 4);
+const hdFactor = (key: string) => (key === 'world.mapa' || key.startsWith('interior.') || key.startsWith('ciudad.') ? 2 : 4);
 
 /**
  * Los placeholders de escenario, terreno y mapa están dibujados en píxeles de pantalla; el arte se dibuja a la mitad
  * (escala 2x), así que al cargarlo se agranda al doble. Personajes y monstruos se agrandan en la escena.
  */
-const UPSCALED = ['prop.', 'deco.', 'build.', 'world.', 'fx.', 'cart', 'interior.'];
+const UPSCALED = ['prop.', 'deco.', 'build.', 'world.', 'fx.', 'cart', 'interior.', 'ciudad.'];
 const isUpscaled = (key: string) => UPSCALED.some((p) => key.startsWith(p));
 const SRC = '@src';
 

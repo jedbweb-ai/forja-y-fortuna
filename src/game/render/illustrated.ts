@@ -78,3 +78,10 @@ export function projectOnFloor(def: IllustratedInterior, cols: number, rows: num
     y: (1 - u) * (1 - v) * a.y + u * (1 - v) * b.y + u * v * cc.y + (1 - u) * v * d.y,
   };
 }
+
+/**
+ * Ciudades ilustradas (ciudad.<id>.png, 1280×720): la ciudad entera es una sola imagen y encima van los nombres y las
+ * zonas tocables de cada lugar. Por defecto van donde dice el mapa del lugar (map.x, map.y, como en el plano que se
+ * adjunta al pedido); si en la ilustración un edificio quedó corrido, acá se marca dónde está (el centro del edificio).
+ */
+export const CITY_PLACES: Record<string, Record<string, Pt>> = {};

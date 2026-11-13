@@ -282,3 +282,10 @@ El pedido está en la herramienta (modo "📦 Pedidos en orden", grupo "Interior
   (`arte/referencias/plano.interior.<lugar>.png`) con la misma vista y dónde va cada mueble. Adjuntalo con el pedido.
 - Cuando llega la imagen se marca a mano en `src/game/render/illustrated.ts`: las 4 esquinas del piso (contando la
   calle), la escala de las figuras, las casillas que tapan los muebles y dónde va cada cartel.
+- **Al aire libre** (mercados, plazas, tablón, mercado de esclavos y muelle): el mismo pedido, pero como un lugar abierto,
+  sin paredes ni techo.
+- **La ciudad entera** también se pide por la herramienta (grupo "Ciudades ilustradas", `ciudad.<id>.png`, 1280×720),
+  con su plano (`plano.ciudad.<id>.png`, el mapa de hoy sin nombres ni gente). Reemplaza al pueblo dibujado y a los
+  edificios sueltos; los nombres y las zonas tocables van donde dice el mapa de cada lugar, o donde se marque en
+  `CITY_PLACES` (`render/illustrated.ts`) si en la ilustración un edificio quedó corrido. Este pedido reemplaza al de §7.
+- Los planos se sacan del juego, con la escena armada sin carteles ni personas, recortada al lugar y en 16:9.
