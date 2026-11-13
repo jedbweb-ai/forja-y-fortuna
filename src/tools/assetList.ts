@@ -5,7 +5,7 @@ import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../game/render/variants';
 // Cada entrada trae su clave (nombre del archivo), carpeta, medida del dibujo y el pedido para ChatGPT.
 // Medidas y estilo: docs/GUIA_DE_ARTE.md.
 
-export type AssetType = 'personaje' | 'monstruo' | 'jefe' | 'espalda' | 'espalda_monstruo' | 'espalda_jefe' | 'icono' | 'retrato' | 'textura' | 'lado' | 'escenario' | 'edificio' | 'mapa' | 'marcador' | 'animal' | 'muro' | 'decoracion';
+export type AssetType = 'personaje' | 'monstruo' | 'jefe' | 'espalda' | 'espalda_monstruo' | 'espalda_jefe' | 'icono' | 'retrato' | 'textura' | 'lado' | 'escenario' | 'edificio' | 'mapa' | 'marcador' | 'animal' | 'muro' | 'decoracion' | 'interior';
 
 export interface AssetEntry {
   key: string;
@@ -43,6 +43,7 @@ const TEMPLATE: Record<AssetType, string> = {
   animal: 'Un solo animal chico de pueblo, de cuerpo entero, en vista isométrica de frente en diagonal (mirando hacia abajo a la izquierda), parado, centrado.',
   muro: 'Textura cuadrada de una pared interior vista de frente, sin perspectiva, que se pueda repetir sin costuras a los costados y arriba y abajo, con poco contraste, pensada para verse a 32×32 píxeles. Sin fondo magenta: la textura ocupa todo el cuadro.',
   decoracion: 'Un solo objeto colgado en una pared, dibujado de frente y plano, sin perspectiva (como si se lo mirara de frente pegado a la pared), centrado.',
+  interior: 'Una sola ilustración horizontal de un interior visto desde arriba en diagonal, en vista isométrica, como una maqueta cortada: el piso forma un rombo grande en el centro, se ven las dos paredes del fondo (izquierda y derecha) y no hay paredes adelante. La escena llena toda la imagen: sin fondo magenta y sin marco. Dejá una franja de piso o de calle arriba y abajo, porque se recorta un poco. Sin personas ni animales. Sin texto, letras ni números. Luz cálida de día.',
   edificio: 'Un solo edificio pequeño en vista isométrica, visto desde arriba en diagonal, centrado, con la puerta hacia el frente.',
   mapa: 'Mapa de fantasía en pixel art visto desde muy arriba, levemente inclinado. Colores vivos pero naturales, bosques en manchas espesas, montañas, ríos y caminos de tierra. Sin texto. Sin fondo magenta: el mapa ocupa todo el cuadro.',
 };
@@ -58,7 +59,7 @@ export function promptFor(e: AssetEntry): string {
 /** Grilla por defecto (columnas × filas) para cada tipo. */
 export const SHEET_GRID: Record<AssetType, [number, number]> = {
   personaje: [3, 3], monstruo: [3, 2], jefe: [2, 1], espalda: [3, 3], espalda_monstruo: [3, 2], espalda_jefe: [2, 1], icono: [4, 4], retrato: [3, 3],
-  textura: [3, 2], lado: [3, 2], escenario: [3, 3], edificio: [2, 2], mapa: [1, 1], marcador: [4, 3], animal: [3, 1], muro: [2, 1], decoracion: [4, 3],
+  textura: [3, 2], lado: [3, 2], escenario: [3, 3], edificio: [2, 2], mapa: [1, 1], marcador: [4, 3], animal: [3, 1], muro: [2, 1], decoracion: [4, 3], interior: [1, 1],
 };
 
 const SHEET_ITEMS: Record<AssetType, string> = {
@@ -77,6 +78,7 @@ const SHEET_ITEMS: Record<AssetType, string> = {
   animal: 'animales chicos de pueblo distintos, de cuerpo entero, en vista isométrica de frente en diagonal (mirando hacia abajo a la izquierda), parados',
   muro: 'texturas cuadradas distintas de paredes interiores vistas de frente, sin perspectiva, cada una repetible sin costuras y con poco contraste, pensadas para verse a 32×32 píxeles. Cada textura llena por completo su cuadrado y entre los cuadrados queda una franja magenta',
   decoracion: 'objetos distintos colgados en una pared, cada uno dibujado de frente y plano, sin perspectiva (como si se los mirara de frente pegados a la pared)',
+  interior: 'interiores',
   edificio: 'edificios pequeños distintos en vista isométrica, vistos desde arriba en diagonal, con la puerta hacia el frente',
   mapa: 'mapas',
 };
@@ -99,7 +101,7 @@ export const isBack = (t: AssetType) => t === 'espalda' || t === 'espalda_monstr
 export const frontKey = (key: string) => key.replace(/\.espalda$/, '');
 
 /** Orden en que conviene generar lo que falta: primero lo que más se ve. */
-const PRIORITY: AssetType[] = ['muro', 'decoracion', 'escenario', 'marcador', 'animal', 'espalda', 'espalda_monstruo', 'espalda_jefe'];
+const PRIORITY: AssetType[] = ['interior', 'muro', 'decoracion', 'escenario', 'marcador', 'animal', 'espalda', 'espalda_monstruo', 'espalda_jefe'];
 
 export interface PendingSheet {
   /** Número de hoja, de 1 en adelante, en el orden de PRIORITY. */
@@ -245,6 +247,19 @@ const WALL_DECOR: Record<string, [number, number, string]> = {
   mapa: [22, 16, 'Un mapa de pergamino clavado en la pared, con caminos y montañas dibujados.'],
 };
 
+/** Interiores ilustrados (interior.<lugar>): cómo es cada lugar y dónde va cada mueble, mirando la imagen. */
+const INTERIORS: Record<string, string> = {
+  herreria: 'El interior de la herrería del protagonista, un taller de pueblo acogedor y trabajado. Piso de tablones de madera. Paredes de revoque crema con vigas de madera, con ventanas con luz, herramientas colgadas, escudos, antorchas y estantes. '
+    + 'Muebles, mirando la imagen: en la esquina del fondo, contra la pared izquierda, una fragua grande de piedra encendida con fuelle, y a su lado una pila de leña y sacos de carbón; '
+    + 'delante de la fragua, un poco hacia el centro, el yunque sobre un tronco y una tina de madera con agua para templar; '
+    + 'contra la pared del fondo derecha, cerca del centro, una mesa de joyero con lupa y gemas, y más a la derecha dos armeros con espadas y lanzas; '
+    + 'sobre el lado derecho, una mesa de runas con piedras brillantes, un arcón grande con herrajes y, más adelante, una mesa de alquimia con frascos y un alambique; '
+    + 'sobre el lado izquierdo, barriles contra la pared, una piedra de afilar y una mesa con un libro grande abierto; '
+    + 'adelante al centro, el mostrador de la tienda, largo y de madera, con algunas armas a la venta. '
+    + 'Al frente de todo, en el borde de abajo, una franja de calle de tierra con la puerta abierta del taller. '
+    + 'El centro del piso queda libre para caminar entre los muebles.',
+};
+
 /** Animales (animal.<nombre>), con su medida de dibujo y descripción. */
 const ANIMALS: Record<string, [number, number, string]> = {
   gallina: [16, 14, 'Una gallina blanca de cresta roja.'],
@@ -334,6 +349,9 @@ export function buildAssetList(c: Content): AssetEntry[] {
   // Terreno
   for (const [id, text] of Object.entries(FLOORS)) add({ key: `tex.${id}`, type: 'textura', folder: 'texturas', w: 32, h: 32, name: `Suelo: ${id}`, group: 'Terreno', detail: text });
   for (const [id, text] of Object.entries(SIDES)) add({ key: `tex.${id}.lado`, type: 'lado', folder: 'texturas', w: 32, h: 32, name: `Pared de escalón: ${id}`, group: 'Terreno', detail: text });
+
+  // Interiores ilustrados (se muestran a 1280×720)
+  for (const [id, text] of Object.entries(INTERIORS)) add({ key: `interior.${id}`, type: 'interior', folder: 'interiores', w: 640, h: 360, name: `Interior: ${id}`, group: 'Interiores ilustrados', detail: text });
 
   // Paredes y decoración de los interiores
   for (const [id, text] of Object.entries(WALLS)) add({ key: `tex.muro.${id}`, type: 'muro', folder: 'texturas', w: 32, h: 32, name: `Pared interior: ${id}`, group: 'Interiores: paredes', detail: text });

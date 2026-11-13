@@ -217,10 +217,11 @@ export function processArt(src: Img, o: ProcessOptions): Img {
   // Qué parte de la imagen original se usa: todo (texturas, mapa) o lo que no es fondo.
   const fg = fill && !o.trim ? null : foreground(src, o.tolerance);
   let box = fg ? fg.box : { x: 0, y: 0, w: src.w, h: src.h };
-  if (fill && o.w === o.h && box.w !== box.h) {
-    // Textura cuadrada: se toma el cuadrado del centro.
-    const side = Math.min(box.w, box.h);
-    box = { x: box.x + Math.floor((box.w - side) / 2), y: box.y + Math.floor((box.h - side) / 2), w: side, h: side };
+  if (fill && Math.abs(box.w / box.h - o.w / o.h) > 0.01) {
+    // Se toma el centro con la proporción del destino (el cuadrado de una textura, la franja 16:9 de un interior).
+    const w = Math.min(box.w, Math.round(box.h * (o.w / o.h)));
+    const h = Math.min(box.h, Math.round(w / (o.w / o.h)));
+    box = { x: box.x + Math.floor((box.w - w) / 2), y: box.y + Math.floor((box.h - h) / 2), w, h };
   }
   // Tamaño del dibujo dentro del cuadro, sin deformar (salvo "llenar").
   const s = fill ? 0 : Math.min(o.w / box.w, o.h / box.h);
