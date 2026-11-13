@@ -31,8 +31,38 @@ export const ILLUSTRATION = { w: 1280, h: 720 };
 
 /** Interiores que tienen ilustración (se usan solo si la imagen existe; si no, el lugar se arma como siempre). */
 export const ILLUSTRATED: Record<string, IllustratedInterior> = {
-  // La herrería se está volviendo a pedir en vista isométrica y con la calle de afuera: cuando llegue la imagen, se marca
-  // acá (la primera prueba salió de frente y se descartó).
+  // La herrería en isométrica: columnas a lo largo de la pared derecha, filas a lo largo de la izquierda; las filas 9 a 11
+  // son la calle de afuera (la 9 es la vereda, donde están los postes de la entrada y un barril).
+  herreria: {
+    image: 'interior.herreria',
+    floor: [{ x: 683, y: 195 }, { x: 1268, y: 416 }, { x: 575, y: 760 }, { x: -101, y: 450 }],
+    charScale: 1.45,
+    blocked: [
+      [0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0], [7, 0], [8, 0], [9, 0], // fragua, tina, sacos, mesa de joyero y armeros
+      [0, 1], [1, 1], [2, 1], [6, 1], [7, 1], [8, 1], // fragua, yunque y mesa de runas
+      [0, 2], [2, 2], [7, 2], [8, 2], // piedra de afilar, yunque y mesa de runas
+      [0, 3], [6, 3], [7, 3], [8, 3], // barriles y arcón
+      [0, 4], [5, 4], [7, 4], // barriles, farol del mostrador y alambique
+      [0, 5], [1, 5], [2, 5], [3, 5], [4, 5], [5, 5], [6, 5], [7, 5], [8, 5], // mesa del libro, mostrador y mesa de alquimia
+      [0, 6], [1, 6], [3, 6], [4, 6], [5, 6], [6, 6], [7, 6], [8, 6], [9, 6],
+      [1, 7], [3, 7], [4, 7], [7, 7], [8, 7], // postes de la entrada y mesa de alquimia
+      [0, 8], [4, 8], [5, 8], [7, 8], [8, 8], // barrilito, postes y barril (la entrada es la casilla 6,8)
+      [5, 9], [8, 9], [9, 9], // en la vereda: los postes y el barril
+      [9, 11], // fuera de la imagen
+    ],
+    labels: {
+      yunque: { x: 690, y: 215 }, mostrador: { x: 615, y: 385 }, libro: { x: 320, y: 265 }, arcon: { x: 920, y: 395 },
+      mesa_runas: { x: 1015, y: 345 }, mesa_joyeria: { x: 930, y: 195 }, mesa_alquimia: { x: 815, y: 470 },
+    },
+    spots: {
+      npc: {
+        oriol: [5, 3], marcia: [2, 8],
+        // Los que atienden la tienda, detrás del mostrador.
+        brunilda: [4, 4], ciro: [4, 4], nayra: [4, 4], gualterio: [4, 4],
+      },
+      customer: [5, 7], // el cliente, delante del mostrador
+    },
+  },
 };
 
 /**

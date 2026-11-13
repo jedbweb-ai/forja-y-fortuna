@@ -148,7 +148,11 @@ describe('preparación de arte', () => {
     expect(keys).toContain('tex.grass');
     expect(keys).toContain('build.herreria');
     for (const npc of Object.keys(CONTENT.npcs)) expect(keys).toContain(`retrato.${npc}`);
-    for (const e of list) expect(promptFor(e)).toContain('#FF00FF');
+    // Todo va sobre magenta, salvo los interiores, que son una escena entera.
+    for (const e of list) {
+      if (e.type === 'interior') expect(promptFor(e)).not.toContain('#FF00FF');
+      else expect(promptFor(e)).toContain('#FF00FF');
+    }
   });
 
   it('cada figura tiene su espalda, con la misma medida, y el pedido pide la referencia de frente', () => {

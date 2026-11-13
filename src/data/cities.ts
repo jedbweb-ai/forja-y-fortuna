@@ -43,7 +43,7 @@ export const CITIES: City[] = [
           ],
           spawn: { x: 4, y: 3 },
           // La entrada del taller, frente al mostrador; afuera pasa la calle.
-          doors: [{ x: 5, y: 8 }],
+          doors: [{ x: 6, y: 8 }],
           hotspots: [
             { id: 'yunque', label: 'Yunque', x: 3, y: 2, action: 'forge' },
             { id: 'mostrador', label: 'Mostrador', x: 5, y: 6, action: 'shop' },
