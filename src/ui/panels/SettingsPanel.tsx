@@ -48,6 +48,13 @@ export function SettingsPanel() {
           <small className="muted block">Los compañeros que caen en mazmorras de 5 estrellas o más no vuelven. El herrero nunca muere.</small>
         </span>
       </label>
+      <label className="setting">
+        <input type="checkbox" checked={!!s.settings.infiniteGold} onChange={(e) => store.setInfiniteGold(e.target.checked)} />
+        <span>
+          🧪 Oro ilimitado (modo prueba)
+          <small className="muted block">Para probar cosas rápido: el oro no se gasta. Al apagarlo vuelve el oro que tenías antes.</small>
+        </span>
+      </label>
       <div className="row">
         <button className="btn" onClick={toggleFullscreen}>⛶ Pantalla completa</button>
         <button className="btn" onClick={() => { store.saveNow(); store.toast('Partida guardada.', 'good'); }}>💾 Guardar ahora</button>

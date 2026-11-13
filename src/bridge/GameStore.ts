@@ -89,6 +89,8 @@ function fxDuration(fx: CombatFx[]): number {
 
 const SAVE_SLOT = 'auto';
 const SAVE_DELAY_MS = 400;
+/** Oro fijo del modo prueba (Ajustes → Oro ilimitado). */
+const INFINITE_GOLD = 9_999_999;
 
 /**
  * Única fuente de verdad del estado. React y Phaser leen el snapshot y mandan comandos.
@@ -142,8 +144,10 @@ export class GameStore {
     const draft = structuredClone(this.state);
     const rng = createRng(draft.rngState);
     let events: GameEvent[];
+    if (draft.settings.infiniteGold) draft.gold = INFINITE_GOLD;
     try {
       events = runCommand(draft, { c: this.content, rng } as Ctx, cmd, ...args);
+      if (draft.settings.infiniteGold) draft.gold = INFINITE_GOLD;
     } catch (err) {
       if (err instanceof GameError) {
         this.toast(err.message, 'bad');
@@ -298,6 +302,22 @@ export class GameStore {
 
   updateSettings(patch: Partial<GameState['settings']>) {
     this.run((s) => { Object.assign(s.settings, patch); return []; });
+  }
+
+  /** Modo prueba: oro ilimitado. Al apagarlo vuelve el oro que había antes de prenderlo. */
+  setInfiniteGold(on: boolean) {
+    this.run((s) => {
+      if (on === !!s.settings.infiniteGold) return [];
+      if (on) {
+        s.settings.goldBeforeInfinite = s.gold;
+        s.settings.infiniteGold = true;
+      } else {
+        s.gold = s.settings.goldBeforeInfinite ?? s.gold;
+        s.settings.infiniteGold = false;
+        delete s.settings.goldBeforeInfinite;
+      }
+      return [];
+    });
   }
 
   // ── Partida y guardado ──

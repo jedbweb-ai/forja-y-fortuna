@@ -531,6 +531,10 @@ export interface GameSettings {
   fullscreenOnStart: boolean;
   /** Los compañeros que caen en mazmorras de mucho peligro mueren para siempre. */
   permadeath: boolean;
+  /** Modo prueba: el oro queda fijo en un monto enorme y nunca se gasta. */
+  infiniteGold?: boolean;
+  /** Oro real guardado al activar el modo prueba; se devuelve al apagarlo. */
+  goldBeforeInfinite?: number;
 }
 
 export interface GameState {
