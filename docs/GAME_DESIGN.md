@@ -261,7 +261,7 @@ Sistema de relaciones inspirado en los juegos de vida/granja: cada NPC important
 ---
 
 ## 7. Compañeros
-- **Grupo máximo: 3 personajes** (el herrero + 2 compañeros).
+- **Grupo máximo: 4 personajes** (el herrero + 3 compañeros); 5 con la mejora «Cuarto para compañeros». (Cambio aprobado el 13/11/2026: antes era 3.)
 - El máximo es un valor configurable (`MAX_PARTY_SIZE = 3`), pensado para ampliarse más adelante con progresión.
 
 ### Formas de conseguir compañeros
@@ -338,7 +338,7 @@ Sistema de relaciones inspirado en los juegos de vida/granja: cada NPC important
 
 ### Reglas base
 - Por turnos, en **grilla isométrica con alturas**, estilo RPG táctico clásico.
-- **Grupo del jugador: hasta 3 personajes.**
+- **Grupo del jugador: hasta 4 personajes (5 con la mejora del cuarto).**
 - **Enemigos: de 2 a 7 por combate**, según la zona, el nivel de peligro y la franja del día.
 
 Mecánicas:

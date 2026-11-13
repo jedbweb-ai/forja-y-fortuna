@@ -1,5 +1,6 @@
 import { BALANCE } from '../../config/balance';
 import { aiTurn } from '../combat/ai';
+import { arenasFor } from '../combat/grid';
 import { beginTurn, buildCombat, currentUnit, endTurn, moveUnit, tryFlee, usePotion, useSkill } from '../combat/engine';
 import { acquireGrimoire, hasGrimoire } from '../magic/grimoires';
 import { addToBag, bagLoad, bestTool, loseFromBag, resolveCombat, toolTier } from '../combat/result';
@@ -212,10 +213,12 @@ function engage(c: Content, s: GameState, rng: Rng, group: MonsterGroup): GameEv
   const r = region(c, s);
   const dungeon = dungeonDef(c, s);
   const biome = group.boss ? (dungeon ? dungeon.bossArena : r.bossArena ?? 'campamento') : r.zoneDefs[group.zone]?.biome ?? 'pradera';
-  const arenas = Object.values(c.arenas).filter((a) => a.biome === biome || a.id === biome);
+  const arenas = arenasFor(c, biome);
   const arena = rng.pick(arenas.length ? arenas : Object.values(c.arenas));
   const events = spendEnergy(c, s, rng, EX.combatEnergy);
-  e.combat = buildCombat(c, s, group, arena.id, e.members);
+  // Emboscada: más probable de noche; nunca contra jefes ni en mazmorras.
+  const ambush = !group.boss && !dungeon && rng.chance(slotName(s) === 'noche' ? BALANCE.combat.ambushNight : BALANCE.combat.ambushDay);
+  e.combat = buildCombat(c, s, group, arena.id, e.members, ambush);
   beginTurn(c, s, rng);
   const names = [...new Set(group.monsters.map((m) => c.monsters[m].name))].join(', ');
   return [...events, { type: 'toast', text: group.boss ? `¡${c.monsters[group.monsters[0]].name} te sale al cruce!` : `¡Combate! ${names}`, tone: 'bad' }, { type: 'combatStarted' }];
@@ -407,7 +410,7 @@ export function roadEncounter(s: GameState, { c, rng }: Ctx, to: string, slotsLe
   };
   const group = makeGroup(c, s.expedition, { x: 2, y: 1 }, 0, g.monsters, { aggressive: true });
   s.expedition.groups.push(group);
-  const arenas = Object.values(c.arenas).filter((a) => ['pradera', 'bosque', 'colinas'].includes(a.biome));
+  const arenas = ['pradera', 'bosque', 'colinas'].flatMap((b) => arenasFor(c, b));
   s.expedition.combat = buildCombat(c, s, group, rng.pick(arenas).id, members);
   beginTurn(c, s, rng);
   const names = [...new Set(g.monsters.map((m) => c.monsters[m].name))].join(', ');

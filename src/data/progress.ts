@@ -100,9 +100,9 @@ export const UPGRADES: UpgradeDef[] = [
     ],
   },
   {
-    id: 'cuarto', name: 'Cuarto para compañeros', icon: '🛏️', description: 'Un lugar para que viva un compañero más: el grupo pasa a ser de 4.',
+    id: 'cuarto', name: 'Cuarto para compañeros', icon: '🛏️', description: 'Un lugar para que viva un compañero más: el grupo pasa a ser de 5.',
     levels: [
-      { cost: { gold: 600, materials: [{ id: 'roble', qty: 10 }, { id: 'cuero_curtido', qty: 6 }] }, effect: { grupo: 1 }, description: 'El grupo puede ser de 4.', reputationMin: 70 },
+      { cost: { gold: 600, materials: [{ id: 'roble', qty: 10 }, { id: 'cuero_curtido', qty: 6 }] }, effect: { grupo: 1 }, description: 'El grupo puede ser de 5.', reputationMin: 70 },
     ],
   },
 ];

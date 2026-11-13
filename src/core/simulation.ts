@@ -1,6 +1,7 @@
 import { CONTENT as c } from '../data';
 import { aiTurn } from './combat/ai';
 import { beginTurn, buildCombat } from './combat/engine';
+import { arenasFor } from './combat/grid';
 import { equipItem } from './party/equipment';
 import { createMercenary, gainXp, xpToNext } from './party/progression';
 import { createRng } from './rng';
@@ -65,7 +66,7 @@ export function simFight(stage: Stage, monsters: string[], arena: string, seed: 
     regionId: 'linde_brezal', pos: { x: 0, y: 0 }, energy: 99, maxEnergy: 99, spent: 0, bag: {}, capacity: 99, nodes: [], groups: [],
     members, combat: null, report: null, nightSpawned: false, nextId: 1, home: 'herreria',
   };
-  const arenas = Object.values(c.arenas).filter((a) => a.biome === arena || a.id === arena);
+  const arenas = arenasFor(c, arena);
   const cs = buildCombat(c, s, { id: 'g', x: 0, y: 0, zone: 0, monsters, threat: 0, aggressive: false }, rng.pick(arenas).id, members);
   s.expedition.combat = cs;
   beginTurn(c, s, rng);

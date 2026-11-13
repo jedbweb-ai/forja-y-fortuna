@@ -62,9 +62,9 @@ describe('mejoras de la herrería', () => {
     expect(() => buyUpgrade(s, ctx, 'cuarto')).toThrow(/reputación/);
     s.reputation.valdebrasa = 70;
     buyUpgrade(s, ctx, 'cuarto');
-    expect(maxPartySize(ctx.c, s)).toBe(4);
-    for (const id of ['brunilda', 'ciro', 'nayra']) dbgHire(s, ctx, id);
-    expect(s.party).toHaveLength(4);
+    expect(maxPartySize(ctx.c, s)).toBe(5);
+    for (const id of ['brunilda', 'ciro', 'nayra', 'gualterio']) dbgHire(s, ctx, id);
+    expect(s.party).toHaveLength(5);
   });
 });
 

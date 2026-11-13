@@ -2,6 +2,7 @@ import { indexById, type Content } from '../core/content';
 import type { Blueprint, Material } from '../core/types';
 import { ABILITY_SKILLS } from './abilities';
 import { ARENAS } from './arenas';
+import { ARENAS_2 } from './arenas2';
 import { TALENTS, UPGRADES } from './progress';
 import { WORK_TRAITS, WORKER_DIALOGUES, WORKER_NPCS, WORKERS } from './workers';
 import { TIPS, TUTORIAL_END, TUTORIAL_STEPS } from './tutorial';
@@ -79,7 +80,7 @@ export const CONTENT: Content = {
   skills: indexById([...COMBAT_SKILLS, ...ABILITY_SKILLS, ...SKILLS_5, ...SKILLS_6C, ...SKILLS_7]),
   weaponSkills: WEAPON_SKILLS,
   monsters: indexById([...MONSTERS, ...MONSTERS_5, ...MONSTERS_6C, ...MONSTERS_7]),
-  arenas: indexById([...ARENAS, ...ARENAS_5, ...ARENAS_6C, ...ARENAS_7]),
+  arenas: indexById([...ARENAS, ...ARENAS_2, ...ARENAS_5, ...ARENAS_6C, ...ARENAS_7]),
   regions: indexById([...REGIONS, ...REGIONS_6C, ...REGIONS_7]),
   marketEvents: indexById(MARKET_EVENTS),
   grimoires: indexById([...GRIMOIRES, ...GRIMOIRES_5]),

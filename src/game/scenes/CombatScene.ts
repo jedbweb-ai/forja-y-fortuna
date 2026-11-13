@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { combatTap, combatHighlights } from '../../bridge/combatInput';
 import type { GameStore } from '../../bridge/GameStore';
 import { currentUnit } from '../../core/combat/engine';
-import { arenaSize, heightAt, terrainAt } from '../../core/combat/grid';
+import { arenaSize, heightAt, isObstacle, isVoid, terrainAt } from '../../core/combat/grid';
 import type { ArenaDef, CombatFx, CombatState, CombatUnit, TerrainKind } from '../../core/combat/types';
 import type { Affinity } from '../../core/types';
 import { slotName } from '../../core/time';
@@ -35,10 +35,18 @@ const MAX_ZOOM = 3;
 const CLOSE_ZOOM = 80 / TILE_W;
 /** Opacidad de lo que tapa a una figura. */
 const SEE_THROUGH = 0.35;
+/** Color de la silueta de una figura tapada por el terreno. */
+const GHOST_TINT = { party: 0x9fd8ff, enemy: 0xff9a8a };
+/** Profundidades fijas: siluetas, barras de vida, flecha del turno. */
+const DEPTH = { ghost: 9200, overlay: 9300, marker: 9500 };
 
 interface UnitView {
   box: Phaser.GameObjects.Container;
   sprite: Phaser.GameObjects.Sprite;
+  /** Copia plana de la figura que se ve a través del terreno cuando una loma la tapa. */
+  ghost: Phaser.GameObjects.Sprite;
+  /** Barra de vida y estados: siempre arriba de todo, sigue a la figura. */
+  overlay: Phaser.GameObjects.Container;
   hp: Phaser.GameObjects.Graphics;
   status: Phaser.GameObjects.Text;
   baseTint?: number;
@@ -55,6 +63,10 @@ const OBSTACLE: Record<string, string> = {
   pradera: 'prop.rock', bosque: 'prop.tree', colinas: 'prop.rock', campamento: 'prop.palisade', cripta: 'prop.pillar', cueva: 'prop.stalagmite', jefe: 'prop.pillar',
   montana: 'prop.rock', pantano: 'prop.tree', ruinas: 'prop.pillar', volcan: 'prop.basalt',
 };
+/** Obstáculos con tipo propio (los '#' usan el del bioma). */
+const OBSTACLE_KIND: Record<string, string> = { T: 'prop.tree', R: 'prop.rock', C: 'prop.pillar' };
+/** Superficies que no son el suelo del bioma. */
+const SURFACE: Record<string, string> = { ':': 'tile.dirt', '=': 'tile.stone', w: 'tile.water', l: 'tile.lava' };
 const STATUS_ICON: Record<string, string> = {
   sangrado: '🩸', veneno: '☠️', quemadura: '🔥', aturdido: '💫', ralentizado: '🐌', inmovilizado: '🕸️',
   cubierto: '🛡️', potenciado: '💪', mojado: '💧', corroido: '🧪',
@@ -75,8 +87,11 @@ const ELEMENT_COLOR: Partial<Record<Affinity, number>> = {
 export class CombatScene extends Phaser.Scene {
   private arena!: ArenaDef;
   private units = new Map<string, UnitView>();
-  private highlight!: Phaser.GameObjects.Graphics;
-  private terrainLayer!: Phaser.GameObjects.Graphics;
+  /** Marcas sobre las casillas (cada una es una imagen con la profundidad de su casilla, así las tapa lo de adelante). */
+  private highlightMarks: Phaser.GameObjects.Image[] = [];
+  private terrainMarks: Phaser.GameObjects.Image[] = [];
+  /** Altura de cada casilla (-1 si está vacía), para saber qué lomas tapan a quién. */
+  private tileTop: number[][] = [];
   private flames = new Map<string, Prop>();
   private grass = new Map<string, Phaser.GameObjects.Image>();
   private view!: IsoView;
@@ -124,11 +139,16 @@ export class CombatScene extends Phaser.Scene {
     this.view.angle = combatView.quarter * (Math.PI / 2);
     this.cameras.main.setBackgroundColor(0x141018);
 
+    this.highlightMarks = [];
+    this.terrainMarks = [];
+    this.makeMarkTextures();
+    this.tileTop = Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => (isVoid(a, x, y) ? -1 : heightAt(a, x, y))));
     this.ground = drawGround(this, {
       cols, rows,
       height: (x, y) => heightAt(a, x, y),
-      tile: (x, y) => (terrainAt(a, x, y) === 'w' ? 'tile.water' : terrainAt(a, x, y) === 'l' ? 'tile.lava' : FLOOR[a.look ?? a.biome]),
+      tile: (x, y) => SURFACE[terrainAt(a, x, y)] ?? FLOOR[a.look ?? a.biome],
       sideTint: () => (a.biome === 'colinas' ? 0x9a8a72 : a.look === 'cueva' || a.biome === 'cueva' ? 0x5e5246 : a.biome === 'cripta' || a.look === 'cripta' ? 0x5a5466 : 0x8a6e48),
+      skip: (x, y) => isVoid(a, x, y),
     });
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
@@ -140,18 +160,16 @@ export class CombatScene extends Phaser.Scene {
           this.grass.set(`${x},${y}`, img);
           this.props.add({ obj: img, x, y, oy: 6, bias: 3 });
         }
-        if (t === '#') {
-          const key = OBSTACLE[a.look ?? a.biome];
-          const img = this.add.image(0, 0, key).setOrigin(0.5, 1).setScale(artScale(key, a.biome === 'bosque' ? 0.75 : 1));
+        if (isObstacle(a, x, y)) {
+          const key = OBSTACLE_KIND[t] ?? OBSTACLE[a.look ?? a.biome];
+          const img = this.add.image(0, 0, key).setOrigin(0.5, 1).setScale(artScale(key, key === 'prop.tree' ? 0.75 : 1));
           this.props.add({ obj: img, x, y, oy: 12, bias: 5, occludes: true });
         }
       }
     }
 
-    this.terrainLayer = this.add.graphics().setDepth(-5100);
-    this.highlight = this.add.graphics().setDepth(-5000);
     this.markerArrow = this.add.image(0, 0, 'fx.arrow');
-    this.marker = this.add.container(0, 0, [this.markerArrow]).setDepth(9500);
+    this.marker = this.add.container(0, 0, [this.markerArrow]).setDepth(DEPTH.marker);
     this.tweens.add({ targets: this.markerArrow, y: -6, yoyo: true, repeat: -1, duration: 400 });
 
     // Luz de la franja del día: un velo que cubre la arena en cualquier giro.
@@ -190,12 +208,18 @@ export class CombatScene extends Phaser.Scene {
   }
 
   update() {
-    if (this.sys.isActive() && this.view) this.seeThrough();
+    if (!this.sys.isActive() || !this.view) return;
+    this.followOverlays();
+    this.seeThrough();
   }
 
   // ── Vista: giro, cámara y transparencias ──
 
-  /** Ubica todo lo fijo de la arena según el ángulo de la vista (suelo, pasto, obstáculos, llamas). */
+  /**
+   * Ubica todo lo fijo de la arena según el ángulo de la vista (suelo, pasto, obstáculos, llamas).
+   * El suelo comparte la escala de profundidad con las figuras: una loma de adelante tapa a quien está detrás.
+   * Por casilla: paredes −1, tapa 0, marcas 1-2, pasto 3, llamas 4, obstáculos 5, figuras 8 (la siguiente fila suma 10).
+   */
   private layout() {
     const v = this.view;
     // A mitad de un giro las baldosas (que no cambian de forma) dejan huecos: se agrandan lo justo para taparlos.
@@ -204,10 +228,10 @@ export class CombatScene extends Phaser.Scene {
     for (const g of this.ground) {
       if (g.lvl === undefined) {
         const p = v.pos(g.c, g.r, g.h);
-        g.img.setPosition(p.x, p.y).setDepth(-10000 + v.depth(g.c, g.r)).setScale(k);
+        g.img.setPosition(p.x, p.y).setDepth(v.depth(g.c, g.r)).setScale(k);
       } else {
         const p = v.pos(g.c, g.r, g.lvl + 1);
-        g.img.setOrigin(0.5, 0).setPosition(p.x, p.y).setDepth(-10000 + v.depth(g.c, g.r) - 1).setScale(k, 1);
+        g.img.setOrigin(0.5, 0).setPosition(p.x, p.y).setDepth(v.depth(g.c, g.r, -1)).setScale(k, 1);
       }
     }
     for (const pr of this.props) {
@@ -248,8 +272,8 @@ export class CombatScene extends Phaser.Scene {
     const focus = this.unproject(cam.midPoint.x, cam.midPoint.y);
     const from = this.view.angle;
     const to = (Math.round(from / (Math.PI / 2)) + dir) * (Math.PI / 2);
-    this.highlight.clear();
-    this.terrainLayer.clear();
+    this.clearMarks(this.highlightMarks);
+    this.clearMarks(this.terrainMarks);
     const t = { a: from };
     this.tweens.add({
       targets: t, a: to, duration: ROTATE_MS, ease: 'Sine.easeInOut',
@@ -394,7 +418,7 @@ export class CombatScene extends Phaser.Scene {
       this.drag.down = false;
       this.drag.dragging = false;
       if (wasDrag || this.animating || this.rotating) return;
-      const tile = this.view.pick(p.worldX, p.worldY, (x, y) => (x >= 0 && y >= 0 && x < cols && y < rows ? heightAt(a, x, y) : null), maxH);
+      const tile = this.view.pick(p.worldX, p.worldY, (x, y) => (x >= 0 && y >= 0 && x < cols && y < rows && !isVoid(a, x, y) ? heightAt(a, x, y) : null), maxH);
       if (tile) combatTap(this.store, tile.x, tile.y);
     });
     this.input.on('wheel', (p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => {
@@ -429,7 +453,53 @@ export class CombatScene extends Phaser.Scene {
       if (!pr.occludes) continue;
       pr.obj.setAlpha(covers(pr.obj.depth, pr.obj.getBounds()) ? SEE_THROUGH : 1);
     }
-    for (const f of figures) f.v!.sprite.setAlpha(covers(f.v!.box.depth, f.v!.sprite.getBounds()) ? 0.55 : 1);
+    for (const f of figures) {
+      f.v!.sprite.setAlpha(covers(f.v!.box.depth, f.v!.sprite.getBounds()) ? 0.55 : 1);
+      this.updateGhost(f.u, f.v!);
+    }
+    for (const v of this.units.values()) if (!v.box.visible) v.ghost.setVisible(false);
+  }
+
+  /** La barra de vida y los estados siguen a cada figura (que se mueve con tweens). */
+  private followOverlays() {
+    for (const v of this.units.values()) {
+      v.overlay.setPosition(v.box.x, v.box.y).setVisible(v.box.visible).setAlpha(v.box.alpha).setScale(v.box.scale);
+    }
+  }
+
+  /**
+   * ¿Una loma de adelante tapa buena parte de la figura? Se mira la línea vertical del medio de la figura: el borde
+   * de arriba de la casilla más alta que la cruza (adelante y más alta que el piso de la figura) marca hasta dónde
+   * queda tapada. Si es más de un tercio, se dibuja su silueta encima.
+   */
+  private hiddenByTerrain(u: CombatUnit, v: UnitView): boolean {
+    const rect = v.sprite.getBounds();
+    if (!rect.height) return false;
+    const floor = heightAt(this.arena, u.x, u.y);
+    const sx = rect.centerX;
+    let edge = rect.bottom;
+    for (let y = u.y - 4; y <= u.y + 4; y++) {
+      for (let x = u.x - 4; x <= u.x + 4; x++) {
+        const top = this.tileTop[y]?.[x];
+        if (top === undefined || top <= floor || this.view.depth(x, y) <= v.box.depth) continue;
+        const t = this.view.pos(x, y, top);
+        const dx = Math.abs(t.x - sx);
+        if (dx >= TILE_W / 2) continue;
+        // Borde superior del rombo de la tapa a esa altura de x (la pendiente del rombo es 1/2).
+        edge = Math.min(edge, t.y - TILE_H / 2 + dx / 2);
+      }
+    }
+    return (rect.bottom - edge) / rect.height > 0.35;
+  }
+
+  private updateGhost(u: CombatUnit, v: UnitView) {
+    const show = this.hiddenByTerrain(u, v);
+    const g = v.ghost.setVisible(show);
+    if (!show) return;
+    const s = v.sprite;
+    g.setTexture(s.texture.key, s.frame.name).setFlipX(s.flipX).setRotation(s.rotation)
+      .setScale(s.scaleX * v.box.scale, s.scaleY * v.box.scale)
+      .setPosition(v.box.x + s.x * v.box.scale, v.box.y + s.y * v.box.scale);
   }
 
   // ── Unidades ──
@@ -450,10 +520,13 @@ export class CombatScene extends Phaser.Scene {
     const sprite = this.add.sprite(0, 0, look.key).setOrigin(0.5, 1).setScale(look.scale);
     if (look.tint !== undefined) sprite.setTint(look.tint);
     if (this.anims.exists(`${look.key}.walk`) && u.side === 'enemy') sprite.play(`${look.key}.walk`);
+    box.add([shadow, sprite]);
     const hp = this.add.graphics();
     const status = this.add.text(0, -sprite.displayHeight - 22, '', { fontSize: '13px' }).setOrigin(0.5, 1).setResolution(2);
-    box.add([shadow, sprite, hp, status]);
-    this.units.set(u.id, { box, sprite, hp, status, baseTint: look.tint, key: look.key });
+    const overlay = this.add.container(p.x, p.y, [hp, status]).setDepth(DEPTH.overlay);
+    const ghost = this.add.sprite(p.x, p.y, look.key).setOrigin(0.5, 1).setDepth(DEPTH.ghost).setVisible(false)
+      .setTint(GHOST_TINT[u.side]).setTintMode(Phaser.TintModes.FILL).setAlpha(0.45);
+    this.units.set(u.id, { box, sprite, ghost, overlay, hp, status, baseTint: look.tint, key: look.key });
   }
 
   /** Orienta la figura hacia (dx, dy): frente o espalda, y espejo. Los enemigos y quien camina se animan. */
@@ -501,29 +574,40 @@ export class CombatScene extends Phaser.Scene {
     this.drawHighlights();
   }
 
-  private diamond(g: Phaser.GameObjects.Graphics, x: number, y: number, color: number, alpha: number, stroke = false) {
+  /** Rombos blancos (relleno y borde) que se tiñen para marcar casillas. */
+  private makeMarkTextures() {
+    if (this.textures.exists('mark.fill')) return;
+    const g = this.add.graphics();
+    g.fillStyle(0xffffff, 1).fillPoints([new Phaser.Math.Vector2(30, 0), new Phaser.Math.Vector2(60, 15), new Phaser.Math.Vector2(30, 30), new Phaser.Math.Vector2(0, 15)], true);
+    g.generateTexture('mark.fill', 60, 30);
+    g.clear();
+    g.lineStyle(3, 0xffffff, 1).strokePoints([new Phaser.Math.Vector2(32, 2), new Phaser.Math.Vector2(62, 17), new Phaser.Math.Vector2(32, 32), new Phaser.Math.Vector2(2, 17)], true);
+    g.generateTexture('mark.line', 64, 34);
+    g.destroy();
+  }
+
+  /** Marca una casilla con un rombo de color. Va justo encima de su tapa: lo que está adelante lo tapa. */
+  private mark(list: Phaser.GameObjects.Image[], x: number, y: number, color: number, alpha: number, stroke = false) {
     const p = this.view.pos(x, y, heightAt(this.arena, x, y));
-    const pts = [new Phaser.Math.Vector2(p.x - 30, p.y), new Phaser.Math.Vector2(p.x, p.y - 15), new Phaser.Math.Vector2(p.x + 30, p.y), new Phaser.Math.Vector2(p.x, p.y + 15)];
-    if (stroke) {
-      g.lineStyle(3, color, 1);
-      g.strokePoints(pts, true);
-    } else {
-      g.fillStyle(color, alpha);
-      g.fillPoints(pts, true);
-    }
+    list.push(this.add.image(p.x, p.y, stroke ? 'mark.line' : 'mark.fill').setTint(color).setAlpha(stroke ? 1 : alpha).setDepth(this.view.depth(x, y, stroke ? 2 : 1)));
+  }
+
+  private clearMarks(list: Phaser.GameObjects.Image[]) {
+    list.forEach((m) => m.destroy());
+    list.length = 0;
   }
 
   /** Hielo, llamas y charcos sobre las casillas; la hierba quemada se oscurece. */
   private drawTerrain() {
     const cs = this.cs;
     if (!cs) return;
-    const g = this.terrainLayer;
-    g.clear();
+    const g = this.terrainMarks;
+    this.clearMarks(g);
     const burning = new Set<string>();
     for (const [k, fx] of Object.entries(cs.terrainFx)) {
       const [x, y] = k.split(',').map(Number);
       const [color, alpha] = TERRAIN_COLOR[fx.kind];
-      this.diamond(g, x, y, color, alpha);
+      this.mark(g, x, y, color, alpha);
       if (fx.kind !== 'llamas') continue;
       burning.add(k);
       if (this.flames.has(k)) continue;
@@ -543,16 +627,16 @@ export class CombatScene extends Phaser.Scene {
     for (const k of cs.burnt) this.grass.get(k)?.setTint(0x3a2a20).setAlpha(0.6);
     // Golpes anunciados: casillas marcadas en rojo hasta que caen.
     for (const p of cs.pending ?? []) for (const t of p.tiles) {
-      this.diamond(g, t.x, t.y, 0xff2a2a, 0.35);
-      this.diamond(g, t.x, t.y, 0xff2a2a, 1, true);
+      this.mark(g, t.x, t.y, 0xff2a2a, 0.35);
+      this.mark(g, t.x, t.y, 0xff2a2a, 1, true);
     }
   }
 
   private drawHighlights() {
-    const g = this.highlight;
-    g.clear();
+    const g = this.highlightMarks;
+    this.clearMarks(g);
     const h = combatHighlights(this.store);
-    const diamond = (x: number, y: number, color: number, alpha: number, stroke = false) => this.diamond(g, x, y, color, alpha, stroke);
+    const diamond = (x: number, y: number, color: number, alpha: number, stroke = false) => this.mark(g, x, y, color, alpha, stroke);
     h.move.forEach((t) => diamond(t.x, t.y, 0x5aa9ff, 0.38));
     h.range.forEach((t) => diamond(t.x, t.y, 0xff8a3d, 0.22));
     h.targets.forEach((t) => diamond(t.x, t.y, 0xff4a3a, 1, true));
@@ -570,7 +654,7 @@ export class CombatScene extends Phaser.Scene {
       return;
     }
     this.animating = true;
-    this.highlight.clear();
+    this.clearMarks(this.highlightMarks);
     this.marker.setVisible(false);
     this.play(fx, () => this.runQueue());
   }
@@ -687,12 +771,12 @@ export class CombatScene extends Phaser.Scene {
       case 'area': {
         sfx(elementSfx(fx.element));
         // Destello del área de la acción (cono, línea, radio).
-        const g = this.add.graphics().setDepth(-4900);
+        const flash: Phaser.GameObjects.Image[] = [];
         const color = (fx.element && ELEMENT_COLOR[fx.element]) ?? 0xffe9a8;
-        fx.tiles.forEach((t) => this.diamond(g, t.x, t.y, color, 0.7));
+        fx.tiles.forEach((t) => this.mark(flash, t.x, t.y, color, 0.7));
         const a = view(fx.from);
         if (a) this.tweens.add({ targets: a.box, scale: 1.08, yoyo: true, duration: 120 });
-        this.tweens.add({ targets: g, alpha: 0, duration: 420, onComplete: () => g.destroy() });
+        this.tweens.add({ targets: flash, alpha: 0, duration: 420, onComplete: () => this.clearMarks(flash) });
         return void this.time.delayedCall(260, done);
       }
       case 'telegraph':

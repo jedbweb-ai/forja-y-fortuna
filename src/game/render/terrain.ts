@@ -7,6 +7,8 @@ export interface GroundSpec {
   height: (c: number, r: number) => number;
   tile: (c: number, r: number) => string;
   sideTint: (c: number, r: number) => number;
+  /** Casillas que no se dibujan (vacío en las arenas de silueta irregular). */
+  skip?: (c: number, r: number) => boolean;
 }
 
 /** Posición en pantalla del centro de la casilla, contando su altura. */
@@ -30,6 +32,7 @@ export function drawGround(scene: Phaser.Scene, g: GroundSpec): GroundPiece[] {
   const pieces: GroundPiece[] = [];
   for (let r = 0; r < g.rows; r++) {
     for (let c = 0; c < g.cols; c++) {
+      if (g.skip?.(c, r)) continue;
       const h = g.height(c, r);
       const base = isoToScreen(c, r);
       // Con arte definitivo, cada suelo puede tener su cara lateral (tile.<suelo>.side); si no, la genérica teñida.

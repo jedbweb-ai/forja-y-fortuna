@@ -1,6 +1,7 @@
 import type { Content } from '../core/content';
 import type { Condition, DialogueEffect, Effect, SynergyCondition } from '../core/types';
 import { BALANCE } from '../config/balance';
+import { arenaProblems } from '../core/combat/arenaCheck';
 import type { CraftSpec, QuestReward } from '../core/town/types';
 
 /** Revisa referencias cruzadas del contenido. Devuelve la lista de errores (vacía = OK). */
@@ -96,17 +97,7 @@ export function validateContent(c: Content): string[] {
     m.loot.forEach((l) => mat(l.material, `monstruo ${m.id}`));
     m.halfHp?.summon?.forEach((id) => { if (!c.monsters[id]) errors.push(`monstruo ${m.id}: invoca "${id}" inexistente`); });
   }
-  for (const a of Object.values(c.arenas)) {
-    const cols = a.terrain[0]?.length ?? 0;
-    if (a.terrain.some((r) => r.length !== cols) || a.heights.length !== a.terrain.length || a.heights.some((r) => r.length !== cols)) {
-      errors.push(`arena ${a.id}: filas de distinto largo`);
-    }
-    for (const p of [...a.partySpawns, ...a.enemySpawns]) {
-      if (a.terrain[p.y]?.[p.x] === undefined || a.terrain[p.y][p.x] === '#') errors.push(`arena ${a.id}: aparición en (${p.x},${p.y}) bloqueada`);
-    }
-    if (a.enemySpawns.length < 7) errors.push(`arena ${a.id}: necesita 7 lugares de enemigos`);
-    if (a.partySpawns.length < BALANCE.MAX_PARTY_SIZE + 1) errors.push(`arena ${a.id}: necesita ${BALANCE.MAX_PARTY_SIZE + 1} lugares para el grupo`);
-  }
+  for (const a of Object.values(c.arenas)) errors.push(...arenaProblems(a));
   for (const r of Object.values(c.regions).filter((x) => x.available)) {
     if (r.bossArena && !c.arenas[r.bossArena]) errors.push(`región ${r.id}: arena de jefe inexistente "${r.bossArena}"`);
     if (r.unlock?.bossOf && !c.regions[r.unlock.bossOf]?.boss) errors.push(`región ${r.id}: se abre con el jefe de "${r.unlock.bossOf}", que no tiene jefe`);

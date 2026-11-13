@@ -121,16 +121,26 @@ export interface MonsterDef {
 /** 'jefe': arenas de jefe de mazmorra (se eligen por id, nunca al azar). */
 export type Biome = 'pradera' | 'bosque' | 'colinas' | 'campamento' | 'cripta' | 'cueva' | 'jefe' | 'montana' | 'pantano' | 'ruinas' | 'volcan';
 
-/** Arena chica de combate. `terrain`: '.' suelo, ',' hierba alta, 'w' agua baja, '#' bloqueo. */
+/**
+ * Arena de combate. `terrain`, un carácter por casilla:
+ * '.' suelo del bioma, ':' sendero de tierra, '=' losas de piedra, ',' hierba alta, 'w' agua baja, 'l' lava,
+ * ' ' vacío (no hay casilla: la arena tiene silueta irregular),
+ * obstáculos que tapan el paso y el tiro: '#' el del bioma, 'T' árbol, 'R' roca, 'C' columna o ruina.
+ * `heights`: un dígito de altura por casilla (0 a 9).
+ */
 export interface ArenaDef {
   id: string;
   biome: Biome;
   /** Aspecto (suelo y obstáculos) si no es el del bioma; lo usan las arenas de jefe. */
   look?: Biome;
+  /** Generación: si un bioma ya tiene arenas de la 2 (grandes, irregulares), solo se usan esas. */
+  gen?: 2;
   terrain: string[];
   heights: string[];
   partySpawns: { x: number; y: number }[];
   enemySpawns: { x: number; y: number }[];
+  /** Emboscada: lugares detrás o al costado del grupo donde aparecen algunos enemigos (más seguido de noche). */
+  ambushSpawns?: { x: number; y: number }[];
 }
 
 // ───────────────────────── Estado ─────────────────────────

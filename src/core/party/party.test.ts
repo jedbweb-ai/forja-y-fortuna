@@ -103,7 +103,8 @@ describe('mercenarios', () => {
     goTo(s, ctx, 'taberna');
     hireMercenary(s, ctx, 'brunilda');
     hireMercenary(s, ctx, 'ciro');
-    expect(() => hireMercenary(s, ctx, 'nayra')).toThrow();
+    hireMercenary(s, ctx, 'nayra');
+    expect(() => hireMercenary(s, ctx, 'gualterio')).toThrow();
     const daga = makeItem(s, 'daga', { hoja: 'hierro', guarda: 'hierro', mango: 'pino' });
     equipItem(s, ctx, 'brunilda', daga.uid);
     dismissMercenary(s, ctx, 'brunilda');

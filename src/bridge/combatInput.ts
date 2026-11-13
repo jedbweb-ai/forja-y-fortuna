@@ -1,6 +1,6 @@
 import { calcAttack, type AttackCalc } from '../core/combat/damage';
 import { canUseSkill, currentUnit, effectiveSkill } from '../core/combat/engine';
-import { dist, reachable, skillRange, targetsFor, tileInRange, unitAt, type Pt } from '../core/combat/grid';
+import { dist, hasSight, isFloor, needsSight, reachable, skillRange, targetsFor, tileInRange, unitAt, type Pt } from '../core/combat/grid';
 import { areaTiles } from '../core/combat/terrain';
 import type { CombatUnit } from '../core/combat/types';
 import { combatMove, combatPotion, combatSkill } from '../core/world/expedition';
@@ -77,6 +77,12 @@ export function combatTap(store: GameStore, x: number, y: number) {
       else store.setUi({ combat: { ...ui.combat, target: { x, y } } });
       return;
     }
+    // Un enemigo al alcance pero tapado: se avisa en vez de cancelar en silencio.
+    const [, max] = skillRange(c, cs, u, skill, u, { x, y });
+    if (target && target.side !== u.side && needsSight(skill) && dist(u, target) <= max && !hasSight(c.arenas[cs.arenaId], u, target)) {
+      store.toast('No hay línea de tiro: algo lo tapa. Buscá altura o rodealo.', 'bad');
+      return;
+    }
     store.setUi({ combat: { mode: null } });
     return;
   }
@@ -115,7 +121,10 @@ export function combatHighlights(store: GameStore): Highlights {
     for (let y = 0; y < a.terrain.length; y++) {
       for (let x = 0; x < a.terrain[0].length; x++) {
         const d = dist(u, { x, y });
-        if (d >= min && d <= (skill.charge ? skill.charge + 1 : max) && d > 0) out.range.push({ x, y });
+        if (!isFloor(a, x, y) || d < min || d > (skill.charge ? skill.charge + 1 : max) || d === 0) continue;
+        // A distancia, solo se marca lo que se ve.
+        if (needsSight(skill) && !hasSight(a, u, { x, y })) continue;
+        out.range.push({ x, y });
       }
     }
     out.targets = targetsFor(c, cs, u, skill).map((t) => ({ x: t.x, y: t.y }));

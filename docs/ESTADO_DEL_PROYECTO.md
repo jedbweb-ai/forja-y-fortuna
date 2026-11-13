@@ -40,7 +40,15 @@ Resumen para retomar en un chat nuevo. El diseño completo está en `docs/GAME_D
 - **Darles más vida a los lugares ilustrados.** El estilo está bien, pero falta lo que hace que se sientan naturales: árboles, plantas y faroles afuera de cada tienda, gente y cosas en la calle (bancos, macetas, carros, perros) y bordes que no terminen en vacío. Se puede resolver pidiendo nuevas versiones de las ilustraciones (sumando eso al pedido de interiores en `src/tools/assetList.ts`) o agregando adornos por código sobre la imagen.
 - **En curso: rehacer cómo funcionan las expediciones y las batallas.** Abajo está cómo funcionan hoy. Plan aprobado en 4 etapas:
   1. **Cámara giratoria en combate (hecha).** La arena gira de a 90° con transición (⟲ ⟳ o Q/E), se arrastra, se acerca con dos dedos o la rueda, ⤢/R alterna entre la arena entera y la vista cercana, y lo que tapa a una figura se vuelve transparente. Todo pasa por `IsoView` (`src/game/render/view.ts`); la interfaz le habla a la escena por `src/bridge/combatView.ts`.
-  2. **Arenas nuevas:** unas 16×16 casillas, alturas de hasta 6, rampas, muros, puentes, cobertura, línea de visión y enemigos por varios lados. Se rehacen las 24 arenas y se rebalancea.
+  2. **Arenas nuevas** (en curso). Primera tanda hecha:
+     - Motor: casillas vacías (' ') para siluetas irregulares, obstáculos con tipo ('T' árbol, 'R' roca, 'C' columna), superficies (':' sendero, '=' losas), alturas de 0 a 9 y emboscadas (`ambushSpawns`, más seguido de noche, nunca con jefes ni en mazmorras).
+     - Línea de tiro (`hasSight` en `core/combat/grid.ts`): la cortan obstáculos y terreno más alto que la recta; desde arriba se tira por encima.
+     - Grupo de 4 (5 con el cuarto), +1 de movimiento para todos.
+     - La IA se acerca por el camino real, respetando el salto.
+     - Dibujo: el suelo se ordena junto con las figuras (una loma de adelante tapa), marcas de casilla por pieza, silueta de quien queda tapado, barras de vida siempre arriba.
+     - Chequeo de arenas en `core/combat/arenaCheck.ts`: en las nuevas, se llega a todo con salto 1.
+     - 3 arenas de muestra en `data/arenas2.ts` (`gen: 2`): pradera_terrazas, bosque_hondonada y colinas_mesetas. Si un bioma tiene arenas nuevas, solo se usan esas (`arenasFor`).
+     - Falta la segunda tanda: las otras 21 arenas (cuevas, cripta, montaña, pantano, ruinas, volcán, campamento y jefes) y, al reemplazar las viejas, migrar partidas guardadas en medio de un combate.
   3. **Expediciones, dos formatos a prueba en Linde de Brezal:** A, mapa de rutas con paradas; B, exploración libre mejorada (caminar solo hasta donde se toca, mapa más lleno, recolectar en una acción). El usuario elige uno y se extiende a todas las regiones.
   4. **Arte nuevo** para lo anterior, pedido desde `herramientas/arte.html`.
 
@@ -50,7 +58,7 @@ Resumen para retomar en un chat nuevo. El diseño completo está en `docs/GAME_D
 
 1. **Elegir adónde ir.** En la herrería, el botón «Expedición» abre el mapa del mundo (`WorldMapScene`).
    - Se elige una región (`ExpeditionPanel`). Las regiones tienen peligro visible y algunas se abren con reputación o al vencer a un jefe.
-   - Se elige el grupo: el herrero y hasta 2 compañeros, 3 con la mejora «Cuarto para compañeros».
+   - Se elige el grupo: el herrero y hasta 3 compañeros, 4 con la mejora «Cuarto para compañeros» (antes 2 y 3).
    - Salir consume una franja de ida (`startExpedition` en `src/core/world/expedition.ts`).
 2. **Recorrer la región.** Es un mapa isométrico por casillas (`RegionScene`, `src/core/world/region.ts`), con vetas, árboles, hierbas y animales.
    - Para recolectar hace falta la herramienta adecuada (`gather`).

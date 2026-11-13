@@ -3,7 +3,7 @@ import type { Rng } from '../rng';
 import type { GameState } from '../types';
 import { calcAttack, expectedDamage } from './damage';
 import { canUseSkill, endTurn, moveUnit, useSkill } from './engine';
-import { arenaOf, dist, hasStatus, heightAt, reachable, targetsFor, type Pt } from './grid';
+import { arenaOf, dist, hasStatus, heightAt, isFloor, reachable, targetsFor, type Pt } from './grid';
 import type { CombatFx, CombatState, CombatUnit } from './types';
 
 interface Plan {
@@ -19,6 +19,33 @@ function enemiesOf(cs: CombatState, u: CombatUnit) {
 
 function alliesOf(cs: CombatState, u: CombatUnit) {
   return cs.units.filter((x) => x.alive && x.side === u.side);
+}
+
+/**
+ * Pasos caminando (con el salto de la unidad, sin contar figuras) desde cada casilla hasta el enemigo más cercano.
+ * Sirve para acercarse bordeando acantilados en vez de quedarse abajo mirando.
+ */
+function walkDistances(c: Content, cs: CombatState, u: CombatUnit): Map<string, number> {
+  const a = arenaOf(c, cs);
+  const out = new Map<string, number>();
+  const queue: Pt[] = [];
+  for (const e of enemiesOf(cs, u)) {
+    out.set(`${e.x},${e.y}`, 0);
+    queue.push({ x: e.x, y: e.y });
+  }
+  while (queue.length) {
+    const p = queue.shift()!;
+    const d = out.get(`${p.x},${p.y}`)!;
+    for (const [dx, dy] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) {
+      const n = { x: p.x + dx, y: p.y + dy };
+      const k = `${n.x},${n.y}`;
+      if (out.has(k) || !isFloor(a, n.x, n.y)) continue;
+      if (Math.abs(heightAt(a, n.x, n.y) - heightAt(a, p.x, p.y)) > u.jump) continue;
+      out.set(k, d + 1);
+      queue.push(n);
+    }
+  }
+  return out;
 }
 
 /** Valor de una posición según el rol (distancia, altura, cercanía a aliados). */
@@ -89,12 +116,14 @@ export function planTurn(c: Content, s: GameState, cs: CombatState, u: CombatUni
 
   if (best.skill && best.score > 0) return best;
 
-  // Sin nada para hacer: acercarse (o, si es tirador, quedar a media distancia).
+  // Sin nada para hacer: acercarse por donde se pueda caminar (o, si es tirador, quedar a media distancia).
   const want = u.ai === 'tirador' || u.ai === 'sanador' ? 3 : 1;
+  const walk = walkDistances(c, cs, u);
   let move = { x: u.x, y: u.y };
   let bestDist = Infinity;
   for (const p of positions) {
-    const d = Math.min(...enemies.map((e) => Math.abs(dist(p, e) - want)));
+    const steps = walk.get(`${p.x},${p.y}`) ?? 50 + Math.min(...enemies.map((e) => dist(p, e)));
+    const d = Math.abs(steps - want);
     const score = d - positionScore(c, cs, u, p) * 0.1;
     if (score < bestDist) {
       bestDist = score;

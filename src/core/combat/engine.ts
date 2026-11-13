@@ -11,7 +11,7 @@ import type { Affinity, GameState } from '../types';
 import type { MonsterGroup } from '../world/types';
 import { attackProps, calcAttack, dominantElement } from './damage';
 import {
-  arenaOf, chargeLanding, DIR_VEC, dirTo, dist, hasStatus, heightAt, inBounds, isFloor, reachable, targetsFor, tileInRange, unitAt, type Pt,
+  arenaOf, chargeLanding, DIR_VEC, dirTo, dist, freeTileNear, hasStatus, heightAt, inBounds, isFloor, reachable, targetsFor, tileInRange, unitAt, type Pt,
 } from './grid';
 import { applyTerrain, areaTiles, decayTerrain, isWet, terrainForElement, terrainFxAt, unitsOn, waterNetwork } from './terrain';
 import type { CombatFx, CombatSkill, CombatState, CombatUnit, StatusId } from './types';
@@ -63,23 +63,43 @@ export function monsterUnit(c: Content, id: string, uid: string): CombatUnit {
   const m = c.monsters[id];
   return {
     id: uid, side: 'enemy', name: m.name, monsterId: m.id, sprite: m.sprite,
-    x: 0, y: 0, facing: 2, hp: m.hp, maxHp: m.hp, atk: m.atk, def: m.def, spd: m.spd, move: m.move, jump: m.jump,
+    x: 0, y: 0, facing: 2, hp: m.hp, maxHp: m.hp, atk: m.atk, def: m.def, spd: m.spd, move: m.move + CB.monsterMoveBonus, jump: m.jump,
     evasion: m.evasion, crit: 0.05, damageType: m.damageType, affinities: { ...(m.affinities ?? {}) }, resist: m.resist,
     elemental: m.elemental, immune: m.immune ?? [], combat: m.regen ? { regen: m.regen } : {}, skills: [...m.skills], cooldowns: {}, statuses: [], abilities: {},
     ai: m.ai, boss: m.boss, moved: false, acted: false, alive: true, shieldedBy: m.shieldedBy,
   };
 }
 
-export function buildCombat(c: Content, s: GameState, group: MonsterGroup, arenaId: string, members: string[]): CombatState {
+/**
+ * Arma el combate. Con `ambush`, los últimos enemigos del grupo (hasta BALANCE.combat.ambushCount) aparecen en los
+ * lugares de emboscada de la arena, detrás o al costado del grupo.
+ */
+export function buildCombat(c: Content, s: GameState, group: MonsterGroup, arenaId: string, members: string[], ambush = false): CombatState {
   const arena = c.arenas[arenaId];
   const party = partyUnits(c, s, members);
   if (!party.length) throw new GameError('No hay nadie en condiciones de pelear.');
-  party.forEach((u, i) => Object.assign(u, arena.partySpawns[i % arena.partySpawns.length]));
-  const enemies = group.monsters.slice(0, arena.enemySpawns.length).map((id, i) => {
+  // Si faltan lugares (arenas viejas, grupo de 5), el resto va a la casilla libre más cercana.
+  const taken: Pt[] = [];
+  const place = (u: CombatUnit, spot: Pt | undefined, fallback: Pt) => {
+    Object.assign(u, freeTileNear(arena, spot && !taken.some((t) => t.x === spot.x && t.y === spot.y) ? spot : fallback, taken));
+    taken.push({ x: u.x, y: u.y });
+  };
+  party.forEach((u, i) => place(u, arena.partySpawns[i], arena.partySpawns[0]));
+  const hidden = ambush && !group.boss ? Math.max(0, Math.min(CB.ambushCount, arena.ambushSpawns?.length ?? 0, group.monsters.length - 1)) : 0;
+  // Los que no entran en los lugares de la arena se quedan afuera.
+  const list = group.monsters.slice(0, arena.enemySpawns.length + hidden);
+  const front = list.length - hidden;
+  const enemies = list.map((id, i) => {
     const u = monsterUnit(c, id, `e${i}`);
-    Object.assign(u, arena.enemySpawns[i]);
+    place(u, i < front ? arena.enemySpawns[i] : arena.ambushSpawns![i - front], arena.enemySpawns[0]);
     return u;
   });
+  // Todos arrancan mirando hacia el otro bando.
+  const center = (list: { x: number; y: number }[]) => ({ x: list.reduce((n, p) => n + p.x, 0) / list.length, y: list.reduce((n, p) => n + p.y, 0) / list.length });
+  const pc = center(party);
+  const ec = center(enemies.length ? enemies : party);
+  party.forEach((u) => { u.facing = dirTo(u, ec); });
+  enemies.forEach((u) => { u.facing = dirTo(u, pc); });
   // Nombres distinguibles: "Lobo gris A", "Lobo gris B"...
   const counts: Record<string, number> = {};
   enemies.forEach((u) => { counts[u.name] = (counts[u.name] ?? 0) + 1; });
@@ -91,6 +111,7 @@ export function buildCombat(c: Content, s: GameState, group: MonsterGroup, arena
     arenaId, groupId: group.id, boss: !!group.boss, units: [...party, ...enemies], round: 0, order: [], turnIndex: 0,
     log: [], outcome: null, flags: {}, ammoUsed: {}, nextUnitId: enemies.length, terrainFx: {}, burnt: [],
   };
+  if (hidden) log(cs, '¡Emboscada! Hay enemigos a sus espaldas.');
   // La lava ('l') es fuego que no se apaga en todo el combate.
   arena.terrain.forEach((row, y) => [...row].forEach((ch, x) => {
     if (ch === 'l') cs.terrainFx[`${x},${y}`] = { kind: 'llamas', turns: 999 };

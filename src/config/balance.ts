@@ -1,7 +1,8 @@
 // Todos los valores de balance del juego, en un solo lugar.
 
 export const BALANCE = {
-  MAX_PARTY_SIZE: 3,
+  /** Grupo en combate: el herrero y 3 compañeros (uno más con el cuarto para compañeros). */
+  MAX_PARTY_SIZE: 4,
 
   start: {
     gold: 120,
@@ -166,7 +167,8 @@ export const BALANCE = {
     /** Experiencia para pasar del nivel n al n+1: xpPerLevel * n. */
     xpPerLevel: 50,
     maxLevel: 30,
-    baseMove: 3,
+    /** 4 desde las arenas grandes (antes 3). */
+    baseMove: 4,
     baseJump: 1,
     baseSpd: 4,
     baseCrit: 0.05,
@@ -268,6 +270,16 @@ export const BALANCE = {
     rangePerHeight: 0.5,
     fallDamagePerLevel: 6,
     collisionDamage: 5,
+    /** Movimiento extra de todos los monstruos (se sumó con las arenas grandes). */
+    monsterMoveBonus: 1,
+    /** Línea de tiro, en niveles de altura: ojos del que tira, pecho del objetivo y alto de un obstáculo. */
+    sightEye: 1.5,
+    sightChest: 1,
+    obstacleHeight: 2.5,
+    /** Probabilidad de emboscada (de día y de noche) y cuántos enemigos aparecen detrás o al costado. */
+    ambushDay: 0.1,
+    ambushNight: 0.35,
+    ambushCount: 2,
     waterMoveCost: 2,
     traitStatusChance: 0.35,
     dotPower: { sangrado: 3, quemadura: 4, veneno: 0.05 } as Record<string, number>,
