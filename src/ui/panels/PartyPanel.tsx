@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { maxPartySize } from '../../core/progress/progress';
 import { BALANCE } from '../../config/balance';
 import { beltTotal, fieldPotion, setBelt } from '../../core/magic/alchemy';
-import { equipItem, slotsFor, unequipItem } from '../../core/party/equipment';
+import { equipItem, isTwoHanded, slotsFor, unequipItem } from '../../core/party/equipment';
+import type { ItemInstance } from '../../core/types';
 import { dismissMercenary } from '../../core/party/mercenaries';
 import { isInjured, xpToNext } from '../../core/party/progression';
 import { characterProfile, itemRequirements } from '../../core/party/stats';
@@ -31,11 +32,8 @@ export function PartyPanel() {
   const injured = isInjured(s, ch);
   const arrows = s.items.filter((i) => i.category === 'municion').reduce((a, i) => a + i.quantity, 0);
 
-  const candidates = picking
-    ? s.items.filter((i) => slotsFor(c, i).includes(picking) && (i.quantity === 1 || i.category === 'arrojadizo') && i.equippedBy !== ch.id)
-    : [];
-
   return (
+    <>
     <Panel title="Grupo" subtitle={`${s.party.length} de ${maxPartySize(c, s)} · Las habilidades de combate salen del equipo que les forjás`} wide>
       <div className="tabs">
         {s.party.map((id) => (
@@ -113,44 +111,111 @@ export function PartyPanel() {
                     </small>
                   </span>
                 ) : <span className="grow muted">— vacío —</span>}
-                <button className="btn" disabled={!!s.expedition?.combat} onClick={() => setPicking(picking === slot ? null : slot)}>{item ? 'Cambiar' : 'Poner'}</button>
+                <button className="btn" disabled={!!s.expedition?.combat} onClick={() => setPicking(slot)}>{item ? 'Cambiar' : 'Poner'}</button>
                 {item && <button className="btn" disabled={!!s.expedition?.combat} onClick={() => store.run(unequipItem, ch.id, slot)}>Quitar</button>}
               </div>
             );
           })}
-          {picking && (
-            <div className="pick-list">
-              <h4>Elegí: {SLOT_LABEL[picking]}</h4>
-              {!candidates.length && <p className="muted small">No tenés nada para este lugar. ¡Forjalo!</p>}
-              <ul className="item-rows">
-                {candidates.map((i) => {
-                  const req = itemRequirements(i);
-                  const weak = Math.floor(ch.attributes.fuerza) < req.fuerza || Math.floor(ch.attributes.voluntad) < req.voluntad;
-                  const other = i.equippedBy ? s.characters[i.equippedBy]?.name : null;
-                  return (
-                    <li key={i.uid} className={`clickable ${RARITY_CLASS[i.rarity]}`} onClick={() => { if (store.run(equipItem, ch.id, i.uid, picking)) setPicking(null); }}>
-                      <Swatch icon={itemIcon(i)} color={i.color} />
-                      <span className="grow">
-                        <b>{i.name}</b>
-                        <small className="muted block">
-                          {i.category === 'joyeria' ? jewelLine(i) : i.category === 'escudo' || i.category === 'armadura' ? `Def ${i.stats.def}` : `Daño ${i.stats.atk}`}
-                          {i.category === 'arrojadizo' ? ` · ${i.quantity} unidades` : ` · Peso ${i.stats.wgt}`}
-                          {req.fuerza ? ` · Fuerza ${req.fuerza}` : ''}{req.voluntad ? ` · Voluntad ${req.voluntad}` : ''}
-                          {other ? ` · lo tiene ${other}` : ''}
-                        </small>
-                      </span>
-                      {weak && <span className="bad-text small">⚠</span>}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
           <BeltSection charId={ch.id} />
         </section>
       </div>
       <WaitingCompanions />
     </Panel>
+    {picking && <EquipPicker charId={ch.id} slot={picking} onClose={() => setPicking(null)} />}
+    </>
+  );
+}
+
+type Item = ItemInstance;
+
+/** Número principal para comparar: daño en armas, defensa en escudos y armaduras (null en joyas). */
+function mainStat(i: Item | undefined): { label: string; value: number } | null {
+  if (!i || i.category === 'joyeria') return null;
+  if (i.category === 'escudo' || i.category === 'armadura') return { label: 'Defensa', value: i.stats.def };
+  return { label: 'Daño', value: i.stats.atk };
+}
+
+/** Ventanita para elegir qué poner en un lugar del equipo, sin perder de vista el panel. */
+function EquipPicker({ charId, slot, onClose }: { charId: string; slot: EquipSlot; onClose: () => void }) {
+  const s = useGame();
+  const c = store.content;
+  const ch = s.characters[charId];
+  const current = ch.equipment[slot] ? s.items.find((i) => i.uid === ch.equipment[slot]) : undefined;
+  const now = mainStat(current);
+  const twoHanded = slot === 'escudo' && isTwoHanded(c, s.items.find((i) => i.uid === ch.equipment.arma));
+  const str = Math.floor(ch.attributes.fuerza);
+  const will = Math.floor(ch.attributes.voluntad);
+
+  const candidates = s.items
+    .filter((i) => slotsFor(c, i).includes(slot) && (i.quantity === 1 || i.category === 'arrojadizo') && i.equippedBy !== ch.id)
+    .map((i) => {
+      const req = itemRequirements(i);
+      return { i, req, weak: str < req.fuerza || will < req.voluntad, stat: mainStat(i) };
+    })
+    // Primero lo que puede usar sin problemas, y de eso lo más fuerte.
+    .sort((a, b) => Number(a.weak) - Number(b.weak) || (b.stat?.value ?? 0) - (a.stat?.value ?? 0) || b.i.quality - a.i.quality);
+
+  const pick = (uid: string) => { if (store.run(equipItem, ch.id, uid, slot)) onClose(); };
+
+  return (
+    <div className="card-backdrop picker-backdrop" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+      <section className="equip-picker" role="dialog" aria-label={`Elegir ${SLOT_LABEL[slot]}`}>
+        <header className="picker-head">
+          <div>
+            <h3>{SLOT_LABEL[slot]} <small className="muted">· {ch.name}</small></h3>
+            <small className="muted">
+              Fuerza {str} · Voluntad {will}
+              {current ? <> · Ahora: <b>{current.name}</b>{now ? ` (${now.label} ${now.value})` : ''}</> : ' · Ahora: vacío'}
+            </small>
+          </div>
+          <button className="btn-icon" data-key="esc" onClick={onClose} aria-label="Cerrar" title="Cerrar (Esc)">✕</button>
+        </header>
+        <div className="picker-body">
+          {twoHanded && <p className="bad-text small">El arma que tiene ocupa las dos manos: sacala para poder usar escudo.</p>}
+          {!candidates.length && <p className="muted small">No tenés nada para este lugar. ¡Forjalo!</p>}
+          <ul className="item-rows">
+            {candidates.map(({ i, req, weak, stat }) => {
+              const other = i.equippedBy ? s.characters[i.equippedBy]?.name : null;
+              const diff = stat && now && now.label === stat.label ? Math.round((stat.value - now.value) * 10) / 10 : null;
+              const broken = i.category !== 'joyeria' && i.category !== 'arrojadizo' && i.durability <= 0;
+              return (
+                <li key={i.uid} className={`clickable ${RARITY_CLASS[i.rarity]}`} onClick={() => pick(i.uid)}>
+                  <Swatch icon={itemIcon(i)} color={i.color} />
+                  <span className="grow">
+                    <b>{i.name}</b> <small className="muted">{i.rarity} · calidad {i.quality}</small>
+                    <small className="muted block">
+                      {i.category === 'joyeria' ? jewelLine(i) : i.category === 'arrojadizo' ? `${i.quantity} unidades` : `Peso ${i.stats.wgt} · Durabilidad ${i.durability}/${i.maxDurability}`}
+                      {broken && <b className="bad-text"> · ROTA</b>}
+                      {isTwoHanded(c, i) && ' · Dos manos'}
+                      {other && ` · lo tiene ${other}`}
+                    </small>
+                    {(req.fuerza > 0 || req.voluntad > 0) && (
+                      <small className="block">
+                        Pide{req.fuerza > 0 && <span className={str < req.fuerza ? 'bad-text' : 'good-text'}> Fuerza {req.fuerza}</span>}
+                        {req.voluntad > 0 && <span className={will < req.voluntad ? 'bad-text' : 'good-text'}> Voluntad {req.voluntad}</span>}
+                        {weak && <span className="bad-text"> · le cuesta usarlo</span>}
+                      </small>
+                    )}
+                  </span>
+                  {stat && (
+                    <span className="picker-stat">
+                      <b>{stat.value}</b>
+                      <small className="muted">{stat.label}</small>
+                      {diff !== null && diff !== 0 && <small className={diff > 0 ? 'good-text' : 'bad-text'}>{diff > 0 ? `▲ +${diff}` : `▼ ${diff}`}</small>}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        {current && (
+          <footer className="picker-foot">
+            <button className="btn" onClick={() => { if (store.run(unequipItem, ch.id, slot)) onClose(); }}>Quitar {current.name}</button>
+          </footer>
+        )}
+      </section>
+    </div>
   );
 }
 
