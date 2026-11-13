@@ -143,7 +143,8 @@ export function pendingSheets(list: AssetEntry[], hasArt: (key: string) => boole
   const types = [...PRIORITY, ...[...new Set(list.map((e) => e.type))].filter((t) => !PRIORITY.includes(t))];
   for (const type of types) {
     const [cols, rows] = SHEET_GRID[type];
-    const pending = list.filter((e) => e.type === type && !hasArt(e.key));
+    // Una espalda se pide con el dibujo de frente como referencia: espera a que exista el frente.
+    const pending = list.filter((e) => e.type === type && !hasArt(e.key) && (!isBack(type) || hasArt(frontKey(e.key))));
     for (let i = 0; i < pending.length; i += cols * rows) {
       const entries = pending.slice(i, i + cols * rows);
       out.push({ n: out.length + 1, type, group: entries[0].group, entries, cols, rows });
