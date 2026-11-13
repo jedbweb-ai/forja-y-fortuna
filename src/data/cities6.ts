@@ -17,6 +17,19 @@ function scene(
   };
 }
 
+/** Un taller chico para una sucursal: mostrador, yunque y fragua, estantes y la calle de afuera. */
+function branchScene(floor: string): LiveSceneDef {
+  return scene(floor, 9, 8, [
+    { key: 'prop.forge', x: 1, y: 0, blocks: true }, { key: 'prop.anvil', x: 2, y: 2, blocks: true },
+    { key: 'prop.rack', x: 5, y: 0, blocks: true }, { key: 'prop.rack', x: 7, y: 0, blocks: true },
+    { key: 'prop.counter', x: 4, y: 4, blocks: true }, { key: 'prop.counter', x: 5, y: 4, blocks: true },
+    { key: 'prop.chest', x: 8, y: 3, blocks: true }, { key: 'prop.barrel', x: 0, y: 3, blocks: true }, { key: 'prop.lamp', x: 8, y: 7, blocks: true },
+  ], [{ id: 'mostrador', label: 'Mostrador', x: 4, y: 4, action: 'shop' }], {}, {
+    spawn: { x: 2, y: 5 }, doors: [{ x: 4, y: 7 }], ambient: { 'mañana': 0, tarde: 0, noche: 0 }, carts: true,
+    staffSpots: { vendedor: [{ x: 4, y: 3 }, { x: 5, y: 3 }], aprendiz: [{ x: 3, y: 2 }, { x: 2, y: 3 }], encargado: [{ x: 6, y: 1 }, { x: 6, y: 2 }] },
+  });
+}
+
 export const CITIES_6: City[] = [
   {
     id: 'puertoseco', name: 'Puertoseco',
@@ -80,6 +93,13 @@ export const CITIES_6: City[] = [
           { key: 'prop.lamp', x: 8, y: 7, blocks: true },
         ], [], {}, { ambient: { 'mañana': 1, tarde: 2, noche: 3 } }),
       },
+      {
+        id: 'ps_taller', name: 'Tu taller en Puertoseco', kind: 'herreria', available: true,
+        branch: { price: 500, reputation: 20 },
+        map: { x: 190, y: 470, w: 120, h: 85, roof: '#7a3b2e' },
+        description: 'Un local chico cerca del puerto, con mostrador y un yunque. Si lo comprás, tu gente lo atiende mientras no estás.',
+        scene: branchScene('tile.wood'),
+      },
     ],
   },
   {
@@ -138,6 +158,13 @@ export const CITIES_6: City[] = [
           { key: 'prop.counter', x: 3, y: 1, blocks: true }, { key: 'prop.bench', x: 1, y: 4, blocks: true }, { key: 'prop.bench', x: 6, y: 4, blocks: true }, { key: 'prop.alfombra', x: 4, y: 4 },
           { key: 'prop.lamp', x: 8, y: 7, blocks: true },
         ], [], {}, { ambient: { 'mañana': 1, tarde: 2, noche: 3 } }),
+      },
+      {
+        id: 'fc_taller', name: 'Tu taller en Fuerte Ceniza', kind: 'herreria', available: true,
+        branch: { price: 700, reputation: 30 },
+        map: { x: 300, y: 470, w: 120, h: 85, roof: '#5a4a3a' },
+        description: 'Un taller de piedra junto a los cuarteles, con mostrador y un yunque. Si lo comprás, tu gente lo atiende mientras no estás.',
+        scene: branchScene('tile.wood_dark'),
       },
     ],
   },

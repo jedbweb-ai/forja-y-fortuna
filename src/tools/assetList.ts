@@ -328,6 +328,13 @@ const INTERIORS: Record<string, string> = {
     + 'La entrada, adelante al centro, da a la calle.',
   fc_posada: 'El cuartel de huéspedes del fuerte: sencillo y ordenado. Piso de tablones y paredes de piedra con mantas de lana dobladas en estantes y una fila de catres contra la pared izquierda. '
     + 'Muebles, como en el plano: atrás, un mostrador con un libro de registro y llaves; dos bancos de madera; una alfombra gastada al centro; adelante a la derecha, un farol. La entrada, adelante al centro, da a la calle.',
+  // Las sucursales: talleres chicos que el herrero compra en otras ciudades.
+  ps_taller: 'Un taller de herrería chico en Puertoseco, que el protagonista acaba de comprar: modesto pero prolijo. Piso de tablones claros y paredes blancas con vigas de madera, una ventana al mar, sogas y redes colgadas. '
+    + 'Muebles, como en el plano: en la esquina del fondo, una fragua chica de piedra encendida; delante, un yunque sobre un tronco; contra la pared del fondo derecha, dos armeros con algunas armas; '
+    + 'adelante al centro, el mostrador de la tienda con armas y herramientas a la venta; a la derecha, un arcón; a la izquierda, un barril; adelante a la derecha, un farol. La entrada, adelante al centro, da a la calle.',
+  fc_taller: 'Un taller de herrería chico en Fuerte Ceniza, que el protagonista acaba de comprar: austero y de piedra, como todo el fuerte. Piso de tablones oscuros y paredes de piedra gris con vigas, escudos colgados y un estandarte rojo. '
+    + 'Muebles, como en el plano: en la esquina del fondo, una fragua chica de piedra encendida; delante, un yunque sobre un tronco; contra la pared del fondo derecha, dos armeros con lanzas y espadas; '
+    + 'adelante al centro, el mostrador de la tienda con armas y piezas de armadura a la venta; a la derecha, un arcón con herrajes; a la izquierda, un barril; adelante a la derecha, un farol. La entrada, adelante al centro, da a la calle.',
   // Lugares al aire libre (ver OUTDOOR).
   mercado: 'El mercado de Valdebrasa, en la plaza central: una plaza de adoquines animada. Puestos de madera con toldos a rayas, como en el plano: tres atrás (rojo, azul al centro, que es el de materiales para el taller con lingotes, cueros y maderas, y verde) '
     + 'y dos más adelante (azul a la izquierda y rojo a la derecha), con frutas, telas, herramientas y cacharros; un aljibe de piedra en el centro; cajones y barriles en los bordes; un árbol adelante a la izquierda; dos faroles adelante. '

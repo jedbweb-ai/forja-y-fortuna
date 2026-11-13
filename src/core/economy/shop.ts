@@ -6,7 +6,8 @@ import { cityLocation } from '../city';
 import { advanceTime, slotName } from '../time';
 import { customerMult } from '../town/cityEvents';
 import { demandOf, registerSale } from '../town/demand';
-import { bonus, displaySlots } from '../progress/progress';
+import { bonus } from '../progress/progress';
+import { displaySlotsOf, HOME_SHOP, setExhibited, shopHere, shopOfItem } from './shops';
 import { STAT_KEYS, type CustomerType, type GameEvent, type GameState, type ItemInstance, type ShopCustomer, type ShopSession } from '../types';
 
 const S = BALANCE.shop;
@@ -62,23 +63,30 @@ function shop(s: GameState): ShopSession {
   return s.shop;
 }
 
-export function exhibitedItems(s: GameState): ItemInstance[] {
-  return s.items.filter((i) => i.exhibited && i.quantity > 0 && !i.equippedBy);
+/** Lo exhibido en una tienda (la herrería, si no se dice cuál). */
+export function exhibitedItems(s: GameState, shop = HOME_SHOP): ItemInstance[] {
+  return s.items.filter((i) => i.exhibited && shopOfItem(i) === shop && i.quantity > 0 && !i.equippedBy);
 }
 
 export function toggleExhibit(s: GameState, { c }: Ctx, uid: string): GameEvent[] {
   const item = s.items.find((i) => i.uid === uid);
   if (!item) throw new GameError('Ese objeto no existe.');
   if (item.equippedBy) throw new GameError('Ese objeto está equipado.');
-  const slots = displaySlots(c, s);
-  if (!item.exhibited && exhibitedItems(s).length >= slots) throw new GameError(`Solo tenés ${slots} lugares de exhibición.`);
-  item.exhibited = !item.exhibited;
+  // Se exhibe en la tienda donde estás (en un puesto ambulante, lo de la herrería viaja con vos).
+  const shop = shopHere(c, s) ?? HOME_SHOP;
+  if (item.exhibited && shopOfItem(item) === shop) {
+    setExhibited(item, null);
+    return [];
+  }
+  const slots = displaySlotsOf(c, s, shop);
+  if (exhibitedItems(s, shop).length >= slots) throw new GameError(`Solo tenés ${slots} lugares de exhibición.`);
+  setExhibited(item, shop);
   return [];
 }
 
-/** Se atiende en la herrería, o en un puesto ambulante en el mercado de otra ciudad. */
+/** Se atiende en la herrería o en una sucursal tuya, o en un puesto ambulante en el mercado de otra ciudad. */
 export function canOpenShop(c: Content, s: GameState): boolean {
-  if (s.location === 'herreria') return true;
+  if (shopHere(c, s)) return true;
   const kind = cityLocation(c, s.location)?.kind;
   return currentCity(s) !== homeCity() && (kind === 'mercado' || kind === 'muelle');
 }
@@ -87,7 +95,7 @@ export function openShop(s: GameState, { c, rng }: Ctx): GameEvent[] {
   if (s.shop) throw new GameError('La tienda ya está abierta.');
   if (s.forge) throw new GameError('Terminá primero la pieza del yunque.');
   if (!canOpenShop(c, s)) throw new GameError('La tienda se atiende desde tu herrería (o en un puesto en el mercado de otra ciudad).');
-  s.shop = { customers: generateCustomers(c, s, rng), index: -1, negotiation: null, line: '', status: 'resolved', sold: [], earned: 0 };
+  s.shop = { customers: generateCustomers(c, s, rng), index: -1, negotiation: null, line: '', status: 'resolved', sold: [], earned: 0, shopId: shopHere(c, s) ?? HOME_SHOP };
   return nextCustomer(s, { c, rng });
 }
 
@@ -105,7 +113,7 @@ export function nextCustomer(s: GameState, { c, rng }: Ctx): GameEvent[] {
   }
   const type = c.customers[customer.typeId];
   // Lo que está en alta demanda se busca más.
-  const candidates = exhibitedItems(s)
+  const candidates = exhibitedItems(s, sh.shopId ?? HOME_SHOP)
     .map((item) => ({ item, score: interestScore(type, item) * (1 + (demandOf(s, item.category) - 1) * BALANCE.demand.customerWeight) }))
     .filter(({ item, score }) => score > 0 && item.value * minQty(type, item) <= customer.budget * 1.1);
   if (!candidates.length) {

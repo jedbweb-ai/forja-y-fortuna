@@ -6,6 +6,8 @@ import {
 } from '../../core/staff/staff';
 import { OFICIO_NAMES, OFICIOS, ROLE_NAMES, ROLE_OFICIO, STAFF_ROLES, type StaffMember } from '../../core/staff/types';
 import { relationLevel } from '../../core/state';
+import { cityOfLocation } from '../../core/city';
+import { HOME_SHOP, ownedShops, shopHere, shopName } from '../../core/economy/shops';
 import { Panel } from '../components/Panel';
 import { Portrait } from '../components/Swatch';
 import { store, useGame } from '../hooks';
@@ -21,16 +23,20 @@ const ROLE_HELP: Record<string, string> = {
 export function StaffPanel() {
   const s = useGame();
   const c = store.content;
-  const st = peekShop(s);
-  const slots = staffSlots(c, s);
-  const candidates = staffCandidates(s);
+  // El personal de la tienda donde estás (fuera de tus tiendas, el de la herrería).
+  const shop = shopHere(c, s) ?? HOME_SHOP;
+  const atShop = shopHere(c, s) === shop;
+  const st = peekShop(s, shop);
+  const slots = staffSlots(c, s, shop);
+  const candidates = staffCandidates(s, shop);
+  const others = ownedShops(s).filter((x) => x !== shop);
   const templates = orderTemplates(c, s);
   const [tpl, setTpl] = useState(0);
   const [qty, setQty] = useState(5);
   const chosen = templates[Math.min(tpl, templates.length - 1)];
 
   return (
-    <Panel title="Personal de la herrería" subtitle={`${st.staff.length}/${slots} puestos · sueldos 🪙 ${staffWages(c, s)} por día · 🪙 ${Math.floor(s.gold)}`} wide>
+    <Panel title={shop === HOME_SHOP ? 'Personal de la herrería' : `Personal de ${shopName(c, shop)}`} subtitle={`${st.staff.length}/${slots} puestos · sueldos 🪙 ${staffWages(c, s)} por día · 🪙 ${Math.floor(s.gold)}`} wide>
       <p className="small muted">
         El personal trabaja solo en cada franja de la mañana y de la tarde, estés o no: el {ROLE_NAMES.vendedor.toLowerCase()} {ROLE_HELP.vendedor};
         el {ROLE_NAMES.encargado.toLowerCase()} {ROLE_HELP.encargado}; el {ROLE_NAMES.aprendiz.toLowerCase()} {ROLE_HELP.aprendiz}.
@@ -38,9 +44,9 @@ export function StaffPanel() {
         Pueden trabajar los compañeros comprados en el mercado de esclavos y los empleados que se contratan en el tablón; los mercenarios solo pelean.
       </p>
 
-      {st.staff.length === 0 && <p className="muted">Todavía no trabaja nadie en la herrería.</p>}
+      {st.staff.length === 0 && <p className="muted">Todavía no trabaja nadie {shop === HOME_SHOP ? 'en la herrería' : 'en este taller'}.</p>}
       <div className="quest-grid">
-        {st.staff.map((m) => <MemberCard key={m.id} m={m} />)}
+        {st.staff.map((m) => <MemberCard key={m.id} m={m} shop={shop} atShop={atShop} />)}
       </div>
 
       {st.staff.length < slots && (
@@ -48,7 +54,7 @@ export function StaffPanel() {
           <h4>Sumar a alguien</h4>
           <ul className="item-rows">
             {candidates.map((id) => {
-              const block = joinBlock(c, s, id);
+              const block = joinBlock(c, s, id, shop);
               return (
                 <li key={id}>
                   <Portrait id={id} look={c.npcs[id]?.look} size="small" />
@@ -57,7 +63,7 @@ export function StaffPanel() {
                     <small className="muted">{s.characters[id]?.bond === 'liberado' ? 'liberado' : 'esclavo'} · lealtad {relationLevel(s.npcs[id]?.relation ?? 0)}{s.party.includes(id) ? ' · deja el grupo' : ''}</small>
                     {block && <small className="muted block">{block}</small>}
                   </span>
-                  <button className="btn" disabled={!!block || s.location !== 'herreria'} onClick={() => store.run(assignStaff, id, undefined)}>Poner a trabajar</button>
+                  <button className="btn" disabled={!!block || !atShop} onClick={() => store.run(assignStaff, id, undefined)}>Poner a trabajar</button>
                 </li>
               );
             })}
@@ -82,16 +88,32 @@ export function StaffPanel() {
             {templates.map((t, i) => <option key={i} value={i}>{t.name}</option>)}
           </select>
           <input type="number" min={1} max={BALANCE.staff.maxOrderQty} value={qty} onChange={(e) => setQty(Number(e.target.value))} style={{ width: '4.5em' }} />
-          <button className="btn primary" disabled={s.location !== 'herreria'} onClick={() => store.run(addOrder, chosen.blueprintId, chosen.materials, qty, chosen.name)}>Encargar</button>
+          <button className="btn primary" disabled={!atShop} onClick={() => store.run(addOrder, chosen.blueprintId, chosen.materials, qty, chosen.name)}>Encargar</button>
         </div>
       ) : (
         <p className="small muted">El aprendiz repite piezas del yunque que ya forjaste vos: forjá alguna (o guardá un diseño en el libro) y aparece acá.</p>
+      )}
+
+      {others.length > 0 && (
+        <>
+          <h4>Tus otras tiendas</h4>
+          <ul className="item-rows">
+            {others.map((x) => (
+              <li key={x}>
+                <span className="grow">
+                  <b>{shopName(c, x)}</b> <small className="muted">{c.cities[cityOfLocation(c, x) ?? '']?.name} · {peekShop(s, x).staff.length}/{staffSlots(c, s, x)} puestos{peekShop(s, x).staff.length ? `: ${peekShop(s, x).staff.map((m) => workerName(c, s, m.id).split(' ')[0]).join(', ')}` : ''}</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="small muted">El personal de cada tienda se organiza ahí. Lo que hacen mientras no estás te lo cuentan cuando vas.</p>
+        </>
       )}
     </Panel>
   );
 }
 
-function MemberCard({ m }: { m: StaffMember }) {
+function MemberCard({ m, shop, atShop }: { m: StaffMember; shop: string; atShop: boolean }) {
   const s = useGame();
   const c = store.content;
   const p = peekProgress(c, s, m.id);
@@ -100,7 +122,7 @@ function MemberCard({ m }: { m: StaffMember }) {
   const kind = def ? def.title : ch?.bond === 'liberado' ? 'Liberado' : 'Esclavo';
   const wage = def?.wage ?? ch?.wage ?? 0;
   const loyalty = loyaltyRateLabel(s, m.id);
-  const order = m.piece ? peekShop(s).orders.find((o) => o.id === m.piece!.order) : undefined;
+  const order = m.piece ? peekShop(s, shop).orders.find((o) => o.id === m.piece!.order) : undefined;
 
   return (
     <article className="quest-card">
@@ -110,7 +132,7 @@ function MemberCard({ m }: { m: StaffMember }) {
       </header>
       <div className="row">
         {STAFF_ROLES.map((r) => (
-          <button key={r} className={`btn ${m.role === r ? 'primary' : ''}`} disabled={s.location !== 'herreria'} onClick={() => store.run(setStaffRole, m.id, r)}>{ROLE_NAMES[r]}</button>
+          <button key={r} className={`btn ${m.role === r ? 'primary' : ''}`} disabled={!atShop} onClick={() => store.run(setStaffRole, m.id, r)}>{ROLE_NAMES[r]}</button>
         ))}
       </div>
       <p className="small">
@@ -145,9 +167,9 @@ function MemberCard({ m }: { m: StaffMember }) {
       {loyalty && <p className="small bad-text">{loyalty}</p>}
       <div className="row">
         {def ? (
-          <button className="btn" disabled={s.location !== 'herreria'} onClick={() => store.run(fireWorker, m.id)}>Despedir</button>
+          <button className="btn" disabled={!atShop} onClick={() => store.run(fireWorker, m.id)}>Despedir</button>
         ) : (
-          <button className="btn" disabled={s.location !== 'herreria'} onClick={() => store.run(removeStaff, m.id)}>Sacarlo del puesto</button>
+          <button className="btn" disabled={!atShop} onClick={() => store.run(removeStaff, m.id)}>Sacarlo del puesto</button>
         )}
       </div>
     </article>

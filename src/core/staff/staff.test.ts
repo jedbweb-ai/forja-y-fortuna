@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CONTENT } from '../../data';
 import { makeSaveFile, migrateSave } from '../../persistence/saveFile';
 import { runCommand } from '../commands';
+import { exhibitedItems, toggleExhibit } from '../economy/shop';
 import { dbgHire } from '../../debug/commands';
 import { createMercenary } from '../party/progression';
 import { buyUpgrade } from '../progress/progress';
@@ -10,7 +11,7 @@ import { makeItem, setup, toasts } from '../testUtils';
 import { advanceTime } from '../time';
 import type { GameState } from '../types';
 import {
-  addOrder, assignStaff, displayCandidates, fireWorker, hireBlock, hireWorker, joinBlock, oficioLevel, refreshWorkerMarket,
+  addOrder, assignStaff, branchBlock, buyBranch, displayCandidates, hireTarget, fireWorker, hireBlock, hireWorker, joinBlock, oficioLevel, refreshWorkerMarket,
   removeStaff, setStaffRole, staffSlots,
 } from './staff';
 
@@ -176,5 +177,54 @@ describe('partidas guardadas', () => {
     const out = migrateSave(JSON.parse(JSON.stringify(v7)));
     expect(out.state.staff.shops.herreria.staff).toEqual([{ id: 'yago', role: 'vendedor' }]);
     expect((out.state as unknown as Record<string, unknown>).assistant).toBeUndefined();
+  });
+});
+
+describe('sucursales', () => {
+  it('se compran con oro y reputación, tienen su vidriera y su personal, y venden con los clientes de su ciudad', () => {
+    const { s, ctx } = setup();
+    s.city = 'puertoseco';
+    s.location = 'ps_taller';
+    s.gold = 2000;
+    expect(branchBlock(ctx.c, s)).toMatch(/reputación/);
+    s.reputation.puertoseco = 40;
+    buyBranch(s, ctx);
+    expect(s.staff.branches).toEqual(['ps_taller']);
+    // La vidriera del taller es aparte de la de la herrería.
+    const home = makeItem(s, 'daga', DAGA, 50);
+    home.exhibited = true;
+    const here = makeItem(s, 'daga', DAGA, 50);
+    toggleExhibit(s, ctx, here.uid);
+    expect(here.shopId).toBe('ps_taller');
+    expect(exhibitedItems(s, 'ps_taller').map((i) => i.uid)).toEqual([here.uid]);
+    expect(exhibitedItems(s).map((i) => i.uid)).toEqual([home.uid]);
+    // Un esclavo que viaja con vos se puede quedar a atender; uno que espera en Valdebrasa, no.
+    buyServant(s, 'yago', 50);
+    buyServant(s, 'sabela', 50);
+    s.party = s.party.filter((p) => p !== 'sabela');
+    expect(joinBlock(ctx.c, s, 'sabela', 'ps_taller')).toMatch(/grupo/);
+    assignStaff(s, ctx, 'yago', 'vendedor');
+    expect(s.staff.shops.ps_taller.staff[0].id).toBe('yago');
+    for (let i = 0; i < 6; i++) toggleExhibit(s, ctx, makeItem(s, 'daga', DAGA, 50).uid);
+    s.location = 'ps_posada';
+    const gold = s.gold;
+    pass(s, ctx, 6);
+    expect(s.gold).toBeGreaterThan(gold);
+    expect(exhibitedItems(s, 'ps_taller').length).toBeLessThan(7);
+    // Lo de la herrería no se tocó.
+    expect(home.exhibited).toBe(true);
+  });
+
+  it('lo que contratás en la ciudad de un taller tuyo va a trabajar ahí', () => {
+    const { s, ctx } = setup();
+    s.city = 'puertoseco';
+    s.staff.branches.push('ps_taller');
+    refreshWorkerMarket(s, ctx.c, ctx.rng);
+    s.location = 'ps_gremio';
+    s.gold = 500;
+    const id = s.staff.market.puertoseco.offer[0];
+    expect(hireTarget(ctx.c, s)).toBe('ps_taller');
+    hireWorker(s, ctx, id);
+    expect(s.staff.shops.ps_taller.staff.map((m) => m.id)).toEqual([id]);
   });
 });

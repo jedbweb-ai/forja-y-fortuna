@@ -135,7 +135,9 @@ export class CityMapScene extends Phaser.Scene {
     c.add(g);
     }
 
-    const label = this.add.text(0, h * 0.5 + 6, loc.available ? loc.name : `${loc.name}\n(próximamente)`, {
+    // Una sucursal que todavía no compraste figura como local en venta.
+    const forSale = !!loc.branch && !this.store.getSnapshot().state?.staff.branches.includes(loc.id);
+    const label = this.add.text(0, h * 0.5 + 6, forSale ? 'Local en venta' : loc.available ? loc.name : `${loc.name}\n(próximamente)`, {
       fontFamily: 'system-ui, sans-serif', fontSize: loc.available ? '22px' : '17px', fontStyle: loc.available ? 'bold' : 'normal',
       color: loc.available ? '#fff8e8' : '#d6d0c4',
       backgroundColor: loc.available ? '#3a2418cc' : '#3a3a3acc', padding: { x: 6, y: 3 }, align: 'center',

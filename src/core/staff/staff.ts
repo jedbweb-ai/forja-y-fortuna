@@ -5,7 +5,8 @@ import { computeDesign, isAllowed } from '../forge/design';
 import { defectChanceFor, rollTraits, strike, type ForgeMods } from '../forge/forging';
 import { buildItem } from '../forge/item';
 import { bulkRange, exhibitedItems, generateCustomers, interestScore, preferenceMatch } from '../economy/shop';
-import { bonus, displaySlots, maxPartySize, workshopBonus } from '../progress/progress';
+import { displaySlotsOf, HOME_SHOP, isBranch, ownsBranch, setExhibited, shopHere, shopName } from '../economy/shops';
+import { bonus, maxPartySize, workshopBonus } from '../progress/progress';
 import type { Rng } from '../rng';
 import { addMaterial, changeRelation, changeReputation, currentCity, hasMaterial, homeCity, nextUid, relationLevel } from '../state';
 import { demandOf, registerSale } from '../town/demand';
@@ -21,8 +22,7 @@ import {
 const ST = BALANCE.staff;
 const F = BALANCE.forge;
 
-/** La herrería del protagonista. */
-export const HOME_SHOP = 'herreria';
+export { HOME_SHOP };
 
 export function emptyReport(): StaffReport {
   return { sold: 0, earned: 0, made: {}, ruined: 0, exhibited: 0, notes: [] };
@@ -48,9 +48,9 @@ export function staffShopOf(s: GameState, id: string): string | null {
 
 export const isWorking = (s: GameState, id: string) => staffShopOf(s, id) !== null;
 
-/** Puestos de trabajo de la herrería: uno, más los que suman las mejoras del taller. */
-export function staffSlots(c: Content, s: GameState): number {
-  return ST.baseSlots + bonus(c, s, 'personal');
+/** Puestos de trabajo de una tienda: la herrería tiene uno más los que suman las mejoras; cada sucursal, los suyos. */
+export function staffSlots(c: Content, s: GameState, shop = HOME_SHOP): number {
+  return shop === HOME_SHOP ? ST.baseSlots + bonus(c, s, 'personal') : BALANCE.branches.staffSlots;
 }
 
 export function workerName(c: Content, s: GameState, id: string): string {
@@ -146,15 +146,19 @@ export function priceRatio(c: Content, s: GameState, id: string): number {
 // ───────────────────────── Quién trabaja ─────────────────────────
 
 /** Por qué alguien no puede sumarse al personal (o null si puede). */
-export function joinBlock(c: Content, s: GameState, id: string): string | null {
+export function joinBlock(c: Content, s: GameState, id: string, shop = HOME_SHOP): string | null {
   if (id === 'herrero') return 'El herrero es tu personaje.';
   const ch = s.characters[id];
   if (!isWorkerNpc(c, id)) {
     if (c.mercenaries[id]?.kind !== 'esclavo') return 'Los mercenarios solo pelean.';
     if (!ch?.bond || ch.escaped || ch.dead) return 'No está con vos.';
   } else if (!s.staff.hired.includes(id)) return 'No trabaja para vos.';
-  if (isWorking(s, id)) return 'Ya trabaja en la herrería.';
-  if (shopStaff_count(s) >= staffSlots(c, s)) return `No hay más puestos (tenés ${staffSlots(c, s)}). Ampliá el taller con «Puestos de trabajo».`;
+  if (isWorking(s, id)) return `Ya trabaja en ${shopName(c, staffShopOf(s, id)!)}.`;
+  // A una sucursal solo puede ir alguien que viaja con vos.
+  if (shop !== HOME_SHOP && !isWorkerNpc(c, id) && !s.party.includes(id)) return 'Para dejarlo en este taller tiene que venir en tu grupo.';
+  if (shopStaff_count(s, shop) >= staffSlots(c, s, shop)) {
+    return shop === HOME_SHOP ? `No hay más puestos (tenés ${staffSlots(c, s)}). Ampliá el taller con «Puestos de trabajo».` : `Este taller tiene ${staffSlots(c, s, shop)} puestos y están ocupados.`;
+  }
   return null;
 }
 
@@ -162,16 +166,22 @@ function shopStaff_count(s: GameState, shop = HOME_SHOP): number {
   return peekShop(s, shop).staff.length;
 }
 
-/** Compañeros comprados (o liberados) que pueden ponerse a trabajar: los que esperan en la herrería o van en el grupo. */
-export function staffCandidates(s: GameState): string[] {
+/**
+ * Compañeros comprados (o liberados) que pueden ponerse a trabajar en una tienda: en la herrería, los que esperan
+ * ahí o van en el grupo; en una sucursal, solo los que van en el grupo.
+ */
+export function staffCandidates(s: GameState, shop = HOME_SHOP): string[] {
   return Object.values(s.characters)
-    .filter((ch) => ch.bond && !ch.escaped && !ch.dead && !isWorking(s, ch.id))
+    .filter((ch) => ch.bond && !ch.escaped && !ch.dead && !isWorking(s, ch.id) && (shop === HOME_SHOP || s.party.includes(ch.id)))
     .map((ch) => ch.id);
 }
 
-function checkAtHome(s: GameState) {
+/** El personal se organiza en la tienda donde estás (tu herrería o un taller tuyo). Devuelve cuál. */
+function checkAtShop(c: Content, s: GameState): string {
   if (s.expedition) throw new GameError('Estás de expedición.');
-  if (s.location !== HOME_SHOP) throw new GameError('El personal se organiza en tu herrería.');
+  const shop = shopHere(c, s);
+  if (!shop) throw new GameError('El personal se organiza en tu herrería o en tus talleres.');
+  return shop;
 }
 
 /** Puesto con el que arranca alguien: el de su mejor oficio. */
@@ -183,33 +193,34 @@ function bestRole(c: Content, s: GameState, id: string): StaffRole {
 
 /** Poner a trabajar a un compañero comprado o liberado (si iba en el grupo, deja el grupo). */
 export function assignStaff(s: GameState, { c }: Ctx, id: string, role?: StaffRole): GameEvent[] {
-  checkAtHome(s);
-  const block = joinBlock(c, s, id);
+  const shop = checkAtShop(c, s);
+  const block = joinBlock(c, s, id, shop);
   if (block) throw new GameError(block);
   s.party = s.party.filter((p) => p !== id);
   workerProgress(c, s, id);
   const r = role ?? bestRole(c, s, id);
-  shopStaff(s).staff.push({ id, role: r });
-  return [{ type: 'toast', text: `${workerName(c, s, id)} trabaja en la herrería: ${ROLE_NAMES[r].toLowerCase()}.`, tone: 'good' }];
+  shopStaff(s, shop).staff.push({ id, role: r });
+  return [{ type: 'toast', text: `${workerName(c, s, id)} trabaja en ${shopName(c, shop)}: ${ROLE_NAMES[r].toLowerCase()}.`, tone: 'good' }];
 }
 
 export function setStaffRole(s: GameState, { c }: Ctx, id: string, role: StaffRole): GameEvent[] {
-  checkAtHome(s);
-  const m = shopStaff(s).staff.find((x) => x.id === id);
-  if (!m) throw new GameError('No trabaja en la herrería.');
+  const shop = checkAtShop(c, s);
+  const m = shopStaff(s, shop).staff.find((x) => x.id === id);
+  if (!m) throw new GameError(`No trabaja en ${shopName(c, shop)}.`);
   if (m.role === role) return [];
   releasePiece(s, c, m);
   m.role = role;
   return [{ type: 'toast', text: `${workerName(c, s, id)} pasa a ${ROLE_NAMES[role].toLowerCase()}.` }];
 }
 
-/** Sacar a un compañero del puesto: vuelve al grupo si hay lugar, o espera en la herrería. */
+/** Sacar a un compañero del puesto: vuelve al grupo si hay lugar, o espera en la herrería (en un taller, tiene que volver con vos). */
 export function removeStaff(s: GameState, { c }: Ctx, id: string): GameEvent[] {
-  checkAtHome(s);
+  const shop = checkAtShop(c, s);
   if (isWorkerNpc(c, id)) throw new GameError('A un empleado se lo despide.');
-  const st = shopStaff(s);
+  const st = shopStaff(s, shop);
   const m = st.staff.find((x) => x.id === id);
-  if (!m) throw new GameError('No trabaja en la herrería.');
+  if (!m) throw new GameError(`No trabaja en ${shopName(c, shop)}.`);
+  if (shop !== HOME_SHOP && s.party.length >= maxPartySize(c, s)) throw new GameError('Tu grupo está completo: no puede volver con vos.');
   releasePiece(s, c, m);
   st.staff = st.staff.filter((x) => x.id !== id);
   if (s.party.length < maxPartySize(c, s)) {
@@ -221,8 +232,9 @@ export function removeStaff(s: GameState, { c }: Ctx, id: string): GameEvent[] {
 
 /** Despedir a un empleado: deja de cobrar y vuelve a buscar trabajo. */
 export function fireWorker(s: GameState, { c }: Ctx, id: string): GameEvent[] {
-  checkAtHome(s);
+  const shop = checkAtShop(c, s);
   if (!s.staff.hired.includes(id)) throw new GameError('No trabaja para vos.');
+  if (staffShopOf(s, id) !== shop) throw new GameError(`Trabaja en ${shopName(c, staffShopOf(s, id) ?? HOME_SHOP)}: se lo despide ahí.`);
   leaveJob(s, c, id);
   changeRelation(s, id, ST.fireRelation);
   return [{ type: 'toast', text: `Despediste a ${workerName(c, s, id)}.` }];
@@ -264,13 +276,23 @@ export function isHiringBoard(c: Content, s: GameState): boolean {
   return kind === 'tablon' || (!hasBoard && kind === 'gremio');
 }
 
+/**
+ * A qué tienda va alguien que contratás: al taller tuyo de esta ciudad si tiene lugar; si no, a tu herrería.
+ * (null: no hay lugar en ninguna de las dos.)
+ */
+export function hireTarget(c: Content, s: GameState): string | null {
+  const here = s.staff.branches.find((b) => cityOfLocation(c, b) === currentCity(s));
+  if (here && peekShop(s, here).staff.length < staffSlots(c, s, here)) return here;
+  return peekShop(s).staff.length < staffSlots(c, s) ? HOME_SHOP : null;
+}
+
 export function hireBlock(c: Content, s: GameState, id: string): string | null {
   const def = c.workers[id];
   if (!def) return 'No existe.';
   if (s.staff.hired.includes(id)) return 'Ya trabaja para vos.';
   if (!workerOffer(s).includes(id)) return 'Ya no busca trabajo acá.';
   if (!isHiringBoard(c, s)) return 'Se contrata en el tablón de anuncios (en las ciudades sin tablón, en el gremio).';
-  if (peekShop(s).staff.length >= staffSlots(c, s)) return `No hay puestos libres en tu herrería (tenés ${staffSlots(c, s)}).`;
+  if (!hireTarget(c, s)) return `No hay puestos libres en tu herrería (tenés ${staffSlots(c, s)})${s.staff.branches.length ? ' ni en tus talleres' : ''}.`;
   if ((s.npcs[id]?.relation ?? 0) <= ST.refuseRelation) return `${def.name} no quiere volver a trabajar con vos.`;
   if (s.gold < def.hireCost) return `Contratarlo cuesta ${def.hireCost} de oro.`;
   return null;
@@ -287,8 +309,9 @@ export function hireWorker(s: GameState, { c }: Ctx, id: string): GameEvent[] {
   for (const m of Object.values(s.staff.market)) m.offer = m.offer.filter((x) => x !== id);
   workerProgress(c, s, id).unpaidDays = 0;
   const role = bestRole(c, s, id);
-  shopStaff(s).staff.push({ id, role });
-  const where = cityOfLocation(c, HOME_SHOP) === currentCity(s) ? 'tu herrería' : `tu herrería de ${c.cities[homeCity()].name}`;
+  const shop = hireTarget(c, s)!;
+  shopStaff(s, shop).staff.push({ id, role });
+  const where = shop !== HOME_SHOP ? shopName(c, shop) : cityOfLocation(c, HOME_SHOP) === currentCity(s) ? 'tu herrería' : `tu herrería de ${c.cities[homeCity()].name}`;
   return [{ type: 'toast', text: `${def.name} empieza a trabajar en ${where}: ${ROLE_NAMES[role].toLowerCase()}. Cobra ${def.wage} de oro por día.`, tone: 'good' }];
 }
 
@@ -369,18 +392,19 @@ function baseName(c: Content, i: ItemInstance): string {
 }
 
 export function addOrder(s: GameState, { c }: Ctx, blueprintId: string, materials: Record<string, string>, qty: number, name?: string): GameEvent[] {
-  checkAtHome(s);
+  const shop = checkAtShop(c, s);
   if (!canOrder(c, s, blueprintId)) throw new GameError('El aprendiz solo repite piezas del yunque que ya forjaste vos.');
   const bp = c.blueprints[blueprintId];
   for (const part of bp.parts) if (!materials[part.slot] || !isAllowed(c, part, materials[part.slot])) throw new GameError(`Falta un material válido para: ${part.label}.`);
   const n = Math.round(qty);
   if (!(n >= 1 && n <= ST.maxOrderQty)) throw new GameError(`Se encargan entre 1 y ${ST.maxOrderQty}.`);
-  shopStaff(s).orders.push({ id: nextUid(s, 'wo'), name: name ?? bp.name, blueprintId, materials: { ...materials }, qty: n, done: 0 });
+  shopStaff(s, shop).orders.push({ id: nextUid(s, 'wo'), name: name ?? bp.name, blueprintId, materials: { ...materials }, qty: n, done: 0 });
   return [{ type: 'toast', text: `Pedido: ${n}× ${name ?? bp.name}.` }];
 }
 
 export function cancelOrder(s: GameState, { c }: Ctx, id: string): GameEvent[] {
-  const st = shopStaff(s);
+  const st = Object.values(s.staff.shops).find((x) => x.orders.some((o) => o.id === id));
+  if (!st) return [];
   for (const m of st.staff) if (m.piece?.order === id) releasePiece(s, c, m);
   st.orders = st.orders.filter((o) => o.id !== id);
   return [];
@@ -400,10 +424,10 @@ function releasePiece(s: GameState, c: Content, m: StaffMember) {
  * Corre las franjas que pasaron (de `from` a `to`, contadas como día × 3 + franja) en cada herrería con personal.
  * `ownerSold`: el herrero atendió él mismo la tienda en esas franjas (los vendedores no venden).
  */
-export function staffShift(s: GameState, c: Content, rng: Rng, from: number, to: number, ownerSold = false): GameEvent[] {
+export function staffShift(s: GameState, c: Content, rng: Rng, from: number, to: number, ownerShop: string | null = null): GameEvent[] {
   for (let abs = from; abs < to; abs++) {
     const slot = SLOTS[((abs % 3) + 3) % 3];
-    for (const [shop, st] of Object.entries(s.staff.shops)) if (st.staff.length) workSlot(s, c, rng, shop, st, slot, ownerSold);
+    for (const [shop, st] of Object.entries(s.staff.shops)) if (st.staff.length) workSlot(s, c, rng, shop, st, slot, shop === ownerShop);
   }
   return [];
 }
@@ -412,9 +436,9 @@ function workSlot(s: GameState, c: Content, rng: Rng, shop: string, st: ShopStaf
   const city = cityOfLocation(c, shop) ?? homeCity();
   const rate = (m: StaffMember) => workRate(c, s, m.id, slot);
   // Primero el encargado arma la vidriera, después venden, y el aprendiz forja.
-  for (const m of st.staff.filter((x) => x.role === 'encargado')) if (rate(m) > 0) arrange(s, c, rng, st, m, rate(m), city, slot);
+  for (const m of st.staff.filter((x) => x.role === 'encargado')) if (rate(m) > 0) arrange(s, c, rng, shop, st, m, rate(m), city, slot);
   const sellers = st.staff.filter((x) => x.role === 'vendedor' && rate(x) > 0);
-  if (sellers.length && !ownerSold) sell(s, c, rng, st, sellers, rate, city);
+  if (sellers.length && !ownerSold) sell(s, c, rng, shop, st, sellers, rate, city);
   for (const m of st.staff.filter((x) => x.role === 'aprendiz')) if (rate(m) > 0) forgeWork(s, c, rng, st, m, rate(m));
 }
 
@@ -445,7 +469,7 @@ function saleScore(c: Content, s: GameState, item: ItemInstance, city: string, s
   return w ? (total / w) * item.value * demandOf(s, item.category, city) : 0;
 }
 
-function arrange(s: GameState, c: Content, rng: Rng, st: ShopStaff, m: StaffMember, rate: number, city: string, slot: TimeSlot) {
+function arrange(s: GameState, c: Content, rng: Rng, shop: string, st: ShopStaff, m: StaffMember, rate: number, city: string, slot: TimeSlot) {
   if (!rng.chance(Math.min(1, rate))) return;
   const p = workerProgress(c, s, m.id);
   const level = oficioLevel(p.xp.criterio) + effectSum(c, p, 'vidriera');
@@ -453,19 +477,19 @@ function arrange(s: GameState, c: Content, rng: Rng, st: ShopStaff, m: StaffMemb
   const scored = (i: ItemInstance) => saleScore(c, s, i, city, slot) * (1 + rng.range(-noise, noise));
   let changes = 0;
   const candidates = displayCandidates(s).map((i) => ({ i, score: scored(i) })).filter((x) => x.score > 0).sort((a, b) => b.score - a.score);
-  const slots = displaySlots(c, s);
-  while (exhibitedItems(s).length < slots && candidates.length) {
-    candidates.shift()!.i.exhibited = true;
+  const slots = displaySlotsOf(c, s, shop);
+  while (exhibitedItems(s, shop).length < slots && candidates.length) {
+    setExhibited(candidates.shift()!.i, shop);
     changes++;
   }
   // Con más criterio, cambia lo que no se vende por algo mejor (nunca toca lo reservado).
   if (level >= ST.swapFromLevel && candidates.length) {
-    const shown = exhibitedItems(s).filter((i) => !i.reserved).map((i) => ({ i, score: scored(i) })).sort((a, b) => a.score - b.score);
+    const shown = exhibitedItems(s, shop).filter((i) => !i.reserved).map((i) => ({ i, score: scored(i) })).sort((a, b) => a.score - b.score);
     const worst = shown[0];
     const best = candidates[0];
     if (worst && best.score > worst.score * ST.swapMargin) {
-      worst.i.exhibited = false;
-      best.i.exhibited = true;
+      setExhibited(worst.i, null);
+      setExhibited(best.i, shop);
       changes++;
     }
   }
@@ -473,7 +497,7 @@ function arrange(s: GameState, c: Content, rng: Rng, st: ShopStaff, m: StaffMemb
   levelNote(st, addWorkXp(c, s, rng, m.id, 'criterio', ST.xpSlot + changes * ST.xpPerChange));
 }
 
-function sell(s: GameState, c: Content, rng: Rng, st: ShopStaff, sellers: StaffMember[], rate: (m: StaffMember) => number, city: string) {
+function sell(s: GameState, c: Content, rng: Rng, shop: string, st: ShopStaff, sellers: StaffMember[], rate: (m: StaffMember) => number, city: string) {
   const best = [...sellers].sort((a, b) => priceRatio(c, s, b.id) - priceRatio(c, s, a.id))[0];
   const ratio = priceRatio(c, s, best.id);
   const extra = (sellers.length - 1) * ST.extraCustomersPerSeller + sellers.reduce((a, m) => a + effectSum(c, peekProgress(c, s, m.id), 'clientes'), 0);
@@ -483,7 +507,7 @@ function sell(s: GameState, c: Content, rng: Rng, st: ShopStaff, sellers: StaffM
   for (const customer of customers) {
     if (!rng.chance(attend)) continue;
     const type = c.customers[customer.typeId];
-    const candidates = exhibitedItems(s)
+    const candidates = exhibitedItems(s, shop)
       .map((item) => ({ item, score: interestScore(type, item) * (1 + (demandOf(s, item.category, city) - 1) * BALANCE.demand.customerWeight) }))
       .filter(({ item, score }) => score > 0 && item.value <= customer.budget * 1.1);
     if (!candidates.length) continue;
@@ -587,10 +611,11 @@ export function makePiece(s: GameState, c: Content, rng: Rng, id: string, order:
 
 // ───────────────────────── Resumen ─────────────────────────
 
-/** Si el herrero está en la herrería, cuenta lo que hizo el personal desde la última vez y lo pone en cero. */
-export function staffReportEvents(s: GameState): GameEvent[] {
-  if (s.expedition || s.location !== HOME_SHOP) return [];
-  const st = s.staff.shops[HOME_SHOP];
+/** Si el herrero está en una tienda suya, cuenta lo que hizo el personal de ahí desde la última vez y lo pone en cero. */
+export function staffReportEvents(s: GameState, c: Content): GameEvent[] {
+  const shop = shopHere(c, s);
+  if (!shop) return [];
+  const st = s.staff.shops[shop];
   if (!st) return [];
   const r = st.report;
   const parts: string[] = [];
@@ -621,3 +646,31 @@ export function toggleReserved(s: GameState, _ctx: Ctx, uid: string): GameEvent[
   item.reserved = !item.reserved;
   return [];
 }
+
+// ───────────────────────── Sucursales ─────────────────────────
+
+/** Por qué no se puede comprar el local donde estás (o null si se puede). */
+export function branchBlock(c: Content, s: GameState, id = s.location): string | null {
+  const loc = cityLocation(c, id);
+  if (!loc?.branch) return 'Acá no hay un local en venta.';
+  if (ownsBranch(s, id)) return 'Ya es tuyo.';
+  if (s.expedition) return 'Estás de expedición.';
+  if (s.location !== id) return 'Se compra en el local.';
+  const city = cityOfLocation(c, id)!;
+  if ((s.reputation[city] ?? 0) < loc.branch.reputation) return `El dueño no te lo vende todavía: pide reputación ${loc.branch.reputation} en ${c.cities[city].name}.`;
+  if (s.gold < loc.branch.price) return `Cuesta ${loc.branch.price} de oro.`;
+  return null;
+}
+
+/** Comprar el local: desde ahora es tu taller, con su vidriera y sus puestos de trabajo. */
+export function buyBranch(s: GameState, { c }: Ctx): GameEvent[] {
+  const block = branchBlock(c, s);
+  if (block) throw new GameError(block);
+  const id = s.location;
+  s.gold -= cityLocation(c, id)!.branch!.price;
+  s.staff.branches.push(id);
+  shopStaff(s, id);
+  return [{ type: 'toast', text: `¡Compraste el local! Ahora es ${shopName(c, id)}. Contratá gente en el tablón para que lo atienda mientras no estás.`, tone: 'good' }];
+}
+
+export { isBranch };

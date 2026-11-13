@@ -164,7 +164,7 @@ export class LiveScene extends Phaser.Scene {
       if (e.type === 'timeAdvanced') this.scene.restart({ locationId: this.locId });
       if (e.type === 'forgeHit') this.sparks(e.result === 'defecto');
     }));
-    if (this.locId === 'herreria') {
+    if (this.locId === 'herreria' || state.staff.branches.includes(this.locId)) {
       this.unsubs.push(this.store.subscribe(() => this.syncCustomer()));
       this.syncCustomer();
     }

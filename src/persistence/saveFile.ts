@@ -3,7 +3,7 @@ import { EMPTY_SKILLS, emptyStaffState, emptyTownState } from '../core/state';
 import type { GameState } from '../core/types';
 
 /** Versión actual del formato de guardado. Subirla junto con una migración. */
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 /**
  * Formato del guardado. Es JSON plano para que el mismo archivo pueda subirse
@@ -107,6 +107,11 @@ export const MIGRATIONS: Record<number, Migration> = {
     staff.forged = [...new Set((st.items ?? []).filter((i) => i.uid.startsWith('it') && !(i.tags ?? []).includes('subasta')).map((i) => i.blueprintId))];
     const { assistant: _gone, ...rest } = st;
     return { ...save, version: 8, state: { ...rest, party, staff } };
+  },
+  // Sucursales: todavía no hay ninguna comprada.
+  8: (save) => {
+    const st = save.state as Record<string, unknown> & { staff?: Record<string, unknown> };
+    return { ...save, version: 9, state: { ...st, staff: { ...(st.staff ?? {}), branches: [] } } };
   },
 };
 

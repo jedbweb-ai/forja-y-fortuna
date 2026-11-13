@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { displaySlots } from '../../core/progress/progress';
+import { cityLocation } from '../../core/city';
+import { displaySlotsOf, HOME_SHOP, shopHere, shopName, shopOfItem } from '../../core/economy/shops';
 import {
   acceptOffer, askPrice, canOpenShop, closeShop, customerCount, declineCustomer, exhibitedItems, minAsk, nextCustomer, openShop, startingAsk, suggestedPrice, toggleExhibit,
 } from '../../core/economy/shop';
@@ -17,11 +18,15 @@ export function ShopPanel() {
 
 function ShopSetup() {
   const s = useGame();
-  const shown = exhibitedItems(s).length;
+  const c = store.content;
+  // En un puesto ambulante se vende lo de la vidriera de la herrería; en un taller tuyo, lo de su propia vidriera.
+  const shop = shopHere(c, s) ?? HOME_SHOP;
+  const shown = exhibitedItems(s, shop).length;
+  const title = s.location === 'herreria' ? 'Tu tienda' : cityLocation(c, s.location)?.branch ? cityLocation(c, s.location)!.name : 'Puesto ambulante';
   return (
     <Panel
-      title={s.location === 'herreria' ? 'Tu tienda' : 'Puesto ambulante'}
-      subtitle={`Exhibición ${shown}/${displaySlots(store.content, s)} · Esperás unos ${customerCount(s)} clientes esta ${slotName(s)}`}
+      title={title}
+      subtitle={`Exhibición ${shown}/${displaySlotsOf(c, s, shop)} · Esperás unos ${customerCount(s)} clientes esta ${slotName(s)}`}
       footer={
         <button className="btn primary big" data-key="enter" disabled={!!s.forge} onClick={() => store.run(openShop)}>
           🛎️ Abrir la tienda · consume la franja
@@ -34,11 +39,11 @@ function ShopSetup() {
         {s.items.filter((i) => !i.equippedBy).map((i) => (
           <li key={i.uid} className={RARITY_CLASS[i.rarity]}>
             <label className="check">
-              <input type="checkbox" checked={i.exhibited} onChange={() => store.run(toggleExhibit, i.uid)} />
+              <input type="checkbox" checked={i.exhibited && shopOfItem(i) === shop} onChange={() => store.run(toggleExhibit, i.uid)} />
               <Swatch icon={itemIcon(i)} color={i.color} />
               <span className="grow">
                 <b>{i.name}</b>
-                <small className="muted">{i.rarity} · calidad {i.quality}{i.quantity > 1 ? ` · ×${i.quantity}` : ''}</small>
+                <small className="muted">{i.rarity} · calidad {i.quality}{i.quantity > 1 ? ` · ×${i.quantity}` : ''}{i.exhibited && shopOfItem(i) !== shop ? ` · en la vidriera de ${shopName(c, shopOfItem(i))}` : ''}</small>
               </span>
               <span>🪙 {money(i.value)}{i.quantity > 1 ? ' c/u' : ''}</span>
             </label>

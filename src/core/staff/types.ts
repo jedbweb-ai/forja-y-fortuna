@@ -119,7 +119,7 @@ export interface ShopStaff {
 }
 
 export interface StaffState {
-  /** Personal de cada herrería, por id de lugar (por ahora, solo 'herreria'). */
+  /** Personal de cada tienda, por id de lugar: la herrería y las sucursales. */
   shops: Record<string, ShopStaff>;
   /** Progreso de todos los que trabajaron alguna vez. */
   workers: Record<string, WorkerProgress>;
@@ -129,4 +129,6 @@ export interface StaffState {
   market: Record<string, { offer: string[]; lastRefresh: number }>;
   /** Planos que el herrero ya forjó alguna vez (el aprendiz solo repite esos). */
   forged: string[];
+  /** Sucursales compradas (ids de lugar). */
+  branches: string[];
 }

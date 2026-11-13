@@ -1,5 +1,6 @@
 import { BALANCE } from '../../config/balance';
-import { hireBlock, hireWorker, peekShop, staffSlots, workerOffer } from '../../core/staff/staff';
+import { hireBlock, hireTarget, hireWorker, workerOffer } from '../../core/staff/staff';
+import { shopName } from '../../core/economy/shops';
 import { OFICIO_NAMES, OFICIOS } from '../../core/staff/types';
 import { currentCity } from '../../core/state';
 import { Portrait } from '../components/Swatch';
@@ -12,13 +13,13 @@ export function WorkersOffer() {
   const offer = workerOffer(s).map((id) => c.workers[id]).filter(Boolean);
   const market = s.staff.market[currentCity(s)];
   const next = market ? market.lastRefresh + BALANCE.staff.refreshDays : null;
-  const free = staffSlots(c, s) - peekShop(s).staff.length;
+  const target = hireTarget(c, s);
 
   return (
     <>
       <p className="small muted">
         Gente que busca trabajo en tu herrería. No pelea: atiende, arma la vidriera o forja. Se paga al contratar y después un sueldo por día.
-        Puestos libres: {Math.max(0, free)}{next ? ` · nuevos candidatos el día ${next}` : ''}.
+        {target ? `Quien contrates va a trabajar a ${shopName(c, target)}` : 'No tenés puestos libres en tus tiendas'}{next ? ` · nuevos candidatos el día ${next}` : ''}.
       </p>
       {!offer.length && <p className="muted">Hoy no hay nadie buscando trabajo.</p>}
       <div className="quest-grid">

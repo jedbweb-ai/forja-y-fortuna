@@ -368,6 +368,8 @@ export interface CityLocation {
   kind: LocationKind;
   available: boolean;
   map: { x: number; y: number; w: number; h: number; roof: string };
+  /** Sucursal: un taller tuyo en otra ciudad, que se compra (oro y reputación en la ciudad) y atiende tu personal. */
+  branch?: { price: number; reputation: number };
   scene?: LiveSceneDef;
   /** Materiales que se venden en este lugar. */
   stock?: string[];
@@ -434,6 +436,8 @@ export interface ItemInstance {
   quantity: number;
   exhibited: boolean;
   createdDay: number;
+  /** En la vidriera de qué tienda está, si está exhibido (sin dato: la herrería). */
+  shopId?: string;
   /** Reservado: el encargado no lo pone en la vidriera ni lo saca. */
   reserved?: boolean;
   /** Lo hizo alguien del personal (id). */
@@ -500,6 +504,8 @@ export interface ShopSession {
   status: 'greeting' | 'negotiating' | 'resolved';
   sold: { itemName: string; qty: number; price: number; customer: string }[];
   earned: number;
+  /** En qué tienda se atiende (la herrería o una sucursal): de ahí sale lo exhibido. */
+  shopId?: string;
 }
 
 export interface NpcState {

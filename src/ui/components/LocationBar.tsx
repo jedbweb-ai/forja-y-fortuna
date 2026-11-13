@@ -2,6 +2,8 @@ import { cityLocation, npcsAt, restSlot, sleepUntilMorning } from '../../core/ci
 import { BALANCE } from '../../config/balance';
 import { currentCity, homeCity } from '../../core/state';
 import { canOpenShop } from '../../core/economy/shop';
+import { ownsBranch } from '../../core/economy/shops';
+import { buyBranch } from '../../core/staff/staff';
 import { damagedItems } from '../../core/forge/repair';
 import { slotName } from '../../core/time';
 import { talentPoints } from '../../core/progress/progress';
@@ -74,7 +76,15 @@ export function LocationBar() {
           </>
         )}
         {(loc.kind === 'mercado' || loc.kind === 'muelle') && <button className="btn primary" onClick={() => store.openPanel('market')}>🧺 {loc.kind === 'muelle' ? 'Mercadería del barco' : 'Puesto de materiales'}</button>}
-        {canOpenShop(c, state) && loc.id !== 'herreria' && (
+        {loc.branch && (ownsBranch(state, loc.id) ? (
+          <>
+            <button className="btn primary" data-key="t" onClick={() => store.openPanel('shop')}>{state.shop ? '🛎️ Tienda abierta' : '🛎️ Atender tienda'}</button>
+            <button className="btn" onClick={() => store.openPanel('staff')}>🧑‍🏭 Personal</button>
+          </>
+        ) : (
+          <button className="btn primary" onClick={() => store.run(buyBranch)}>🏠 Comprar el local · 🪙 {loc.branch.price} · reputación {loc.branch.reputation}</button>
+        ))}
+        {canOpenShop(c, state) && loc.id !== 'herreria' && !loc.branch && (
           <button className="btn" onClick={() => store.openPanel('shop')}>{state.shop ? '🛖 Puesto abierto' : '🛖 Puesto ambulante'}</button>
         )}
         {loc.kind === 'posada' && (

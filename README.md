@@ -228,9 +228,23 @@ Aprobado con estas recomendaciones. La lógica está en `src/core/staff/` y los 
 - **Costos**: los empleados se pagan al contratarlos y cobran un sueldo por día. Si no se les paga 2 días, renuncian.
 - **Al volver a la herrería**, un aviso resume lo que hizo el personal: ventas, piezas forjadas, cambios en la vidriera y faltantes.
 - **En la escena**, cada uno se para en el lugar de su puesto. Los empleados sin dibujo propio usan por ahora la figura de un vecino.
-- **Próximas etapas**:
-  - Etapa 2: herrerías en Puertoseco y Fuerte Ceniza. El inventario sigue siendo uno solo y lo exhibido es de cada tienda.
-  - Etapa 3: dibujos y retratos de los empleados.
+- **Etapa 3 (hecha)**: dibujos de frente, espalda y retrato de los 8 empleados.
+
+## Sucursales (etapa 2 del personal)
+
+- **Locales**: hay uno en venta en Puertoseco (500 de oro, reputación 20) y otro en Fuerte Ceniza (700 de oro, reputación 30).
+  - Se compran en el mismo local. Mientras no son tuyos, en el mapa figuran como «Local en venta».
+  - Cada uno es un taller chico (mostrador, yunque y fragua) con la calle de afuera, igual que los demás interiores.
+- **Vidriera por tienda**: el inventario sigue siendo uno solo, pero cada pieza exhibida es de una tienda.
+  - Una sucursal tiene 8 lugares de exhibición. Las vitrinas del taller solo agrandan la herrería.
+  - En un puesto ambulante se vende lo de la vidriera de la herrería.
+- **Personal por tienda**: cada sucursal tiene 2 puestos de trabajo y sus propios pedidos para el aprendiz.
+  - Un empleado que contratás en una ciudad con taller tuyo va a trabajar ahí; si está lleno, a la herrería.
+  - A una sucursal solo se puede dejar un esclavo que viaje en tu grupo. Para sacarlo, tiene que haber lugar en el grupo.
+  - El personal de cada tienda se organiza estando en ella. Lo que hizo mientras no estabas te lo cuenta cuando vas.
+- **Atender vos**: en un taller tuyo podés abrir la tienda como en la herrería. Se vende lo de su vidriera, a los clientes de esa ciudad.
+- **No se puede**: forjar ni hacer alquimia en una sucursal. Su yunque es para el aprendiz.
+- **Arte**: los dos talleres ya tienen su pedido de ilustración con plano en la herramienta.
 
 ## Pendiente para próximas fases
 - **Arte definitivo**: generar la muestra de estilo (herrero, Brunilda, monstruos del Linde, texturas básicas, yunque y fragua, íconos y retrato del herrero), revisarla en el juego y seguir por tandas.

@@ -414,6 +414,12 @@ export const BALANCE = {
     defeatGoldLoss: 0.15,
   },
 
+  /** Sucursales: talleres chicos en otras ciudades (el precio y la reputación que piden están en cada lugar). */
+  branches: {
+    displaySlots: 8,
+    staffSlots: 2,
+  },
+
   /** Personal de la herrería (src/core/staff). */
   staff: {
     /** Puestos de trabajo sin mejoras (las mejoras «Puestos de trabajo» suman más). */
