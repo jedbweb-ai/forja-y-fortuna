@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
 import { buildCombat } from '../combat/engine';
 import { toggleExhibit } from '../economy/shop';
-import { forgeBegin } from '../forge/commands';
+import { materialPrice } from '../economy/monsterMarket';
+import { forgeBegin, forgeMods } from '../forge/commands';
 import { failChance } from '../magic/alchemy';
 import { dbgHire } from '../../debug/commands';
 import { startDungeon } from '../dungeon/dungeon';
@@ -39,6 +40,31 @@ describe('talentos', () => {
     s.skills.alquimia = xpForLevel(3);
     learnTalent(s, ctx, 'pulso_firme');
     expect(failChance(s, 'fuerte', bonus(ctx.c, s, 'alquimiaFalla'))).toBeLessThan(failChance(s, 'fuerte'));
+  });
+
+  it('cada habilidad tiene al menos cinco talentos', () => {
+    const { ctx } = setup();
+    const per: Record<string, number> = {};
+    for (const t of Object.values(ctx.c.talents)) per[t.skill] = (per[t.skill] ?? 0) + 1;
+    for (const n of Object.values(per)) expect(n).toBeGreaterThanOrEqual(5);
+    expect(Object.keys(per).length).toBe(12);
+  });
+
+  it('los talentos de runas solo cuentan en la mesa de runas', () => {
+    const { s, ctx } = setup();
+    s.talents.cincel_seguro = 2;
+    s.talents.runa_perfecta = 1;
+    expect(forgeMods(ctx.c, s).defect).toBe(0);
+    s.forge = { kind: 'runa', blueprintId: Object.keys(ctx.c.enchantments)[0] } as typeof s.forge;
+    expect(forgeMods(ctx.c, s).defect).toBeCloseTo(0.016);
+    expect(forgeMods(ctx.c, s).perfect).toBeCloseTo(0.03);
+  });
+
+  it('Ojo de comprador abarata los materiales del mercado', () => {
+    const { s, ctx } = setup();
+    const before = materialPrice(ctx.c, s, 'acero');
+    s.talents.ojo_comprador = 3;
+    expect(materialPrice(ctx.c, s, 'acero')).toBeLessThan(before);
   });
 });
 

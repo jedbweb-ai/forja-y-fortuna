@@ -1,5 +1,6 @@
 import { BALANCE } from '../../config/balance';
 import type { Content } from '../content';
+import { bonus } from '../progress/progress';
 import type { Rng } from '../rng';
 import { materialEventMult } from '../town/cityEvents';
 import { tradeMult } from '../town/relations';
@@ -62,7 +63,8 @@ export function refreshMarket(s: GameState, c: Content, rng: Rng) {
  */
 export function materialPrice(c: Content, s: GameState, id: string): number {
   const base = c.materials[id].price;
-  const mult = (s.market?.priceMult[id] ?? 1) * materialEventMult(c, s, id) * tradeMult(c, s, s.location);
+  const discount = 1 - Math.min(50, bonus(c, s, 'compraBarata')) / 100;
+  const mult = (s.market?.priceMult[id] ?? 1) * materialEventMult(c, s, id) * tradeMult(c, s, s.location) * discount;
   return Math.max(1, Math.round(base * mult));
 }
 

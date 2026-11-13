@@ -40,7 +40,18 @@ function checkWorkshop(s: GameState) {
 
 /** Bonos de talentos y mejoras para los golpes de la forja. */
 export function forgeMods(c: Content, s: GameState): ForgeMods {
-  return { defect: bonus(c, s, 'forjaDefecto'), perfect: bonus(c, s, 'forjaPerfecto'), trait: bonus(c, s, 'forjaRasgo') };
+  const mods = { defect: bonus(c, s, 'forjaDefecto'), perfect: bonus(c, s, 'forjaPerfecto'), trait: bonus(c, s, 'forjaRasgo') };
+  // Talentos propios de la mesa de joyería y de la de runas.
+  const skill = s.forge ? workSkill(c, s) : 'herreria';
+  if (skill === 'joyeria') {
+    mods.defect += bonus(c, s, 'joyaDefecto');
+    mods.perfect += bonus(c, s, 'joyaPerfecto');
+    mods.trait += bonus(c, s, 'joyaRasgo');
+  } else if (skill === 'runas') {
+    mods.defect += bonus(c, s, 'runaDefecto');
+    mods.perfect += bonus(c, s, 'runaPerfecto');
+  }
+  return mods;
 }
 
 /** Habilidad que se usa para la etapa de golpes (herrería, joyería o runas). */
@@ -204,6 +215,8 @@ export function planEnchantments(c: Content, s: GameState, blueprintId: string, 
     }
   }
   if (new Set(picks.map((p) => p.id)).size !== picks.length) throw new GameError('No se puede repetir el mismo encantamiento.');
+  const saving = Math.min(90, bonus(c, s, 'grimorioAhorro'));
+  if (saving) gold = Math.round(gold * (1 - saving / 100));
   return { needs, gold, runeQuality, runes };
 }
 
@@ -230,6 +243,10 @@ export function forgeComplete(s: GameState, { c, rng }: Ctx, picks: EnchantPick[
   const defPct = bonus(c, s, 'armaduraDefensa');
   if (atkPct && (item.category === 'arma' || item.category === 'distancia')) item.stats = { ...item.stats, atk: Math.round(item.stats.atk * (1 + atkPct / 100) * 10) / 10 };
   if (defPct && (item.category === 'armadura' || item.category === 'escudo')) item.stats = { ...item.stats, def: Math.round(item.stats.def * (1 + defPct / 100) * 10) / 10 };
+  const rangedPct = bonus(c, s, 'distanciaAtaque');
+  if (rangedPct && (item.category === 'distancia' || item.category === 'municion' || item.category === 'arrojadizo')) {
+    item.stats = { ...item.stats, atk: Math.round(item.stats.atk * (1 + rangedPct / 100) * 10) / 10 };
+  }
   if (bp.batch) item.quantity = Math.round(item.quantity * (1 + bonus(c, s, 'loteExtra') / 100));
   s.items.push(item);
   s.forge = null;

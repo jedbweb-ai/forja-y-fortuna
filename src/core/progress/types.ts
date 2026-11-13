@@ -6,13 +6,17 @@ import type { SkillId } from '../types';
 export const BONUS_KEYS = [
   // Forja
   'forjaCalidadInicial', 'forjaDefecto', 'forjaPerfecto', 'forjaRasgo', 'forjaIntuicion',
-  'armaAtaque', 'armaduraDefensa', 'loteExtra', 'joyaCalidad', 'runaCalidad',
+  'armaAtaque', 'armaduraDefensa', 'distanciaAtaque', 'loteExtra', 'joyaCalidad', 'runaCalidad',
+  // Golpes en la mesa de joyería y en la de runas (se suman a los de forja)
+  'joyaDefecto', 'joyaRasgo', 'joyaPerfecto', 'runaDefecto', 'runaPerfecto',
+  // Grimorios: descuento (%) en el oro de los reactivos
+  'grimorioAhorro',
   // Alquimia
   'alquimiaFalla', 'alquimiaExtra',
   // Recolección (chance de una unidad más)
   'mineriaExtra', 'talaExtra', 'siegaExtra', 'desuelloExtra',
   // Comercio
-  'regateo', 'ventaRapida',
+  'regateo', 'ventaRapida', 'compraBarata',
   // Combate y expediciones (del herrero)
   'combateAtaque', 'combateDefensa', 'carga', 'energia',
   // Herrería
