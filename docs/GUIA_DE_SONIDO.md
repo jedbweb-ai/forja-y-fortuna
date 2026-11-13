@@ -16,10 +16,9 @@ Cómo suena Forja & Fortuna: música orquestal suave para cada lugar (generada c
 
 | | Temas |
 |---|---|
-| ✅ Hechos (16) | `titulo`, `herreria`, `valdebrasa`, `puertoseco`, `fuerte_ceniza`, `mundo`, `linde_brezal`, `montanas_grises`, `pantano_niebla`, `ruinas_vigia`, `tierras_dragon`, `mazmorra`, `combate`, `jefe`, `victoria`, `derrota` |
-| ⏳ Pendientes (opcionales) | `taberna`, `ps_taberna`, `fc_cantina`, `cripta_vigia`, `cuevas_eco`, `subastas` |
+| ✅ Hechos (22) | `titulo`, `herreria`, `valdebrasa`, `puertoseco`, `fuerte_ceniza`, `mundo`, `linde_brezal`, `montanas_grises`, `pantano_niebla`, `ruinas_vigia`, `tierras_dragon`, `mazmorra`, `combate`, `jefe`, `victoria`, `derrota`, `taberna`, `ps_taberna`, `fc_cantina`, `subastas`, `cripta_vigia`, `cuevas_eco` |
 
-Mientras falten, las tabernas y la casa de subastas usan el tema de su ciudad, y cada mazmorra usa `mazmorra`.
+Un lugar sin tema propio usa el de su grupo (su ciudad o `mazmorra`).
 
 ## Cómo generar los temas con ChatGPT
 
@@ -282,7 +281,7 @@ Sin voces ni letra.
 Entregámelo como archivo MP3 descargable.
 ```
 
-## Temas opcionales (⏳ pendientes)
+## Temas opcionales (✅ hechos)
 
 Sin estos archivos, las tabernas y la casa de subastas usan el tema de su ciudad, y cada mazmorra usa `mazmorra`. Cuando los tengas, dejalos en `arte/originales/musica/` (con cualquier nombre) y avisame: los renombro, los recorto para que repitan y los pongo en su lugar.
 
