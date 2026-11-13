@@ -284,14 +284,103 @@ Entregámelo como archivo MP3 descargable.
 
 ## Temas opcionales (⏳ pendientes)
 
-Un lugar puede tener su propio tema con su clave; sin archivo, usa el de su grupo. Para estos, usá cualquiera de los pedidos de arriba como modelo y cambiá solo el lugar, el clima, los instrumentos y el tempo:
+Sin estos archivos, las tabernas y la casa de subastas usan el tema de su ciudad, y cada mazmorra usa `mazmorra`. Cuando los tengas, dejalos en `arte/originales/musica/` (con cualquier nombre) y avisame: los renombro, los recorto para que repitan y los pongo en su lugar.
 
-| Archivo | Lugar | Clima e instrumentos |
-|---|---|---|
-| ⏳ `taberna.mp3` · `ps_taberna.mp3` · `fc_cantina.mp3` | Tabernas (Valdebrasa, Puertoseco, Fuerte Ceniza) | Animado, folk de taberna: violín, tambores de mano, palmas, 120 BPM en Re mayor |
-| ⏳ `cripta_vigia.mp3` | Cripta del Vigía | Solemne, cripta real olvidada: cuerdas lentas como un órgano, campanas tenues, 65 BPM en Si menor |
-| ⏳ `cuevas_eco.mp3` | Cuevas del Eco | Cuevas profundas: láminas metálicas con mucho eco, notas graves sostenidas, 70 BPM en Re menor |
-| ⏳ `subastas.mp3` | Casa de subastas | Elegante con algo de suspenso: clave (clavecín) y cuerdas, 110 BPM en Si bemol mayor |
+### Taberna El Fuelle Roto (Valdebrasa) · `taberna.mp3`
+
+```
+Componé un tema instrumental para un videojuego de rol táctico de fantasía, con gráficos pixel art de estilo anime.
+
+Lugar: la taberna de un pueblo de valle: fuego en el hogar, jarras que chocan, guiso caliente y vecinos que cuentan rumores.
+Clima: animado y cálido, de taberna llena al final del día; alegre sin ser ruidoso.
+Instrumentos: violín folk y flauta con la melodía, laúd, tambor de mano, palmas suaves y un contrabajo que marca el paso.
+Tempo: 120 BPM, compás de 6/8, en Re mayor.
+Duración: unos 2 minutos.
+
+Tiene que repetirse en bucle sin que se note el corte: que el final enganche con el principio, en el mismo acorde, tempo y volumen. Sin final, sin fundido de salida y sin silencio al principio ni al final.
+Sin voces ni letra. Mezcla suave, pensada para sonar de fondo.
+Entregámelo como archivo MP3 descargable.
+```
+
+### Taberna La Ballena Seca (Puertoseco) · `ps_taberna.mp3`
+
+```
+Componé un tema instrumental para un videojuego de rol táctico de fantasía, con gráficos pixel art de estilo anime.
+
+Lugar: una taberna de puerto llena de marineros: redes colgadas, un timón en la pared y cantos que se arman solos.
+Clima: marinero y pícaro, con vaivén de barco; contento, con un toque de nostalgia de mar.
+Instrumentos: acordeón y violín con la melodía, guitarra rasgueada, contrabajo, pandereta y un silbido suave como de marinero (sin voces).
+Tempo: 112 BPM, compás de 6/8, en La mayor.
+Duración: unos 2 minutos.
+
+Tiene que repetirse en bucle sin que se note el corte: que el final enganche con el principio, en el mismo acorde, tempo y volumen. Sin final, sin fundido de salida y sin silencio al principio ni al final.
+Sin voces ni letra. Mezcla suave, pensada para sonar de fondo.
+Entregámelo como archivo MP3 descargable.
+```
+
+### Cantina El Escudo Roto (Fuerte Ceniza) · `fc_cantina.mp3`
+
+```
+Componé un tema instrumental para un videojuego de rol táctico de fantasía, con gráficos pixel art de estilo anime.
+
+Lugar: la cantina de una fortaleza de frontera: soldados cansados, escudos rotos en las paredes y cerveza amarga.
+Clima: rudo y camaradero, de soldados que se relajan después de la guardia; firme, con algo de melancolía.
+Instrumentos: gaita suave o chirimía con la melodía, tambor militar con escobillas, laúd y un bajo de cuerdas que marca el paso.
+Tempo: 100 BPM, compás de 4/4, en Mi menor.
+Duración: unos 2 minutos.
+
+Tiene que repetirse en bucle sin que se note el corte: que el final enganche con el principio, en el mismo acorde, tempo y volumen. Sin final, sin fundido de salida y sin silencio al principio ni al final.
+Sin voces ni letra. Mezcla suave, pensada para sonar de fondo.
+Entregámelo como archivo MP3 descargable.
+```
+
+### Casa de subastas · `subastas.mp3`
+
+```
+Componé un tema instrumental para un videojuego de rol táctico de fantasía, con gráficos pixel art de estilo anime.
+
+Lugar: una casa de subastas elegante, con cortinados bordó, candelabros y un estrado donde se venden rarezas.
+Clima: elegante y refinado, con un poco de suspenso, como cuando se espera el próximo lote.
+Instrumentos: clave (clavecín) con la melodía, cuerdas suaves, pizzicato que da tensión y algún toque de campanita.
+Tempo: 110 BPM, compás de 3/4, en Si bemol mayor.
+Duración: unos 2 minutos.
+
+Tiene que repetirse en bucle sin que se note el corte: que el final enganche con el principio, en el mismo acorde, tempo y volumen. Sin final, sin fundido de salida y sin silencio al principio ni al final.
+Sin voces ni letra. Mezcla suave, pensada para sonar de fondo.
+Entregámelo como archivo MP3 descargable.
+```
+
+### Cripta del Vigía (mazmorra) · `cripta_vigia.mp3`
+
+```
+Componé un tema instrumental para un videojuego de rol táctico de fantasía, con gráficos pixel art de estilo anime.
+
+Lugar: la cripta olvidada de un viejo reino: pasillos de piedra, sarcófagos y antorchas que apenas iluminan.
+Clima: solemne y misterioso, con respeto por los muertos; tenso pero no de terror.
+Instrumentos: cuerdas graves lentas como un órgano, un pad suave de fondo, campanas tenues y un tambor lejano de vez en cuando.
+Tempo: 65 BPM, compás de 4/4, en Si menor.
+Duración: unos 2 minutos.
+
+Tiene que repetirse en bucle sin que se note el corte: que el final enganche con el principio, en el mismo acorde, tempo y volumen. Sin final, sin fundido de salida y sin silencio al principio ni al final.
+Sin voces ni letra. Mezcla suave, pensada para sonar de fondo.
+Entregámelo como archivo MP3 descargable.
+```
+
+### Cuevas del Eco (mazmorra) · `cuevas_eco.mp3`
+
+```
+Componé un tema instrumental para un videojuego de rol táctico de fantasía, con gráficos pixel art de estilo anime.
+
+Lugar: unas cuevas profundas donde gotea el agua, brillan cristales y cada ruido vuelve repetido.
+Clima: profundo y extraño, de exploración cuidadosa; misterioso, con mucho eco.
+Instrumentos: láminas metálicas y marimba con mucha reverberación, notas graves sostenidas de cuerdas, gotas como percusión y un arpa suave.
+Tempo: 70 BPM, compás de 4/4, en Re menor.
+Duración: unos 2 minutos.
+
+Tiene que repetirse en bucle sin que se note el corte: que el final enganche con el principio, en el mismo acorde, tempo y volumen. Sin final, sin fundido de salida y sin silencio al principio ni al final.
+Sin voces ni letra. Mezcla suave, pensada para sonar de fondo.
+Entregámelo como archivo MP3 descargable.
+```
 
 ## Efectos de sonido
 
