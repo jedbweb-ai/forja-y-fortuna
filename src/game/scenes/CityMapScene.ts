@@ -9,6 +9,7 @@ import { CITY_PLACES } from '../render/illustrated';
 import { currentStep, stepPlace } from '../../core/tutorial/tutorial';
 import { drawWalledTown } from '../render/townMap';
 import { SLOT_LIGHT } from './lighting';
+import { coverFit, installDragPan } from '../render/camera';
 
 const MAP_W = 1280;
 const MAP_H = 720;
@@ -16,6 +17,8 @@ const MAP_H = 720;
 /** Mapa ilustrado de la ciudad con edificios tocables. */
 export class CityMapScene extends Phaser.Scene {
   private unsubs: (() => void)[] = [];
+  /** El mapa se desliza; un edificio no se toca al soltar un deslizamiento. */
+  private pan: { dragged: () => boolean } = { dragged: () => false };
   private cityId = '';
 
   constructor(private store: GameStore) {
@@ -56,6 +59,7 @@ export class CityMapScene extends Phaser.Scene {
       for (const d of doors) this.add.image(d.x, d.y - 10, 'fx.glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(1600).setScale(0.8);
     }
 
+    this.pan = installDragPan(this);
     this.fit();
     this.scale.on('resize', this.fit, this);
     this.unsubs.push(this.store.onEvent((e) => { if (e.type === 'timeAdvanced') this.scene.restart(); }));
@@ -66,12 +70,9 @@ export class CityMapScene extends Phaser.Scene {
     });
   }
 
+  /** Llena el ancho; si sobra alto, se desliza para ver arriba y abajo. */
   private fit() {
-    const cam = this.cameras.main;
-    const { width, height } = this.scale.gameSize;
-    const zoom = Math.min(width / MAP_W, (height - 60) / MAP_H);
-    cam.setZoom(zoom);
-    cam.centerOn(MAP_W / 2, MAP_H / 2 - 10 / zoom);
+    coverFit(this, MAP_W, MAP_H);
   }
 
   /**
@@ -165,7 +166,8 @@ export class CityMapScene extends Phaser.Scene {
 
     const zone = this.add.zone(0, h * 0.05, w + 20, h * 1.3).setInteractive({ useHandCursor: true });
     c.add(zone);
-    zone.on('pointerdown', () => {
+    zone.on('pointerup', () => {
+      if (this.pan.dragged()) return;
       this.tweens.add({ targets: c, scale: 0.96, yoyo: true, duration: 80 });
       if (loc.available) this.store.goTo(loc.id);
       else this.store.toast(`${loc.name}: abre más adelante.`);

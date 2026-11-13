@@ -10,6 +10,7 @@ import { artScale, facing, installWalkBob, isRealArt, queueLazyArt, smoothArt } 
 import { AMBIENT_VARIANTS, GUARD_VARIANTS } from '../render/placeholders';
 import { drawInteriorWalls, drawWindowLight, isIndoor, WALL_H } from '../render/interior';
 import { SLOT_LIGHT } from './lighting';
+import { coverFit, installDragPan } from '../render/camera';
 
 interface Tile { x: number; y: number }
 
@@ -87,6 +88,8 @@ export class LiveScene extends Phaser.Scene {
   private walkers: Phaser.GameObjects.Sprite[] = [];
   private unsubs: (() => void)[] = [];
   private customer?: { sprite: Phaser.GameObjects.Sprite; key: string };
+  /** En una ilustración, la imagen se desliza; lo tocable no se activa al soltar un deslizamiento. */
+  private pan: { dragged: () => boolean } = { dragged: () => false };
 
   constructor(private store: GameStore) {
     super('Live');
@@ -158,6 +161,7 @@ export class LiveScene extends Phaser.Scene {
       }
     }
 
+    if (this.ill) this.pan = installDragPan(this);
     this.fit();
     this.scale.on('resize', this.fit, this);
     this.unsubs.push(this.store.onEvent((e) => {
@@ -184,10 +188,10 @@ export class LiveScene extends Phaser.Scene {
 
   private fit() {
     if (this.ill) {
-      const { width, height } = this.scale.gameSize;
-      const zoom = Math.min(width / ILLUSTRATION.w, (height - 96) / ILLUSTRATION.h);
-      this.cameras.main.setZoom(zoom);
-      this.cameras.main.centerOn(ILLUSTRATION.w / 2, ILLUSTRATION.h / 2 - 10 / zoom);
+      // Llena el ancho; si sobra alto, se ve primero el centro del lugar y el resto se desliza.
+      // (A mitad de camino entre el centro del piso y el de la imagen: se ven la pared del fondo y el mostrador.)
+      const focus = (projectOnFloor(this.ill, this.cols, this.rows, this.cols / 2, this.def.rows / 2).y + ILLUSTRATION.h / 2) / 2;
+      coverFit(this, ILLUSTRATION.w, ILLUSTRATION.h, focus);
       return;
     }
     const b = isoBounds(this.cols, this.rows);
@@ -273,8 +277,9 @@ export class LiveScene extends Phaser.Scene {
         case 'npc': return h.npc && this.store.talkTo(h.npc);
       }
     };
-    label.on('pointerdown', act);
-    zone.on('pointerdown', act);
+    const tap = () => { if (!this.pan.dragged()) act(); };
+    label.on('pointerup', tap);
+    zone.on('pointerup', tap);
   }
 
   private drawNamedNpcs() {
@@ -306,8 +311,9 @@ export class LiveScene extends Phaser.Scene {
       s.setInteractive({ useHandCursor: true });
       name.setInteractive({ useHandCursor: true });
       const talk = () => this.store.talkTo(npcId);
-      s.on('pointerdown', talk);
-      name.on('pointerdown', talk);
+      const tapTalk = () => { if (!this.pan.dragged()) talk(); };
+      s.on('pointerup', tapTalk);
+      name.on('pointerup', tapTalk);
     }
   }
 

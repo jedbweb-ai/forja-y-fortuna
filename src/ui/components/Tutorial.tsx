@@ -5,7 +5,8 @@ import { store, useSnapshot } from '../hooks';
 /** La tarjeta de la guía de primeros pasos: el próximo paso, con lo que dice el maestro. */
 export function TutorialCard() {
   const { state } = useSnapshot();
-  const [open, setOpen] = useState(true);
+  // En pantallas bajas (un celular apaisado) arranca plegada, para no tapar el lugar.
+  const [open, setOpen] = useState(() => window.innerHeight > 520);
   if (!state) return null;
   const c = store.content;
   const step = currentStep(c, state);
