@@ -248,7 +248,7 @@ Aprobado con estas recomendaciones. La lógica está en `src/core/staff/` y los 
 
 ## Tutorial
 
-Aprobado con estas recomendaciones. La lógica está en , los textos en  y las pantallas en .
+Aprobado con estas recomendaciones. La lógica está en `src/core/tutorial/`, los textos en `src/data/tutorial.ts` y las pantallas en `src/ui/components/Tutorial.tsx`.
 
 - **Quién guía**: Anselmo, el viejo herrero que te dejó el taller, con sus notas. No hace falta arte nuevo.
 - **Primeros pasos** (7): forjar, vender, comprar materiales, hablar con un vecino, aceptar un encargo, salir de expedición y descansar.
