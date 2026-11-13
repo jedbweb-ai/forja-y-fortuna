@@ -64,6 +64,13 @@ export function SettingsPanel() {
           <small className="muted block">Para probar cosas rápido: el oro no se gasta. Al apagarlo vuelve el oro que tenías antes.</small>
         </span>
       </label>
+      <label className="setting">
+        <input type="checkbox" checked={!!s.settings.invincible} onChange={(e) => store.updateSettings({ invincible: e.target.checked })} />
+        <span>
+          🛡️ Invencible (modo prueba)
+          <small className="muted block">En las peleas, los enemigos no le hacen daño al grupo. Se puede prender o apagar en medio de un combate.</small>
+        </span>
+      </label>
       <div className="row">
         <button className="btn" onClick={toggleFullscreen}>⛶ Pantalla completa</button>
         <button className="btn" onClick={() => { store.saveNow(); store.toast('Partida guardada.', 'good'); }}>💾 Guardar ahora</button>

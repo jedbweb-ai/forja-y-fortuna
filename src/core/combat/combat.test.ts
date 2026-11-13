@@ -97,6 +97,36 @@ describe('combate: turnos y resultado', () => {
     expect(cs.outcome).not.toBeNull();
   });
 
+  it('en modo invencible los enemigos no le hacen daño al grupo (y el grupo sí les pega)', () => {
+    const { s, ctx, cs } = fight(['lobo_gris', 'lobo_gris', 'jabali']);
+    cs.flags.invincible = true;
+    const hero = cs.units.find((u) => u.side === 'party')!;
+    const hp = hero.hp;
+    // Los enemigos juegan muchas rondas; el héroe solo pasa el turno.
+    for (let guard = 0; guard < 60 && !cs.outcome; guard++) {
+      const u = currentUnit(cs)!;
+      if (u.side === 'enemy') aiTurn(ctx.c, s, ctx.rng);
+      else endTurn(ctx.c, s, ctx.rng);
+    }
+    expect(hero.hp).toBe(hp);
+    expect(hero.alive).toBe(true);
+    // Envenenado y todo, la vida no baja.
+    hero.statuses.push({ id: 'veneno', turns: 3, power: 1 });
+    cs.order = [hero.id];
+    cs.turnIndex = 0;
+    beginTurn(ctx.c, s, ctx.rng);
+    expect(hero.hp).toBe(hp);
+    // Al enemigo sí le entra daño.
+    const wolf = cs.units.find((u) => u.side === 'enemy' && u.alive)!;
+    Object.assign(hero, { x: wolf.x - 1, y: wolf.y, acted: false });
+    const before = wolf.hp;
+    for (let i = 0; i < 5 && wolf.hp === before; i++) {
+      hero.acted = false;
+      useSkill(ctx.c, s, ctx.rng, hero.id, hero.skills[0], { x: wolf.x, y: wolf.y });
+    }
+    expect(wolf.hp).toBeLessThan(before);
+  });
+
   it('victoria: botín a la bolsa y el grupo desaparece del mapa', () => {
     const { s, ctx, cs } = fight(['gelin_verde']);
     cs.units.filter((u) => u.side === 'enemy').forEach((u) => { u.alive = false; u.hp = 0; u.killedBy = { damageType: 'cortante' }; });

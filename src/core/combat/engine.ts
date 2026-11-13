@@ -170,8 +170,13 @@ export function shielded(cs: CombatState, u: CombatUnit): boolean {
 }
 
 /** Aplica daño. "Último aliento" deja con 1 de vida una vez por combate. */
+/** Modo prueba (Ajustes → Invencible): al grupo no le entra daño. El store copia el ajuste en cs.flags. */
+export function invincible(cs: CombatState, u: CombatUnit): boolean {
+  return u.side === 'party' && !!cs.flags.invincible;
+}
+
 function hurt(cs: CombatState, u: CombatUnit, amount: number, fx: CombatFx[], cause?: CombatUnit['killedBy']) {
-  if (!u.alive || shielded(cs, u)) return;
+  if (!u.alive || shielded(cs, u) || invincible(cs, u)) return;
   u.hp -= amount;
   if (u.hp > 0) return;
   if (u.combat.lastStand && !cs.flags[`ls_${u.id}`]) {
@@ -417,6 +422,7 @@ function strike(c: Content, s: GameState, rng: Rng, u: CombatUnit, t: CombatUnit
     log(cs, `${t.name} es invulnerable mientras sigan en pie sus protecciones.`);
   }
   if (hasStatus(t, 'cubierto') && t.combat.blockPct && rng.chance(t.combat.blockPct / 100)) dmg = Math.round(dmg / 2);
+  if (invincible(cs, t)) dmg = 0;
   fx.push({ kind: 'hit', from: u.id, to: t.id, damage: dmg, crit, skill: skill.id, element: calc.element });
   log(cs, `${u.name} usa ${skill.name}: ${dmg} de daño a ${t.name}${crit ? ' (¡crítico!)' : ''}.`);
   const steal = (combat.lifeStealPct ?? 0) + (skill.lifeStealPct ?? 0);

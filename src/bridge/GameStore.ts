@@ -147,6 +147,8 @@ export class GameStore {
     const rng = createRng(draft.rngState);
     let events: GameEvent[];
     if (draft.settings.infiniteGold) draft.gold = INFINITE_GOLD;
+    // Modo prueba: el combate en curso sabe si el grupo es invencible (se puede prender o apagar en medio de una pelea).
+    if (draft.expedition?.combat) draft.expedition.combat.flags.invincible = !!draft.settings.invincible;
     try {
       events = runCommand(draft, { c: this.content, rng } as Ctx, cmd, ...args);
       if (draft.settings.infiniteGold) draft.gold = INFINITE_GOLD;

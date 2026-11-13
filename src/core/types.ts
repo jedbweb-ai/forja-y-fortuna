@@ -540,6 +540,8 @@ export interface GameSettings {
    * 'libre' = caminar por el mapa (B). Si falta, 'rutas'. Vale desde la expedición siguiente.
    */
   expeditionFormat?: 'rutas' | 'libre';
+  /** Modo prueba: en combate, al grupo no le entra daño (los enemigos pegan 0). */
+  invincible?: boolean;
 }
 
 export interface GameState {
