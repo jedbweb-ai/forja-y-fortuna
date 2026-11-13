@@ -4,6 +4,7 @@ import { ABILITY_SKILLS } from './abilities';
 import { ARENAS } from './arenas';
 import { TALENTS, UPGRADES } from './progress';
 import { WORK_TRAITS, WORKER_DIALOGUES, WORKER_NPCS, WORKERS } from './workers';
+import { TIPS, TUTORIAL_END, TUTORIAL_STEPS } from './tutorial';
 import { DUNGEONS, RIDDLES, ROOM_PIECES, TRAPS } from './dungeons';
 import { BLUEPRINTS_5, ENCHANTMENTS_5, GRIMOIRES_5, MATERIALS_5, POTIONS_5, QUENCH_5, SYNERGIES_5 } from './forge5';
 import { ARENAS_5, MONSTERS_5, SKILLS_5 } from './monsters5';
@@ -96,4 +97,5 @@ export const CONTENT: Content = {
   upgrades: indexById(UPGRADES),
   workers: indexById(WORKERS),
   workTraits: indexById(WORK_TRAITS),
+  tutorial: { steps: TUTORIAL_STEPS, tips: indexById(TIPS), end: TUTORIAL_END },
 };

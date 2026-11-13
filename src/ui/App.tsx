@@ -28,6 +28,7 @@ import { BagPanel, RegionHud } from './components/RegionHud';
 import { DungeonHud, DungeonPanel, LandingBox, RiddleBox } from './components/DungeonUi';
 import { TitleScreen } from './components/TitleScreen';
 import { Toasts } from './components/Toasts';
+import { TipModal, TutorialCard } from './components/Tutorial';
 import { store, useSnapshot } from './hooks';
 
 export function App() {
@@ -79,6 +80,8 @@ export function App() {
           )}
         </>
       )}
+      {ui.screen === 'game' && state && !exp && !ui.panel && !ui.dialogue && !ui.tip && ui.view !== 'world' && <TutorialCard />}
+      {ui.screen === 'game' && <TipModal />}
       <Toasts toasts={ui.toasts} />
     </>
   );

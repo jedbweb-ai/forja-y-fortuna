@@ -1,3 +1,5 @@
+import { seeTip } from '../core/tutorial/tutorial';
+import { cityLocation } from '../core/city';
 import { goTo } from '../core/city';
 import { currentUnit } from '../core/combat/engine';
 import { runCommand, type Command } from '../core/commands';
@@ -9,6 +11,12 @@ import type { GameEvent, GameState, ItemInstance } from '../core/types';
 import { combatAiStep } from '../core/world/expedition';
 import type { CombatFx } from '../core/combat/types';
 import { makeSaveFile, type SaveRepository } from '../persistence/saveFile';
+
+/** El consejo del maestro que aparece la primera vez que se abre cada panel. */
+const PANEL_TIPS: Partial<Record<string, string>> = {
+  auction: 'subasta', servants: 'esclavos', mercenaries: 'mercenarios', alchemy: 'alquimia', talents: 'talentos',
+  workshop: 'taller', staff: 'personal', travel: 'viajes', repair: 'reparar',
+};
 
 export type PanelId =
   | 'forge' | 'shop' | 'market' | 'inventory' | 'book' | 'settings' | 'debug'
@@ -56,6 +64,8 @@ export interface UiState {
   travelTo: string | null;
   /** Hay animaciones o turnos enemigos en curso: la UI de combate espera. */
   busy: boolean;
+  /** Consejo del maestro abierto (id de consejo, o 'fin' al terminar la guía). */
+  tip: string | null;
 }
 
 export interface Snapshot {
@@ -94,7 +104,7 @@ export class GameStore {
   constructor(readonly content: Content, private repo: SaveRepository, debug = false) {
     this.snapshot = {
       state: null,
-      ui: { screen: 'loading', view: 'location', panel: null, dialogue: null, itemCard: null, toasts: [], debug, hasSave: false, forgeDraft: null,
+      ui: { screen: 'loading', view: 'location', panel: null, dialogue: null, itemCard: null, toasts: [], debug, hasSave: false, forgeDraft: null, tip: null,
         regionId: null, combat: { mode: null }, busy: false, forgeStation: 'yunque', contactNpc: null, dungeonId: null, travelTo: null,
       },
     };
@@ -160,7 +170,14 @@ export class GameStore {
         }
       }
       if (e.type === 'expeditionStarted' || e.type === 'expeditionEnded') this.setUi({ view: 'location', panel: null, dialogue: null });
+      if (e.type === 'tutorialDone') this.setUi({ tip: 'fin' });
+      if (e.type === 'expeditionStarted' && this.state.expedition?.dungeon) this.maybeTip('mazmorra');
+      if (e.type === 'locationChanged') {
+        const loc = cityLocation(this.content, e.location);
+        if (loc?.branch && !this.state.staff.branches.includes(loc.id)) this.maybeTip('local');
+      }
       if (e.type === 'combatStarted') {
+        this.maybeTip('combate');
         this.setUi({ combat: { mode: null }, panel: null });
         this.driveCombat(900);
       }
@@ -211,6 +228,22 @@ export class GameStore {
 
   openPanel(panel: PanelId) {
     this.setUi({ panel, dialogue: null });
+    const tip = PANEL_TIPS[panel];
+    if (tip) this.maybeTip(tip);
+  }
+
+  /** Un consejo del maestro, la primera vez (si están prendidos y no hay otro abierto). */
+  maybeTip(id: string) {
+    const s = this.snapshot.state;
+    if (!s || !s.settings.tips || s.tutorial.tips.includes(id) || this.snapshot.ui.tip || !this.content.tutorial.tips[id]) return;
+    this.setUi({ tip: id });
+  }
+
+  /** Cerrar el consejo: ya no vuelve a aparecer. */
+  closeTip() {
+    const id = this.snapshot.ui.tip;
+    this.setUi({ tip: null });
+    if (id && id !== 'fin') this.run(seeTip, id);
   }
 
   closePanel() {
@@ -224,6 +257,7 @@ export class GameStore {
 
   openForge(station: ForgeStation) {
     this.setUi({ panel: 'forge', forgeStation: station, dialogue: null });
+    if (station === 'runas' || station === 'joyeria') this.maybeTip(station);
   }
 
   useDesign(blueprintId: string, materials: Record<string, string>) {
@@ -283,9 +317,13 @@ export class GameStore {
     this.startWith(file.state);
   }
 
-  newGame() {
-    this.startWith(createInitialState(this.content));
+  /** Partida nueva, con o sin la guía de primeros pasos (las notas del maestro). */
+  newGame(guide = true) {
+    const state = createInitialState(this.content);
+    state.tutorial.guide = guide;
+    this.startWith(state);
     this.saveNow();
+    if (guide) this.maybeTip('bienvenida');
   }
 
   private startWith(state: GameState) {
@@ -298,9 +336,9 @@ export class GameStore {
     if (state.expedition?.combat && !state.expedition.combat.outcome) this.driveCombat(600);
   }
 
-  async deleteSaveAndRestart() {
+  async deleteSaveAndRestart(guide = true) {
     await this.repo.remove(SAVE_SLOT);
-    this.newGame();
+    this.newGame(guide);
   }
 
   private scheduleSave() {

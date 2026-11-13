@@ -1,4 +1,5 @@
 import { useState, useSyncExternalStore } from 'react';
+import { resetTips, setGuide } from '../../core/tutorial/tutorial';
 import { getAudioPrefs, setAudioPrefs, subscribeAudioPrefs } from '../../audio/prefs';
 import { Panel } from '../components/Panel';
 import { store, useGame } from '../hooks';
@@ -31,6 +32,14 @@ export function SettingsPanel() {
       <label className="setting">
         <input type="checkbox" checked={s.settings.skipItemCard} onChange={(e) => store.updateSettings({ skipItemCard: e.target.checked })} />
         <span>Saltear la tarjeta del objeto terminado <small className="muted block">Muestra solo un aviso breve.</small></span>
+      </label>
+      <label className="setting">
+        <input type="checkbox" checked={s.tutorial.guide} onChange={(e) => store.run(setGuide, e.target.checked)} />
+        <span>Guía de primeros pasos <small className="muted block">Las notas del maestro: el próximo paso arriba a la izquierda. Lo que ya hiciste cuenta como hecho.</small></span>
+      </label>
+      <label className="setting">
+        <input type="checkbox" checked={s.settings.tips} onChange={(e) => store.updateSettings({ tips: e.target.checked })} />
+        <span>Consejos del maestro <small className="muted block">Un consejo la primera vez que entrás a cada cosa. <button className="linkish" onClick={(ev) => { ev.preventDefault(); store.run(resetTips); }}>Volver a verlos</button></small></span>
       </label>
       <label className="setting">
         <input type="checkbox" checked={!!s.settings.permadeath} onChange={(e) => store.updateSettings({ permadeath: e.target.checked })} />

@@ -6,6 +6,7 @@ import type { City, CityLocation } from '../../core/types';
 import { artScale, facing, installWalkBob, isRealArt, queueLazyArt, smoothArt } from '../render/assets';
 import { AMBIENT_VARIANTS } from '../render/placeholders';
 import { CITY_PLACES } from '../render/illustrated';
+import { currentStep, stepPlace } from '../../core/tutorial/tutorial';
 import { drawWalledTown } from '../render/townMap';
 import { SLOT_LIGHT } from './lighting';
 
@@ -143,6 +144,17 @@ export class CityMapScene extends Phaser.Scene {
       backgroundColor: loc.available ? '#3a2418cc' : '#3a3a3acc', padding: { x: 6, y: 3 }, align: 'center',
     }).setOrigin(0.5, 0).setResolution(2);
     c.add(label);
+
+    // La guía de primeros pasos marca adónde conviene ir.
+    const st = this.store.getSnapshot().state;
+    const step = st && currentStep(this.store.content, st);
+    if (step && stepPlace(step) === loc.id) {
+      const ring = this.add.image(0, h * 0.05, 'fx.glow').setBlendMode(Phaser.BlendModes.ADD).setScale(1.6).setTint(0xffc35a);
+      c.addAt(ring, 0);
+      this.tweens.add({ targets: ring, alpha: 0.35, scale: 2, yoyo: true, repeat: -1, duration: 700 });
+      this.tweens.add({ targets: label, y: label.y - 4, yoyo: true, repeat: -1, duration: 500 });
+      label.setStyle({ backgroundColor: '#8a4a12ee' });
+    }
 
     const state = this.store.getSnapshot().state;
     if (state?.location === loc.id) {

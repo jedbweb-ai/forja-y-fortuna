@@ -1,4 +1,5 @@
 import type { StaffState } from './staff/types';
+import type { TutorialState } from './tutorial/types';
 // Tipos compartidos del núcleo del juego. Sin dependencias visuales.
 import type { CombatFx } from './combat/types';
 import type { AlchemyProps, ItemAbility, PotionData } from './magic/types';
@@ -524,6 +525,8 @@ export type SkillId =
   | 'combate' | 'mineria' | 'tala' | 'desuello' | 'joyeria' | 'alquimia' | 'siega';
 
 export interface GameSettings {
+  /** Mostrar los consejos del maestro la primera vez que se entra a cada sistema. */
+  tips: boolean;
   skipItemCard: boolean;
   fullscreenOnStart: boolean;
   /** Los compañeros que caen en mazmorras de mucho peligro mueren para siempre. */
@@ -582,6 +585,8 @@ export interface GameState {
   workshop: Record<string, number>;
   /** Personal de la herrería: quién trabaja, en qué puesto, pedidos y candidatos del tablón. */
   staff: StaffState;
+  /** Guía de primeros pasos y consejos ya vistos. */
+  tutorial: TutorialState;
   settings: GameSettings;
   nextUid: number;
 }
@@ -605,4 +610,5 @@ export type GameEvent =
   | { type: 'combatFx'; fx: CombatFx[] }
   | { type: 'combatEnded'; outcome: 'victory' | 'defeat' | 'fled' }
   | { type: 'brewed'; recipe: string; name: string; qty: number; discovered: boolean }
-  | { type: 'grimoireFound'; id: string };
+  | { type: 'grimoireFound'; id: string }
+  | { type: 'tutorialDone' };

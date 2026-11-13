@@ -3,6 +3,7 @@ import { refreshMarket } from './economy/monsterMarket';
 import { closeShop } from './economy/shop';
 import { shopHere } from './economy/shops';
 import { payWages } from './party/mercenaries';
+import { tutorialUpdate } from './tutorial/tutorial';
 import { payWorkers, staffReportEvents, staffShift } from './staff/staff';
 import { townMorning, townUpkeep } from './town/daily';
 import type { GameEvent, GameState } from './types';
@@ -25,5 +26,6 @@ export function runCommand<A extends unknown[]>(s: GameState, ctx: Ctx, cmd: Com
   if (!s.market || s.market.day !== s.day) refreshMarket(s, ctx.c, ctx.rng);
   events.push(...townUpkeep(s, ctx));
   events.push(...staffReportEvents(s, ctx.c));
+  events.push(...tutorialUpdate(s, ctx.c, events));
   return events;
 }

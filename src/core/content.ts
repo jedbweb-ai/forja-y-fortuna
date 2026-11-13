@@ -10,6 +10,7 @@ import type { AuctionLotDef, BidderDef, CityEventDef, ContractDef, QuestDef } fr
 import type { DungeonDef, RiddleDef, RoomPiece, TrapDef, TrapKind } from './dungeon/types';
 import type { TalentDef, UpgradeDef } from './progress/types';
 import type { WorkerDef, WorkTraitDef } from './staff/types';
+import type { TipDef, TutorialStepDef } from './tutorial/types';
 
 /** Todo el contenido del juego, indexado por id. El core lo recibe por parámetro. */
 export interface Content {
@@ -52,6 +53,8 @@ export interface Content {
   // ── Personal ──
   workers: Record<string, WorkerDef>;
   workTraits: Record<string, WorkTraitDef>;
+  // ── Tutorial ──
+  tutorial: { steps: TutorialStepDef[]; tips: Record<string, TipDef>; end: string };
 }
 
 export function indexById<T extends { id: string }>(list: T[]): Record<string, T> {

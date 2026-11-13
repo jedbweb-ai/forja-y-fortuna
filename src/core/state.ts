@@ -75,7 +75,8 @@ export function createInitialState(c: Content, seed = Date.now() >>> 0): GameSta
     talents: {},
     workshop: {},
     staff: emptyStaffState(),
-    settings: { skipItemCard: false, fullscreenOnStart: true, permadeath: false },
+    tutorial: { guide: true, done: [], tips: [] },
+    settings: { skipItemCard: false, fullscreenOnStart: true, permadeath: false, tips: true },
     nextUid: 1,
   };
 }

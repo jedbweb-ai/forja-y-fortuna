@@ -246,9 +246,22 @@ Aprobado con estas recomendaciones. La lógica está en `src/core/staff/` y los 
 - **No se puede**: forjar ni hacer alquimia en una sucursal. Su yunque es para el aprendiz.
 - **Arte**: los dos talleres ya tienen su pedido de ilustración con plano en la herramienta.
 
+## Tutorial
+
+Aprobado con estas recomendaciones. La lógica está en , los textos en  y las pantallas en .
+
+- **Quién guía**: Anselmo, el viejo herrero que te dejó el taller, con sus notas. No hace falta arte nuevo.
+- **Primeros pasos** (7): forjar, vender, comprar materiales, hablar con un vecino, aceptar un encargo, salir de expedición y descansar.
+  - Se cumplen solos al hacerlos, en cualquier orden. Cada uno da un premio chico (unos 100 de oro en total y algo de hierro y pino).
+  - Una tarjeta arriba a la izquierda muestra el próximo paso. El botón que conviene tocar brilla, y en el mapa de la ciudad brilla el lugar adonde ir.
+  - Al terminar, la guía se apaga sola con una despedida del maestro.
+- **Consejos de una sola vez**: la primera vez que entrás a cada sistema. Son 14: combate, mazmorras, subasta, esclavos, mercenarios, runas, joyería, alquimia, talentos, mejoras del taller, personal, locales en venta, viajes y reparar.
+- **Partida nueva**: se elige con o sin guía. En Ajustes se prende o apaga la guía (lo que ya hiciste cuenta como hecho, sin premio) y los consejos, que también se pueden volver a ver.
+- **Partidas que ya existían** (guardado v10): la guía arranca apagada y los consejos, prendidos.
+
 ## Pendiente para próximas fases
 - **Arte definitivo**: generar la muestra de estilo (herrero, Brunilda, monstruos del Linde, texturas básicas, yunque y fragua, íconos y retrato del herrero), revisarla en el juego y seguir por tandas.
-- Tutorial (más adelante, a decidir).
+- Ilustraciones de los dos talleres (sucursales): pedidos listos en la herramienta.
 
 ## Publicación
 

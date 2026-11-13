@@ -10,6 +10,7 @@ import { talentPoints } from '../../core/progress/progress';
 import type { SkillId } from '../../core/types';
 import { isAuctionDay } from '../../core/town/auction';
 import { store, useSnapshot } from '../hooks';
+import { currentStep, stepTarget, type TutorialTarget } from '../../core/tutorial/tutorial';
 import { Portrait } from './Swatch';
 
 /** Barra inferior con las acciones del lugar. Todo lo tocable en la escena también está acá. */
@@ -48,6 +49,10 @@ export function LocationBar() {
   const night = slotName(state) === 'noche';
   const damaged = damagedItems(state).length;
   const staffPicks = Object.values(state.staff.workers).reduce((a, p) => a + p.picks.length, 0);
+  // La guía de primeros pasos resalta el botón que conviene tocar.
+  const step = currentStep(c, state);
+  const tut = step ? stepTarget(c, state, step) : null;
+  const g = (k: TutorialTarget) => (tut === k ? ' tut-glow' : '');
   const freePoints = (Object.keys(state.skills) as SkillId[]).reduce((a, k) => a + talentPoints(c, state, k).free, 0);
 
   return (
@@ -60,7 +65,7 @@ export function LocationBar() {
               <button className="btn primary" data-key="f" onClick={() => store.openPanel('forge')}>🔨 Seguir trabajando</button>
             ) : (
               <>
-                <button className="btn primary" data-key="f" onClick={() => store.openForge('yunque')}>🔨 Forjar</button>
+                <button className={`btn primary${g('forjar')}`} data-key="f" onClick={() => store.openForge('yunque')}>🔨 Forjar</button>
                 <button className="btn" onClick={() => store.openForge('joyeria')}>💍 Joyería</button>
                 <button className="btn" onClick={() => store.openForge('runas')}>ᚱ Runas</button>
               </>
@@ -69,13 +74,13 @@ export function LocationBar() {
             <button className="btn" onClick={() => store.openPanel('workshop')}>🏗️ Taller</button>
             <button className="btn" onClick={() => store.openPanel('staff')}>🧑‍🏭 Personal{staffPicks > 0 ? ` (${staffPicks})` : ''}</button>
             <button className="btn" onClick={() => store.openPanel('talents')}>📈 Talentos{freePoints > 0 ? ` (${freePoints})` : ''}</button>
-            <button className="btn" data-key="t" onClick={() => store.openPanel('shop')}>{state.shop ? '🛎️ Tienda abierta' : '🛎️ Atender tienda'}</button>
+            <button className={`btn${g('tienda')}`} data-key="t" onClick={() => store.openPanel('shop')}>{state.shop ? '🛎️ Tienda abierta' : '🛎️ Atender tienda'}</button>
             {damaged > 0 && <button className="btn" onClick={() => store.openPanel('repair')}>🛠️ Reparar ({damaged})</button>}
-            <button className="btn" data-key="x" onClick={() => store.showWorld()}>🧭 Expedición</button>
-            <button className="btn" data-key="d" onClick={() => store.run(night ? sleepUntilMorning : restSlot)}>{night ? '🛏️ Dormir' : '⏳ Descansar'}</button>
+            <button className={`btn${g('expedicion')}`} data-key="x" onClick={() => store.showWorld()}>🧭 Expedición</button>
+            <button className={`btn${g('dormir')}`} data-key="d" onClick={() => store.run(night ? sleepUntilMorning : restSlot)}>{night ? '🛏️ Dormir' : '⏳ Descansar'}</button>
           </>
         )}
-        {(loc.kind === 'mercado' || loc.kind === 'muelle') && <button className="btn primary" onClick={() => store.openPanel('market')}>🧺 {loc.kind === 'muelle' ? 'Mercadería del barco' : 'Puesto de materiales'}</button>}
+        {(loc.kind === 'mercado' || loc.kind === 'muelle') && <button className={`btn primary${g('mercado')}`} onClick={() => store.openPanel('market')}>🧺 {loc.kind === 'muelle' ? 'Mercadería del barco' : 'Puesto de materiales'}</button>}
         {loc.branch && (ownsBranch(state, loc.id) ? (
           <>
             <button className="btn primary" data-key="t" onClick={() => store.openPanel('shop')}>{state.shop ? '🛎️ Tienda abierta' : '🛎️ Atender tienda'}</button>
@@ -96,15 +101,15 @@ export function LocationBar() {
         {loc.kind === 'alquimista' && <button className="btn primary" onClick={() => store.openPanel('market')}>🌿 Hierbas y reactivos</button>}
         {loc.kind === 'libreria' && <button className="btn primary" onClick={() => store.openPanel('library')}>📚 Grimorios y planos</button>}
         {loc.id === 'taberna' && <button className="btn primary" onClick={() => store.openPanel('mercenaries')}>🍺 Mercenarios</button>}
-        {loc.kind === 'gremio' && <button className="btn primary" onClick={() => store.openPanel('quests')}>📜 Encargos y contratos</button>}
-        {loc.kind === 'tablon' && <button className="btn primary" onClick={() => store.openPanel('quests')}>📢 Avisos y encargos</button>}
+        {loc.kind === 'gremio' && <button className={`btn primary${g('tablon')}`} onClick={() => store.openPanel('quests')}>📜 Encargos y contratos</button>}
+        {loc.kind === 'tablon' && <button className={`btn primary${g('tablon')}`} onClick={() => store.openPanel('quests')}>📢 Avisos y encargos</button>}
         {loc.kind === 'subastas' && <button className="btn primary" onClick={() => store.openPanel('auction')}>🔨 Subasta{isAuctionDay(state) ? ' (¡hoy!)' : ''}</button>}
         {loc.kind === 'esclavos' && <button className="btn primary" onClick={() => store.openPanel('servants')}>⛓️ Tratos</button>}
         {npcs.map((id) => (
-          <button key={id} className="btn talk" onClick={() => store.talkTo(id)}><Portrait id={id} look={c.npcs[id].look} size="tiny" /> {c.npcs[id].name.split(' ')[0]}</button>
+          <button key={id} className={`btn talk${g('hablar')}`} onClick={() => store.talkTo(id)}><Portrait id={id} look={c.npcs[id].look} size="tiny" /> {c.npcs[id].name.split(' ')[0]}</button>
         ))}
         {loc.id !== 'herreria' && currentCity(state) !== homeCity() && <button className="btn" data-key="x" onClick={() => store.showWorld()}>🧭 Viajar</button>}
-        <button className="btn" data-key="m" onClick={() => store.showMap()}>🗺️ Ciudad</button>
+        <button className={`btn${g('ciudad')}`} data-key="m" onClick={() => store.showMap()}>🗺️ Ciudad</button>
       </div>
     </div>
   );

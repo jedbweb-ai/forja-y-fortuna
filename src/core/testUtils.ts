@@ -7,7 +7,10 @@ import type { GameEvent, GameState, ItemInstance } from './types';
 
 /** Estado nuevo + contexto con semilla fija, para tests. */
 export function setup(seed = 42): { s: GameState; ctx: Ctx } {
-  return { s: createInitialState(CONTENT, seed), ctx: { c: CONTENT, rng: createRng(seed) } };
+  const s = createInitialState(CONTENT, seed);
+  // La guía de primeros pasos da premios que cambiarían las cuentas de los tests (sus tests la prenden).
+  s.tutorial.guide = false;
+  return { s, ctx: { c: CONTENT, rng: createRng(seed) } };
 }
 
 export function withRng(ctx: Ctx, rng: Rng): Ctx {

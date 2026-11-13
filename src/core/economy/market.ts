@@ -29,6 +29,7 @@ export function buyMaterial(s: GameState, { c }: Ctx, id: string, qty: number): 
   s.gold -= total;
   addMaterial(s, id, qty);
   if (Number.isFinite(available) && s.market) s.market.stock[id] -= qty;
+  s.flags.compro_material = true;
   return [{ type: 'toast', text: `Compraste ${qty}× ${c.materials[id].name} (−${total} oro).`, tone: 'info' }];
 }
 

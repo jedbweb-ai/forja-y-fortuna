@@ -3,7 +3,7 @@ import { EMPTY_SKILLS, emptyStaffState, emptyTownState } from '../core/state';
 import type { GameState } from '../core/types';
 
 /** Versión actual del formato de guardado. Subirla junto con una migración. */
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 /**
  * Formato del guardado. Es JSON plano para que el mismo archivo pueda subirse
@@ -112,6 +112,11 @@ export const MIGRATIONS: Record<number, Migration> = {
   8: (save) => {
     const st = save.state as Record<string, unknown> & { staff?: Record<string, unknown> };
     return { ...save, version: 9, state: { ...st, staff: { ...(st.staff ?? {}), branches: [] } } };
+  },
+  // Tutorial: en una partida que ya venía, la guía de primeros pasos arranca apagada; los consejos, prendidos.
+  9: (save) => {
+    const st = save.state as Record<string, unknown> & { settings?: Record<string, unknown> };
+    return { ...save, version: 10, state: { ...st, tutorial: { guide: false, done: [], tips: [] }, settings: { ...(st.settings ?? {}), tips: true } } };
   },
 };
 
