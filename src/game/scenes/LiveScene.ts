@@ -31,6 +31,22 @@ export class LiveScene extends Phaser.Scene {
     return this.ill ? projectOnFloor(this.ill, this.def.cols, this.def.rows, c + 0.5, r + 0.5) : isoToScreen(c, r);
   }
 
+  /** Orden de dibujo: en una ilustración, por la altura en pantalla; si no, por la diagonal isométrica. */
+  private depth(c: number, r: number, bias = 0) {
+    return this.ill ? Math.round(this.at(c, r).y) * 10 + bias : isoDepth(c, r, bias);
+  }
+
+  /** Dónde aparece el herrero, cada NPC y el cliente (una ilustración puede cambiarlos). */
+  private spawnSpot() {
+    const s = this.ill?.spots?.spawn;
+    return s ? { x: s[0], y: s[1] } : this.def.spawn;
+  }
+
+  private npcSpot(id: string) {
+    const s = this.ill?.spots?.npc?.[id];
+    return s ? { x: s[0], y: s[1] } : this.def.npcSpots[id];
+  }
+
   /** Escala de una figura en este lugar. */
   private fig(key: string) {
     return artScale(key, CHAR_SCALE) * this.k;
@@ -67,8 +83,9 @@ export class LiveScene extends Phaser.Scene {
     this.blocked = new Set(this.ill
       ? this.ill.blocked.map(([x, y]) => `${x},${y}`)
       : this.def.props.filter((p) => p.blocks && this.textures.exists(p.key)).map((p) => `${p.x},${p.y}`));
-    Object.values(this.def.npcSpots).forEach((p) => this.blocked.add(`${p.x},${p.y}`));
-    this.blocked.add(`${this.def.spawn.x},${this.def.spawn.y}`);
+    Object.keys(this.def.npcSpots).forEach((id) => { const p = this.npcSpot(id); this.blocked.add(`${p.x},${p.y}`); });
+    const spawn = this.spawnSpot();
+    this.blocked.add(`${spawn.x},${spawn.y}`);
 
     if (this.ill) {
       this.add.image(0, 0, this.ill.image).setOrigin(0, 0).setDisplaySize(ILLUSTRATION.w, ILLUSTRATION.h).setDepth(-20000);
@@ -136,7 +153,7 @@ export class LiveScene extends Phaser.Scene {
         // La variante solo existe en los placeholders (con arte definitivo no se mezclan estilos).
         const variant = (c * 7 + r * 3) % 5 === 0 && this.textures.exists(`${key}.1`) ? `${key}.1` : key;
         const p = this.at(c, r);
-        this.add.image(p.x, p.y, variant).setOrigin(0.5, 16 / 34).setDepth(-10000 + isoDepth(c, r));
+        this.add.image(p.x, p.y, variant).setOrigin(0.5, 16 / 34).setDepth(-10000 + this.depth(c, r));
       }
     }
   }
@@ -159,7 +176,7 @@ export class LiveScene extends Phaser.Scene {
         this.add.image(pos.x, pos.y, p.key).setDepth(-9600);
         continue;
       }
-      const img = this.add.image(pos.x, pos.y + TILE_H / 2 - 2, p.key).setOrigin(0.5, 1).setDepth(isoDepth(p.x, p.y, 5));
+      const img = this.add.image(pos.x, pos.y + TILE_H / 2 - 2, p.key).setOrigin(0.5, 1).setDepth(this.depth(p.x, p.y, 5));
       if (p.key === 'prop.forge' || p.key === 'prop.fireplace') {
         this.tweens.add({ targets: img, alpha: 0.9, yoyo: true, repeat: -1, duration: 300 + Math.random() * 200 });
       }
@@ -177,7 +194,8 @@ export class LiveScene extends Phaser.Scene {
     const label = this.add.text(where.x, where.y, h.label, {
       fontFamily: 'system-ui, sans-serif', fontSize: '16px', fontStyle: 'bold', color: '#fff8e8', backgroundColor: '#3a2418dd', padding: { x: 6, y: 3 },
     }).setOrigin(0.5, 1).setResolution(2).setDepth(8000).setInteractive({ useHandCursor: true });
-    const zone = this.add.zone(pos.x, pos.y - 14, 70, 60).setInteractive({ useHandCursor: true }).setDepth(8000);
+    // La zona tocable va sobre el mueble: en una ilustración, debajo de su nombre.
+    const zone = (this.ill?.labels?.[h.id] ? this.add.zone(where.x, where.y + 60, 120, 100) : this.add.zone(pos.x, pos.y - 14, 70, 60)).setInteractive({ useHandCursor: true }).setDepth(8000);
     this.tweens.add({ targets: label, y: label.y - 4, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.inOut' });
     const act = () => {
       this.tweens.add({ targets: label, scale: 1.15, yoyo: true, duration: 90 });
@@ -206,13 +224,13 @@ export class LiveScene extends Phaser.Scene {
     const c = this.store.content;
     const state = this.store.state;
     for (const npcId of npcsAt(c, state, this.locId)) {
-      const spot = this.def.npcSpots[npcId];
+      const spot = this.npcSpot(npcId);
       if (!spot) continue;
       const npc = c.npcs[npcId];
       const pos = this.at(spot.x, spot.y);
       const key = `char.npc.${npcId}`;
-      this.add.image(pos.x, pos.y + 4, 'fx.shadow').setDepth(isoDepth(spot.x, spot.y, 6));
-      const s = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(this.fig(key)).setDepth(isoDepth(spot.x, spot.y, 7));
+      this.add.image(pos.x, pos.y + 4, 'fx.shadow').setDepth(this.depth(spot.x, spot.y, 6));
+      const s = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(this.fig(key)).setDepth(this.depth(spot.x, spot.y, 7));
       this.tweens.add({ targets: s, scaleY: s.scaleY * 1.03, yoyo: true, repeat: -1, duration: 700 + spot.x * 40 });
       const name = this.add.text(pos.x, pos.y - 50 * this.k, npc.name, {
         fontFamily: 'system-ui, sans-serif', fontSize: '15px', fontStyle: 'bold', color: '#ffe9a8', stroke: '#1a1220', strokeThickness: 4,
@@ -235,10 +253,10 @@ export class LiveScene extends Phaser.Scene {
   }
 
   private drawPlayer() {
-    const { x, y } = this.def.spawn;
+    const { x, y } = this.spawnSpot();
     const pos = this.at(x, y);
-    this.add.image(pos.x, pos.y + 4, 'fx.shadow').setDepth(isoDepth(x, y, 6));
-    const s = this.add.sprite(pos.x, pos.y + 6, 'char.herrero').setOrigin(0.5, 1).setScale(this.fig('char.herrero')).setDepth(isoDepth(x, y, 7));
+    this.add.image(pos.x, pos.y + 4, 'fx.shadow').setDepth(this.depth(x, y, 6));
+    const s = this.add.sprite(pos.x, pos.y + 6, 'char.herrero').setOrigin(0.5, 1).setScale(this.fig('char.herrero')).setDepth(this.depth(x, y, 7));
     s.setData('player', true);
     this.tweens.add({ targets: s, scaleY: s.scaleY * 1.04, yoyo: true, repeat: -1, duration: 650 });
     this.add.text(pos.x, pos.y - 50 * this.k, 'Vos', {
@@ -292,7 +310,7 @@ export class LiveScene extends Phaser.Scene {
       const key = guard ? `char.guard.${i % GUARD_VARIANTS}` : `char.amb.${(i * 3 + this.locId.length) % AMBIENT_VARIANTS}`;
       const t = Phaser.Utils.Array.GetRandom(free);
       const pos = this.at(t.x, t.y);
-      const s = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(this.fig(key)).setDepth(isoDepth(t.x, t.y, 7));
+      const s = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(this.fig(key)).setDepth(this.depth(t.x, t.y, 7));
       s.setData({ tile: t, key });
       this.walkers.push(s);
       this.time.delayedCall(Phaser.Math.Between(0, 2000), () => this.nextAction(s));
@@ -329,7 +347,7 @@ export class LiveScene extends Phaser.Scene {
                 if (!s.active) return;
                 const back = Phaser.Utils.Array.GetRandom(this.def.doors);
                 const pos = this.at(back.x, back.y);
-                s.setPosition(pos.x, pos.y + 6).setData('tile', back).setDepth(isoDepth(back.x, back.y, 7));
+                s.setPosition(pos.x, pos.y + 6).setData('tile', back).setDepth(this.depth(back.x, back.y, 7));
                 this.tweens.add({ targets: s, alpha: 1, duration: 300, onComplete: () => this.nextAction(s) });
               });
             },
@@ -359,7 +377,7 @@ export class LiveScene extends Phaser.Scene {
       s.play(`${f.key}.walk`, true).setFlipX(f.flip);
       this.tweens.add({
         targets: s, x: pos.x, y: pos.y + 6, duration: STEP_MS,
-        onComplete: () => { s.setData('tile', t).setDepth(isoDepth(t.x, t.y, 7)); go(i + 1); },
+        onComplete: () => { s.setData('tile', t).setDepth(this.depth(t.x, t.y, 7)); go(i + 1); },
       });
     };
     go(0);
@@ -371,7 +389,7 @@ export class LiveScene extends Phaser.Scene {
       const key = `animal.${kind}`;
       const t = Phaser.Utils.Array.GetRandom(free);
       const pos = this.at(t.x, t.y);
-      const a = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(artScale(key, 2) * this.k).setDepth(isoDepth(t.x, t.y, 6));
+      const a = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(artScale(key, 2) * this.k).setDepth(this.depth(t.x, t.y, 6));
       const hop = () => {
         if (!a.active) return;
         const cur = a.getData('tile') ?? t;
@@ -385,7 +403,7 @@ export class LiveScene extends Phaser.Scene {
         a.setFlipX(f.flip).play(`${f.key}.walk`, true);
         this.tweens.add({
           targets: a, x: p.x, y: p.y + 6, duration: kind === 'gallina' ? 300 : 600, delay: Phaser.Math.Between(400, 3500),
-          onComplete: () => { a.stop(); a.setTexture(f.key).setData('tile', n).setDepth(isoDepth(n.x, n.y, 6)); hop(); },
+          onComplete: () => { a.stop(); a.setTexture(f.key).setData('tile', n).setDepth(this.depth(n.x, n.y, 6)); hop(); },
         });
       };
       hop();
@@ -397,10 +415,10 @@ export class LiveScene extends Phaser.Scene {
       const row = this.def.roadRow!;
       const from = this.at(-2, row);
       const to = this.at(this.def.cols + 1, row);
-      const cart = this.add.image(from.x, from.y + 4, 'cart').setOrigin(0.5, 1).setScale(artScale('cart', 1.6)).setDepth(isoDepth(-2, row, 8));
+      const cart = this.add.image(from.x, from.y + 4, 'cart').setOrigin(0.5, 1).setScale(artScale('cart', 1.6)).setDepth(this.depth(-2, row, 8));
       this.tweens.add({
         targets: cart, x: to.x, y: to.y + 4, duration: 9000,
-        onUpdate: () => cart.setDepth(isoDepth(this.def.cols, row, 8) - 1),
+        onUpdate: () => cart.setDepth(this.depth(this.def.cols, row, 8) - 1),
         onComplete: () => { cart.destroy(); this.scheduleCart(); },
       });
       this.tweens.add({ targets: cart, angle: 1.5, yoyo: true, repeat: -1, duration: 160 });
@@ -437,12 +455,13 @@ export class LiveScene extends Phaser.Scene {
     }
     if (!current || this.customer) return;
     const counter = this.def.hotspots.find((h) => h.action === 'shop')!;
-    const spot = { x: counter.x, y: counter.y + 1 };
+    const c = this.ill?.spots?.customer;
+    const spot = c ? { x: c[0], y: c[1] } : { x: counter.x, y: counter.y + 1 };
     const door = this.def.doors[0];
     const tex = `char.amb.${(shop!.index * 7 + current.name.length) % AMBIENT_VARIANTS}`;
     const start = this.at(door.x, door.y);
     const end = this.at(spot.x, spot.y);
-    const s = this.add.sprite(start.x, start.y + 6, tex).setOrigin(0.5, 1).setScale(this.fig(tex)).setDepth(isoDepth(spot.x, spot.y, 7));
+    const s = this.add.sprite(start.x, start.y + 6, tex).setOrigin(0.5, 1).setScale(this.fig(tex)).setDepth(this.depth(spot.x, spot.y, 7));
     const go = facing(tex, end.x - start.x, end.y - start.y);
     // En el mostrador queda mirando hacia él (hacia -y en la grilla).
     const atCounter = facing(tex, 1, -1);
