@@ -267,3 +267,18 @@ Dejá una franja de tierra seca y roca arriba y abajo de la imagen, sin edificio
 Luz pareja de mediodía (sin atardecer ni noche: el juego cambia la luz según la hora), sin rayos de sol ni destellos. Chimeneas sin humo (el juego lo agrega animado).
 Sin personas ni animales grandes. Sin texto, letras, números ni carteles con palabras.
 ```
+
+## 8. Interiores ilustrados
+
+Cada lugar de la ciudad puede ser una sola ilustración (`interior.<lugar>.png`, 1280×720) con la grilla del juego encima.
+El pedido está en la herramienta (modo "📦 Pedidos en orden", grupo "Interiores ilustrados").
+
+- **Siempre en vista isométrica**, igual que el juego: el piso es un rombo y se ven las dos paredes del fondo. La primera
+  prueba de la herrería salió de frente y se descartó (quedó en `arte/originales/descartadas/`).
+- **Con la calle de afuera**: delante de cada local pasa una calle (vereda pegada al local y dos carriles), por donde
+  camina la gente, pasan las carretas y llegan los clientes, que entran solo por la puerta. En el juego son las últimas
+  3 filas de la grilla de cada interior (`street` en `LiveSceneDef`; los lugares al aire libre no la tienen).
+- **Con plano**: en la herramienta, el botón "🖼️ Bajar el plano del lugar" da una captura del juego
+  (`arte/referencias/plano.interior.<lugar>.png`) con la misma vista y dónde va cada mueble. Adjuntalo con el pedido.
+- Cuando llega la imagen se marca a mano en `src/game/render/illustrated.ts`: las 4 esquinas del piso (contando la
+  calle), la escala de las figuras, las casillas que tapan los muebles y dónde va cada cartel.

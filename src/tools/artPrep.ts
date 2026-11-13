@@ -16,6 +16,9 @@ const SKIPPED = 'fyf.arte.salteadas';
 type Mode = 'pedidos' | 'una' | 'hoja';
 
 const entries = buildAssetList(CONTENT);
+/** Planos de los lugares (arte/referencias/plano.interior.<lugar>.png): una captura del juego para adjuntar con el pedido. */
+const PLANS = import.meta.glob('/arte/referencias/plano.*.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const planFor = (key: string): string | undefined => PLANS[`/arte/referencias/plano.${key}.png`];
 let current: AssetEntry | null = null;
 let source: Img | null = null;
 /** La imagen tal cual la dio ChatGPT: se guarda junto con lo procesado. */
@@ -87,8 +90,9 @@ function select(e: AssetEntry) {
 function showPrompt() {
   if (!current) return;
   const refList = sheetMode ? sheetEntries() : [current];
-  $('ref').hidden = !refList.some((e) => ART[frontKey(e.key)]);
-  $('ref').textContent = isBack(current.type) ? '🖼️ Bajar la referencia de frente (adjuntala con el pedido)' : '🖼️ Bajar la referencia: cómo se ve hoy (adjuntala con el pedido)';
+  const plan = current.type === 'interior' ? planFor(current.key) : undefined;
+  $('ref').hidden = !plan && !refList.some((e) => ART[frontKey(e.key)]);
+  $('ref').textContent = plan ? '🖼️ Bajar el plano del lugar (adjuntalo con el pedido)' : isBack(current.type) ? '🖼️ Bajar la referencia de frente (adjuntala con el pedido)' : '🖼️ Bajar la referencia: cómo se ve hoy (adjuntala con el pedido)';
   if (!sheetMode) {
     $('title').textContent = current.name;
     $('meta').innerHTML = `Archivo <code>${current.folder}/${current.key}.png</code> · dibujo de <b>${current.w}×${current.h}</b> píxeles${ART[current.key] ? ' · <b>ya tiene arte</b> (si guardás, se reemplaza)' : ''}`;
@@ -435,6 +439,14 @@ $('unskip').onclick = () => {
  */
 $('ref').onclick = async () => {
   if (!current) return;
+  const plan = current.type === 'interior' ? planFor(current.key) : undefined;
+  if (plan) {
+    const a = document.createElement('a');
+    a.href = plan;
+    a.download = `plano-${current.key.replace('interior.', '')}.png`;
+    a.click();
+    return;
+  }
   const list = sheetMode ? sheetEntries() : [current];
   const cols = sheetMode ? Number($<HTMLInputElement>('cols').value) : 1;
   const rows = sheetMode ? Number($<HTMLInputElement>('rows').value) : 1;

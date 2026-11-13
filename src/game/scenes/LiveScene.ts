@@ -15,6 +15,10 @@ interface Tile { x: number; y: number }
 
 const STEP_MS = 420;
 const CHAR_SCALE = 2;
+/** Ancho de la calle de afuera de los interiores: vereda y dos carriles. */
+const STREET_W = 3;
+/** Cuánta gente pasa por la calle de afuera según la hora. */
+const PASSERSBY: Record<TimeSlot, number> = { 'mañana': 4, tarde: 5, noche: 2 };
 
 /** Escena viva de un lugar: el herrero parado, NPCs con rutinas simples, carretas y animales. */
 export class LiveScene extends Phaser.Scene {
@@ -25,10 +29,24 @@ export class LiveScene extends Phaser.Scene {
   private ill: IllustratedInterior | null = null;
   /** Tamaño de las figuras respecto del normal (en una ilustración, según sus muebles). */
   private k = 1;
+  /** Grilla entera: el lugar más la calle de afuera, si tiene (la calle son las últimas filas). */
+  private cols = 0;
+  private rows = 0;
+  /** Ancho de la calle de afuera (0 si no hay). */
+  private streetW = 0;
 
   /** Posición en pantalla del centro de una casilla (en una ilustración, sobre su piso dibujado). */
   private at(c: number, r: number) {
-    return this.ill ? projectOnFloor(this.ill, this.def.cols, this.def.rows, c + 0.5, r + 0.5) : isoToScreen(c, r);
+    return this.ill ? projectOnFloor(this.ill, this.cols, this.rows, c + 0.5, r + 0.5) : isoToScreen(c, r);
+  }
+
+  /** Fila de la calle de afuera (carril 0 = la vereda, pegada al local). */
+  private streetRow(lane: number) {
+    return this.def.rows + lane;
+  }
+
+  private isDoor(t: Tile) {
+    return this.def.doors.some((d) => d.x === t.x && d.y === t.y);
   }
 
   /** Orden de dibujo: en una ilustración, por la altura en pantalla; si no, por la diagonal isométrica. */
@@ -72,6 +90,9 @@ export class LiveScene extends Phaser.Scene {
     if (!loc?.scene) throw new Error(`Lugar sin escena: ${this.locId}`);
     this.def = loc.scene;
     this.kind = loc.kind;
+    this.streetW = this.def.street ?? (isIndoor(this.kind) ? STREET_W : 0);
+    this.cols = this.def.cols;
+    this.rows = this.def.rows + this.streetW;
     const ill = ILLUSTRATED[this.locId];
     this.ill = ill && isRealArt(ill.image) ? ill : null;
     this.k = this.ill?.charScale ?? 1;
@@ -99,9 +120,11 @@ export class LiveScene extends Phaser.Scene {
     this.drawPlayer();
     this.spawnAmbient(slot);
     this.spawnAnimals();
-    if (!this.ill && this.def.carts && this.def.roadRow !== undefined && slot !== 'noche') this.scheduleCart();
+    // Las carretas van por el carril de afuera de la calle (o por la fila de camino de un lugar al aire libre).
+    const cartRow = this.streetW ? this.rows - 1 : this.def.roadRow;
+    if (this.def.carts && cartRow !== undefined && slot !== 'noche') this.scheduleCart(cartRow);
 
-    const b = isoBounds(this.def.cols, this.def.rows);
+    const b = isoBounds(this.cols, this.rows);
     this.add.rectangle((b.left + b.right) / 2, (b.top + b.bottom) / 2, b.width * 4, b.height * 6, light.color, light.alpha).setDepth(9000);
     if (light.lamps && !this.ill) {
       for (const p of this.def.props.filter((q) => q.key === 'prop.lamp' || q.key === 'prop.fireplace' || q.key === 'prop.forge')) {
@@ -135,7 +158,7 @@ export class LiveScene extends Phaser.Scene {
       this.cameras.main.centerOn(ILLUSTRATION.w / 2, ILLUSTRATION.h / 2 - 10 / zoom);
       return;
     }
-    const b = isoBounds(this.def.cols, this.def.rows);
+    const b = isoBounds(this.cols, this.rows);
     const { width, height } = this.scale.gameSize;
     const top = b.top - WALL_H;
     const zoom = Phaser.Math.Clamp(Math.min(width / (b.width + 20), (height - 96) / (b.bottom - top)), 0.5, 2.6);
@@ -146,10 +169,12 @@ export class LiveScene extends Phaser.Scene {
   // ── Construcción ──
 
   private drawFloor() {
-    const { cols, rows, floor, roadRow } = this.def;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const key = r === roadRow ? 'tile.road' : floor;
+    const { floor, roadRow } = this.def;
+    // La calle de afuera: la vereda de piedra (o de tierra, si el local ya es de piedra) y los carriles de camino.
+    const sidewalk = floor === 'tile.stone' ? 'tile.dirt' : 'tile.stone';
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        const key = r >= this.def.rows ? (r === this.def.rows ? sidewalk : 'tile.road') : r === roadRow ? 'tile.road' : floor;
         // La variante solo existe en los placeholders (con arte definitivo no se mezclan estilos).
         const variant = (c * 7 + r * 3) % 5 === 0 && this.textures.exists(`${key}.1`) ? `${key}.1` : key;
         const p = this.at(c, r);
@@ -268,22 +293,26 @@ export class LiveScene extends Phaser.Scene {
 
   private freeTiles(): Tile[] {
     const out: Tile[] = [];
-    for (let r = 0; r < this.def.rows; r++) for (let c = 0; c < this.def.cols; c++) if (!this.blocked.has(`${c},${r}`)) out.push({ x: c, y: r });
+    for (let r = 0; r < this.rows; r++) for (let c = 0; c < this.cols; c++) if (!this.blocked.has(`${c},${r}`)) out.push({ x: c, y: r });
     return out;
   }
 
-  /** En interiores con calle (la herrería), los transeúntes solo pasan por la calle. */
-  private walkerTiles(): Tile[] {
-    const { floor, roadRow } = this.def;
-    const free = this.freeTiles();
-    return floor.startsWith('tile.wood') && roadRow !== undefined ? free.filter((t) => t.y === roadRow) : free;
+  /** Por dónde andan los de adentro: si el lugar tiene calle, solo el local (salen a la calle por las puertas). */
+  private insideTiles(): Tile[] {
+    return this.freeTiles().filter((t) => t.y < this.def.rows);
   }
 
-  /** Camino por BFS entre dos casillas libres (o null). */
-  private path(from: Tile, to: Tile): Tile[] | null {
+  private isStreet = (t: Tile) => t.y >= this.def.rows;
+
+  /**
+   * Camino por BFS entre dos casillas (o null). Se puede llegar a una casilla ocupada si es el destino (el lugar de un
+   * NPC, por ejemplo). Entre el local y la calle solo se pasa por las puertas. `allow` limita por dónde se camina.
+   */
+  private path(from: Tile, to: Tile, allow: (t: Tile) => boolean = () => true): Tile[] | null {
     const key = (t: Tile) => `${t.x},${t.y}`;
     const prev = new Map<string, Tile | null>([[key(from), null]]);
     const queue: Tile[] = [from];
+    const edge = this.def.rows;
     while (queue.length) {
       const cur = queue.shift()!;
       if (cur.x === to.x && cur.y === to.y) {
@@ -293,8 +322,10 @@ export class LiveScene extends Phaser.Scene {
       }
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const n = { x: cur.x + dx, y: cur.y + dy };
-        if (n.x < 0 || n.y < 0 || n.x >= this.def.cols || n.y >= this.def.rows) continue;
-        if (this.blocked.has(key(n)) || prev.has(key(n))) continue;
+        if (n.x < 0 || n.y < 0 || n.x >= this.cols || n.y >= this.rows) continue;
+        const isTarget = n.x === to.x && n.y === to.y;
+        if ((this.blocked.has(key(n)) && !isTarget) || prev.has(key(n)) || !allow(n)) continue;
+        if (this.streetW && Math.min(cur.y, n.y) === edge - 1 && Math.max(cur.y, n.y) === edge && !this.isDoor(cur.y < n.y ? cur : n)) continue;
         prev.set(key(n), cur);
         queue.push(n);
       }
@@ -304,9 +335,9 @@ export class LiveScene extends Phaser.Scene {
 
   private spawnAmbient(slot: TimeSlot) {
     const count = this.def.ambient[slot];
-    const free = this.walkerTiles();
-    for (let i = 0; i < count; i++) {
-      const guard = slot === 'noche' && i % 3 === 0;
+    const free = this.streetW ? this.insideTiles() : this.freeTiles();
+    for (let i = 0; i < count && free.length; i++) {
+      const guard = !this.streetW && slot === 'noche' && i % 3 === 0;
       const key = guard ? `char.guard.${i % GUARD_VARIANTS}` : `char.amb.${(i * 3 + this.locId.length) % AMBIENT_VARIANTS}`;
       const t = Phaser.Utils.Array.GetRandom(free);
       const pos = this.at(t.x, t.y);
@@ -315,6 +346,16 @@ export class LiveScene extends Phaser.Scene {
       this.walkers.push(s);
       this.time.delayedCall(Phaser.Math.Between(0, 2000), () => this.nextAction(s));
     }
+    if (!this.streetW) return;
+    // La gente que pasa por la calle de afuera (de noche, alguna guardia haciendo la ronda).
+    for (let i = 0; i < PASSERSBY[slot]; i++) {
+      const guard = slot === 'noche' && i % 2 === 0;
+      const key = guard ? `char.guard.${i % GUARD_VARIANTS}` : `char.amb.${(i * 5 + this.locId.length + 2) % AMBIENT_VARIANTS}`;
+      const s = this.add.sprite(0, 0, key).setOrigin(0.5, 1).setScale(this.fig(key)).setAlpha(0);
+      s.setData({ key });
+      this.walkers.push(s);
+      this.time.delayedCall(i === 0 ? 0 : Phaser.Math.Between(500, 9000), () => this.passBy(s));
+    }
   }
 
   private nextAction(s: Phaser.GameObjects.Sprite) {
@@ -322,24 +363,19 @@ export class LiveScene extends Phaser.Scene {
     const tile: Tile = s.getData('tile');
     const r = Math.random();
     if (r < 0.55) {
-      const free = this.walkerTiles();
+      const free = this.streetW ? this.insideTiles() : this.freeTiles();
       const target = Phaser.Utils.Array.GetRandom(free);
-      const steps = this.path(tile, target)?.slice(0, 10);
+      const steps = target && this.path(tile, target, (t) => !this.streetW || !this.isStreet(t))?.slice(0, 10);
       if (steps?.length) return this.walk(s, steps, () => this.nextAction(s));
     } else if (r < 0.88) {
-      const buddy = this.walkers.find((w) => w !== s && w.active && Phaser.Math.Distance.Between(w.x, w.y, s.x, s.y) < 90);
-      if (buddy) {
-        // Charlan o discuten precios.
-        const f = facing(s.getData('key'), buddy.x - s.x, buddy.y - s.y);
-        s.setTexture(f.key).setFlipX(f.flip);
-        const bubble = this.add.image(s.x, s.y - 52, 'fx.bubble').setDepth(8500).setScale(1.2);
-        this.tweens.add({ targets: bubble, y: bubble.y - 3, yoyo: true, repeat: 3, duration: 250, onComplete: () => bubble.destroy() });
-      }
+      if (this.chat(s)) return this.later(s, () => this.nextAction(s));
     } else if (this.def.doors.length) {
-      // Sale por una puerta y vuelve a entrar al rato por otra.
       const door = Phaser.Utils.Array.GetRandom(this.def.doors);
       const steps = this.path(tile, door);
       if (steps?.length) {
+        // Con calle: sale por la puerta, se va caminando por la calle y al rato vuelve a entrar.
+        if (this.streetW) return this.walk(s, steps, () => this.leaveAndReturn(s));
+        // Sin calle: sale por una puerta y vuelve a entrar al rato por otra.
         return this.walk(s, steps, () => {
           this.tweens.add({
             targets: s, alpha: 0, duration: 300, onComplete: () => {
@@ -355,19 +391,113 @@ export class LiveScene extends Phaser.Scene {
         });
       }
     }
+    this.later(s, () => this.nextAction(s));
+  }
+
+  /** Se queda quieto un rato y después sigue. */
+  private later(s: Phaser.GameObjects.Sprite, next: () => void, min = 900, max = 3000) {
     s.stop();
-    s.setTexture(s.getData('key'));
-    this.time.delayedCall(Phaser.Math.Between(900, 3000), () => this.nextAction(s));
+    s.setTexture(s.getData('face') ?? s.getData('key'));
+    this.time.delayedCall(Phaser.Math.Between(min, max), next);
+  }
+
+  /** Si tiene a alguien cerca, se da vuelta y charla (o discuten precios). */
+  private chat(s: Phaser.GameObjects.Sprite): boolean {
+    const buddy = this.walkers.find((w) => w !== s && w.active && w.alpha > 0.5 && Phaser.Math.Distance.Between(w.x, w.y, s.x, s.y) < 90 * this.k);
+    if (!buddy) return false;
+    const f = facing(s.getData('key'), buddy.x - s.x, buddy.y - s.y);
+    s.setTexture(f.key).setFlipX(f.flip).setData('face', f.key);
+    const bubble = this.add.image(s.x, s.y - 52 * this.k, 'fx.bubble').setDepth(8500).setScale(1.2);
+    this.tweens.add({ targets: bubble, y: bubble.y - 3, yoyo: true, repeat: 3, duration: 250, onComplete: () => bubble.destroy() });
+    return true;
+  }
+
+  // ── La calle de afuera ──
+
+  /** Una punta de la calle, en el carril dado: la casilla del borde y un punto un paso afuera de la grilla. */
+  private streetEnd(left: boolean, lane: number) {
+    const tile = { x: left ? 0 : this.cols - 1, y: this.streetRow(lane) };
+    return { tile, outside: { x: tile.x + (left ? -1 : 1), y: tile.y } };
+  }
+
+  /** Paso suelto hasta un punto (puede estar fuera de la grilla), apareciendo o desapareciendo de a poco. */
+  private stepTo(s: Phaser.GameObjects.Sprite, to: Tile, alpha: number, done: () => void) {
+    const key: string = s.getData('key');
+    const pos = this.at(to.x, to.y);
+    const f = facing(key, pos.x - s.x, pos.y + 6 - s.y);
+    s.play(`${f.key}.walk`, true).setFlipX(f.flip).setData('face', f.key).setDepth(this.depth(to.x, to.y, 7));
+    this.tweens.add({ targets: s, x: pos.x, y: pos.y + 6, alpha, duration: STEP_MS * 1.6, onComplete: () => { s.setData('tile', to); done(); } });
+  }
+
+  /** Entra a la calle por una punta (de a poco, como si viniera de más lejos). */
+  private enterStreet(s: Phaser.GameObjects.Sprite, done: () => void) {
+    const end = this.streetEnd(Math.random() < 0.5, Phaser.Math.Between(0, this.streetW - 1));
+    const start = this.at(end.outside.x, end.outside.y);
+    s.setPosition(start.x, start.y + 6).setAlpha(0).setVisible(true);
+    this.stepTo(s, end.tile, 1, done);
+  }
+
+  /** Camina por la calle hasta una punta y se va (desaparece de a poco). */
+  private exitStreet(s: Phaser.GameObjects.Sprite, done: () => void, left = Math.random() < 0.5) {
+    const end = this.streetEnd(left, Phaser.Math.Between(0, this.streetW - 1));
+    const steps = this.path(s.getData('tile'), end.tile, this.isStreet) ?? [];
+    this.walk(s, steps, () => this.stepTo(s, end.outside, 0, () => {
+      s.stop();
+      done();
+    }));
+  }
+
+  /**
+   * Un transeúnte: entra por una punta de la calle, la recorre cambiando de carril, a veces se para a mirar la vidriera
+   * o a charlar con alguien, y sale por la otra punta. Al rato vuelve a pasar otro (el mismo, con otro recorrido).
+   */
+  private passBy(s: Phaser.GameObjects.Sprite) {
+    if (!s.active) return;
+    this.enterStreet(s, () => {
+      const from: Tile = s.getData('tile');
+      const left = from.x !== 0;
+      const mid = { x: Phaser.Math.Between(1, this.cols - 2), y: this.streetRow(Phaser.Math.Between(0, this.streetW - 1)) };
+      const steps = this.path(from, mid, this.isStreet) ?? [];
+      this.walk(s, steps, () => {
+        const go = () => this.exitStreet(s, () => this.time.delayedCall(Phaser.Math.Between(1500, 8000), () => this.passBy(s)), left);
+        const r = Math.random();
+        if (r < 0.25 && this.chat(s)) return this.later(s, go, 1500, 3500);
+        if (r < 0.5) {
+          // Mira hacia el local un ratito.
+          const tile: Tile = s.getData('tile');
+          const here = this.at(tile.x, tile.y);
+          const shop = this.at(tile.x, tile.y - 1);
+          const f = facing(s.getData('key'), shop.x - here.x, shop.y - here.y);
+          s.stop();
+          s.setTexture(f.key).setFlipX(f.flip).setData('face', f.key);
+          return this.time.delayedCall(Phaser.Math.Between(1200, 3500), go);
+        }
+        go();
+      });
+    });
+  }
+
+  /** Uno de adentro sale por la puerta, se va por la calle y al rato vuelve a entrar por una puerta. */
+  private leaveAndReturn(s: Phaser.GameObjects.Sprite) {
+    this.exitStreet(s, () => this.time.delayedCall(Phaser.Math.Between(3000, 9000), () => {
+      if (!s.active) return;
+      this.enterStreet(s, () => {
+        const door = Phaser.Utils.Array.GetRandom(this.def.doors);
+        const steps = this.path(s.getData('tile'), door) ?? [];
+        this.walk(s, steps, () => this.nextAction(s));
+      });
+    }));
   }
 
   private walk(s: Phaser.GameObjects.Sprite, steps: Tile[], done: () => void) {
     const key: string = s.getData('key');
-    let face = key;
+    let face = s.getData('face') ?? key;
     const go = (i: number) => {
       if (!s.active) return;
       if (i >= steps.length) {
         s.stop();
         s.setTexture(face);
+        s.setData('face', face);
         return done();
       }
       const t = steps[i];
@@ -384,10 +514,11 @@ export class LiveScene extends Phaser.Scene {
   }
 
   private spawnAnimals() {
-    const free = this.freeTiles();
+    const free = this.streetW ? this.insideTiles() : this.freeTiles();
     for (const kind of this.def.animals) {
       const key = `animal.${kind}`;
       const t = Phaser.Utils.Array.GetRandom(free);
+      if (!t) return;
       const pos = this.at(t.x, t.y);
       const a = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(artScale(key, 2) * this.k).setDepth(this.depth(t.x, t.y, 6));
       const hop = () => {
@@ -395,7 +526,7 @@ export class LiveScene extends Phaser.Scene {
         const cur = a.getData('tile') ?? t;
         const opts = [[1, 0], [-1, 0], [0, 1], [0, -1]]
           .map(([dx, dy]) => ({ x: cur.x + dx, y: cur.y + dy }))
-          .filter((n) => n.x >= 0 && n.y >= 0 && n.x < this.def.cols && n.y < this.def.rows && !this.blocked.has(`${n.x},${n.y}`));
+          .filter((n) => n.x >= 0 && n.y >= 0 && n.x < this.cols && n.y < this.rows && !this.blocked.has(`${n.x},${n.y}`));
         if (!opts.length) return;
         const n = Phaser.Utils.Array.GetRandom(opts);
         const p = this.at(n.x, n.y);
@@ -410,16 +541,17 @@ export class LiveScene extends Phaser.Scene {
     }
   }
 
-  private scheduleCart() {
+  private scheduleCart(row: number) {
     this.time.delayedCall(Phaser.Math.Between(3000, 9000), () => {
-      const row = this.def.roadRow!;
-      const from = this.at(-2, row);
-      const to = this.at(this.def.cols + 1, row);
-      const cart = this.add.image(from.x, from.y + 4, 'cart').setOrigin(0.5, 1).setScale(artScale('cart', 1.6)).setDepth(this.depth(-2, row, 8));
+      const left = Math.random() < 0.5;
+      const from = this.at(left ? -2 : this.cols + 1, row);
+      const to = this.at(left ? this.cols + 1 : -2, row);
+      const cart = this.add.image(from.x, from.y + 4, 'cart').setOrigin(0.5, 1).setScale(artScale('cart', 1.6) * this.k).setFlipX(!left)
+        .setDepth(this.depth(-2, row, 8));
       this.tweens.add({
         targets: cart, x: to.x, y: to.y + 4, duration: 9000,
-        onUpdate: () => cart.setDepth(this.depth(this.def.cols, row, 8) - 1),
-        onComplete: () => { cart.destroy(); this.scheduleCart(); },
+        onUpdate: () => cart.setDepth(this.ill ? Math.round(cart.y) * 10 + 8 : this.depth(this.cols, row, 8) - 1),
+        onComplete: () => { cart.destroy(); this.scheduleCart(row); },
       });
       this.tweens.add({ targets: cart, angle: 1.5, yoyo: true, repeat: -1, duration: 160 });
     });
@@ -459,14 +591,22 @@ export class LiveScene extends Phaser.Scene {
     const spot = c ? { x: c[0], y: c[1] } : { x: counter.x, y: counter.y + 1 };
     const door = this.def.doors[0];
     const tex = `char.amb.${(shop!.index * 7 + current.name.length) % AMBIENT_VARIANTS}`;
-    const start = this.at(door.x, door.y);
-    const end = this.at(spot.x, spot.y);
-    const s = this.add.sprite(start.x, start.y + 6, tex).setOrigin(0.5, 1).setScale(this.fig(tex)).setDepth(this.depth(spot.x, spot.y, 7));
-    const go = facing(tex, end.x - start.x, end.y - start.y);
     // En el mostrador queda mirando hacia él (hacia -y en la grilla).
     const atCounter = facing(tex, 1, -1);
-    s.play(`${go.key}.walk`).setFlipX(go.flip);
-    this.tweens.add({ targets: s, x: end.x, y: end.y + 6, duration: 1100, onComplete: () => { s.stop(); s.setTexture(atCounter.key).setFlipX(atCounter.flip); } });
+    const s = this.add.sprite(0, 0, tex).setOrigin(0.5, 1).setScale(this.fig(tex)).setDepth(this.depth(spot.x, spot.y, 7));
+    s.setData({ key: tex });
     this.customer = { sprite: s, key: wantKey! };
+    const arrive = () => { s.stop(); s.setTexture(atCounter.key).setFlipX(atCounter.flip); };
+    if (this.streetW) {
+      // Llega caminando por la calle y entra por la puerta.
+      this.enterStreet(s, () => this.walk(s, this.path(s.getData('tile'), spot) ?? [], arrive));
+      return;
+    }
+    const start = this.at(door.x, door.y);
+    const end = this.at(spot.x, spot.y);
+    s.setPosition(start.x, start.y + 6);
+    const go = facing(tex, end.x - start.x, end.y - start.y);
+    s.play(`${go.key}.walk`).setFlipX(go.flip);
+    this.tweens.add({ targets: s, x: end.x, y: end.y + 6, duration: 1100, onComplete: arrive });
   }
 }

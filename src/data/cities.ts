@@ -19,7 +19,7 @@ export const CITIES: City[] = [
         map: { x: 300, y: 440, w: 150, h: 110, roof: '#7a3b2e' },
         description: 'El taller heredado: un yunque, una fragua y deudas de reputación por saldar.',
         scene: {
-          cols: 10, rows: 10, floor: 'tile.wood', roadRow: 9,
+          cols: 10, rows: 9, floor: 'tile.wood',
           props: [
             { key: 'prop.forge', x: 1, y: 1, blocks: true },
             { key: 'prop.anvil', x: 3, y: 2, blocks: true },
@@ -42,7 +42,8 @@ export const CITIES: City[] = [
             { key: 'prop.alfombra', x: 4, y: 4 },
           ],
           spawn: { x: 4, y: 3 },
-          doors: [{ x: 0, y: 9 }, { x: 9, y: 9 }],
+          // La entrada del taller, frente al mostrador; afuera pasa la calle.
+          doors: [{ x: 5, y: 8 }],
           hotspots: [
             { id: 'yunque', label: 'Yunque', x: 3, y: 2, action: 'forge' },
             { id: 'mostrador', label: 'Mostrador', x: 5, y: 6, action: 'shop' },
@@ -57,7 +58,8 @@ export const CITIES: City[] = [
             // Mercenario a cargo de la tienda: detrás del mostrador.
             brunilda: { x: 5, y: 7 }, ciro: { x: 5, y: 7 }, nayra: { x: 5, y: 7 }, gualterio: { x: 5, y: 7 },
           },
-          ambient: { 'mañana': 3, tarde: 4, noche: 1 },
+          // Adentro del taller no anda nadie: la gente pasa por la calle.
+          ambient: { 'mañana': 0, tarde: 0, noche: 0 },
           carts: true,
           animals: ['gato'],
         },

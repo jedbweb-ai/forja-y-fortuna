@@ -43,7 +43,14 @@ const TEMPLATE: Record<AssetType, string> = {
   animal: 'Un solo animal chico de pueblo, de cuerpo entero, en vista isométrica de frente en diagonal (mirando hacia abajo a la izquierda), parado, centrado.',
   muro: 'Textura cuadrada de una pared interior vista de frente, sin perspectiva, que se pueda repetir sin costuras a los costados y arriba y abajo, con poco contraste, pensada para verse a 32×32 píxeles. Sin fondo magenta: la textura ocupa todo el cuadro.',
   decoracion: 'Un solo objeto colgado en una pared, dibujado de frente y plano, sin perspectiva (como si se lo mirara de frente pegado a la pared), centrado.',
-  interior: 'Una sola ilustración horizontal de un interior visto desde arriba en diagonal, en vista isométrica, como una maqueta cortada: el piso forma un rombo grande en el centro, se ven las dos paredes del fondo (izquierda y derecha) y no hay paredes adelante. La escena llena toda la imagen: sin fondo magenta y sin marco. Dejá una franja de piso o de calle arriba y abajo, porque se recorta un poco. Sin personas ni animales. Sin texto, letras ni números. Luz cálida de día.',
+  interior: 'Una sola ilustración horizontal, apaisada (16:9), de un lugar en vista isométrica de verdad, como la maqueta cortada de un juego táctico isométrico: '
+    + 'la cámara mira desde arriba en diagonal y el piso es un rombo el doble de ancho que de alto, con sus cuatro lados en diagonal. NO es una vista de frente ni desde arriba derecha: las líneas del piso nunca son horizontales. '
+    + 'Se ven las dos paredes del fondo (la de arriba a la izquierda y la de arriba a la derecha) y no hay paredes adelante, para que se vea todo adentro. '
+    + 'Afuera, delante del local, a lo largo del lado de abajo a la izquierda del rombo, pasa una calle de pueblo ancha, también en diagonal, que entra y sale de la imagen por los dos costados: '
+    + 'primero una vereda de piedra pegada al local y después un empedrado con lugar para que la gente pase en dos o tres filas. La entrada del local da a esa calle. '
+    + 'Dejá la calle despejada (como mucho un farol o un barril contra el borde) y, del otro lado de la calle, apenas el borde de la vereda de enfrente. '
+    + 'Te adjunto un plano sacado del juego: respetá la misma vista, el mismo ángulo y dónde va cada mueble, la puerta y la calle, pero dibujalo con mucho más detalle y nitidez. '
+    + 'La escena llena toda la imagen: sin fondo magenta y sin marco. Sin personas ni animales. Sin texto, letras ni números. Luz cálida de día.',
   edificio: 'Un solo edificio pequeño en vista isométrica, visto desde arriba en diagonal, centrado, con la puerta hacia el frente.',
   mapa: 'Mapa de fantasía en pixel art visto desde muy arriba, levemente inclinado. Colores vivos pero naturales, bosques en manchas espesas, montañas, ríos y caminos de tierra. Sin texto. Sin fondo magenta: el mapa ocupa todo el cuadro.',
 };
@@ -85,6 +92,8 @@ const SHEET_ITEMS: Record<AssetType, string> = {
 
 /** Pedido para una hoja: una sola imagen con todos, en grilla, numerados en el orden en que se cortan. */
 export function sheetPromptFor(list: AssetEntry[], cols: number, rows: number, redo = false): string {
+  // Una hoja de una sola imagen (un interior, el mapa) es el pedido de esa imagen, con su descripción completa.
+  if (list.length === 1 && cols * rows === 1) return promptFor(list[0]);
   const empty = list.length < cols * rows ? ' Las celdas que sobran quedan vacías, solo con fondo magenta.' : '';
   const ref = isBack(list[0].type)
     ? ` Te adjunto una imagen de referencia con estos mismos ${list.length}, en la misma grilla y el mismo orden, vistos de frente: dibujá exactamente los mismos (misma ropa, colores, peinado, armas y proporciones) y en el mismo lugar de la grilla, pero de espalda.`
@@ -256,7 +265,7 @@ const INTERIORS: Record<string, string> = {
     + 'sobre el lado derecho, una mesa de runas con piedras brillantes, un arcón grande con herrajes y, más adelante, una mesa de alquimia con frascos y un alambique; '
     + 'sobre el lado izquierdo, barriles contra la pared, una piedra de afilar y una mesa con un libro grande abierto; '
     + 'adelante al centro, el mostrador de la tienda, largo y de madera, con algunas armas a la venta. '
-    + 'Al frente de todo, en el borde de abajo, una franja de calle de tierra con la puerta abierta del taller. '
+    + 'Adelante, frente al mostrador, la entrada del taller, abierta, que da a la calle. '
     + 'El centro del piso queda libre para caminar entre los muebles.',
 };
 

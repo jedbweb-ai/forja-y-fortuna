@@ -342,6 +342,12 @@ export interface LiveSceneDef {
   floor: string;
   /** Filas de calle (pasan carretas). */
   roadRow?: number;
+  /**
+   * Calle de afuera, delante del local (filas que se suman después de la última): cuántas casillas de ancho.
+   * Si no se dice, los interiores tienen 3 (vereda y dos carriles) y los lugares al aire libre ninguna.
+   * Se entra y se sale del local solo por las puertas.
+   */
+  street?: number;
   props: ScenePropDef[];
   spawn: { x: number; y: number };
   doors: { x: number; y: number }[];
