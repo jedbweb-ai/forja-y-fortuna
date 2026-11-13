@@ -1,4 +1,4 @@
-import type { ArenaDef, CombatSkill, MonsterDef } from '../core/combat/types';
+import type { CombatSkill, MonsterDef } from '../core/combat/types';
 import type { PotionDef } from '../core/magic/types';
 import type { QuestDef } from '../core/town/types';
 import type { CityLocation, Dialogue, DialogueEffect, Material, Npc, QuenchMedium, Synergy } from '../core/types';
@@ -133,17 +133,6 @@ export const SKILLS_6C: CombatSkill[] = [
     id: 'marea_cienaga', name: 'Marea de la ciénaga', range: [1, 4] as [number, number], target: 'tile' as const, area: 'radius' as const, size: 1, power: 1.4, element: 'agua' as const,
     terrain: 'charco' as const, telegraph: true, cooldown: 2, description: 'El barro sube en las casillas marcadas y al turno siguiente las inunda.',
   },
-];
-
-// ───────────────────────── Arenas ─────────────────────────
-
-const PARTY = [{ x: 0, y: 3 }, { x: 0, y: 4 }, { x: 1, y: 2 }, { x: 1, y: 5 }];
-const ENEMY = [{ x: 9, y: 1 }, { x: 8, y: 2 }, { x: 9, y: 3 }, { x: 8, y: 4 }, { x: 9, y: 5 }, { x: 8, y: 6 }, { x: 9, y: 7 }];
-export const ARENAS_6C: ArenaDef[] = [
-  { id: 'montana_cornisa', biome: 'montana', terrain: ['..........', '...##.....', '..........', '.....#....', '..........', '..##......', '.......#..', '..........'], heights: ['0011122233', '0011122233', '0011122233', '0011122233', '0011122233', '0011122233', '0011122233', '0011122233'], partySpawns: PARTY, enemySpawns: ENEMY },
-  { id: 'montana_paso', biome: 'montana', terrain: ['##........', '#.........', '...,,..#..', '..........', '..........', '...#..,,..', '#.........', '##........'], heights: ['0000111000', '0001221000', '0012332100', '0012332100', '0012332100', '0012332100', '0001221000', '0000111000'], partySpawns: PARTY, enemySpawns: ENEMY },
-  { id: 'pantano_charcos', biome: 'pantano', terrain: ['...ww.....', '.,,ww..,,.', '.......ww.', '..ww......', '..ww..,,..', '......ww..', '.,,...ww..', '..........'], heights: ['0000000000', '0000000000', '0000000000', '0000000000', '0000000000', '0000000000', '0000000000', '0000000000'], partySpawns: PARTY, enemySpawns: ENEMY },
-  { id: 'pantano_islotes', biome: 'pantano', terrain: ['..w.......', '..w..ww...', '.....ww.,,', 'ww........', '....,,..ww', '..ww......', '..ww..w...', '......w...'], heights: ['0000000000', '0000000000', '0000000000', '0000000000', '0000110000', '0000000000', '0000000000', '0000000000'], partySpawns: PARTY, enemySpawns: ENEMY },
 ];
 
 // ───────────────────────── Regiones ─────────────────────────

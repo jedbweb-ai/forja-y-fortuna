@@ -1,14 +1,13 @@
 import { indexById, type Content } from '../core/content';
 import type { Blueprint, Material } from '../core/types';
 import { ABILITY_SKILLS } from './abilities';
-import { ARENAS } from './arenas';
 import { ARENAS_2 } from './arenas2';
 import { TALENTS, UPGRADES } from './progress';
 import { WORK_TRAITS, WORKER_DIALOGUES, WORKER_NPCS, WORKERS } from './workers';
 import { TIPS, TUTORIAL_END, TUTORIAL_STEPS } from './tutorial';
 import { DUNGEONS, RIDDLES, ROOM_PIECES, TRAPS } from './dungeons';
 import { BLUEPRINTS_5, ENCHANTMENTS_5, GRIMOIRES_5, MATERIALS_5, POTIONS_5, QUENCH_5, SYNERGIES_5 } from './forge5';
-import { ARENAS_5, MONSTERS_5, SKILLS_5 } from './monsters5';
+import { MONSTERS_5, SKILLS_5 } from './monsters5';
 import { AUCTION_LOTS, BIDDERS } from './auction';
 import { BLUEPRINTS } from './blueprints';
 import { BLUEPRINTS_3 } from './blueprints3';
@@ -16,7 +15,7 @@ import { BLUEPRINTS_4 } from './blueprints4';
 import { CITIES } from './cities';
 import { CITIES_6 } from './cities6';
 import {
-  ARENAS_6C, DIALOGUES_6C, MATERIALS_6C, MONSTERS_6C, NPCS_6C, POTIONS_6C, QUENCH_6C, QUESTS_6C, REGIONS_6C, SKILLS_6C, SYNERGIES_6C,
+  DIALOGUES_6C, MATERIALS_6C, MONSTERS_6C, NPCS_6C, POTIONS_6C, QUENCH_6C, QUESTS_6C, REGIONS_6C, SKILLS_6C, SYNERGIES_6C,
 } from './content6c';
 import { CITY_EVENTS_6B, CONTRACTS_6B, CUSTOMERS_6B, DIALOGUES_6B, MATERIALS_6B, NPCS_6B, QUESTS_6B, SYNERGIES_6B } from './content6b';
 import { CITY_EVENTS } from './cityEvents';
@@ -37,7 +36,7 @@ import { DIALOGUES_4, NPCS_4 } from './npcs4';
 import { POTIONS } from './potions';
 import { QUESTS } from './quests';
 import { REGIONS } from './regions';
-import { ARENAS_7, MATERIALS_7, MONSTERS_7, QUENCH_7, QUESTS_7, REGIONS_7, SKILLS_7, SLOT_EXTRAS_7, SYNERGIES_7 } from './content7';
+import { MATERIALS_7, MONSTERS_7, QUENCH_7, QUESTS_7, REGIONS_7, SKILLS_7, SLOT_EXTRAS_7, SYNERGIES_7 } from './content7';
 import { SERVANT_DIALOGUES, SERVANT_NPCS, SERVANTS } from './servants';
 import { SYNERGIES } from './synergies';
 import { TRAITS } from './traits';
@@ -80,7 +79,7 @@ export const CONTENT: Content = {
   skills: indexById([...COMBAT_SKILLS, ...ABILITY_SKILLS, ...SKILLS_5, ...SKILLS_6C, ...SKILLS_7]),
   weaponSkills: WEAPON_SKILLS,
   monsters: indexById([...MONSTERS, ...MONSTERS_5, ...MONSTERS_6C, ...MONSTERS_7]),
-  arenas: indexById([...ARENAS, ...ARENAS_2, ...ARENAS_5, ...ARENAS_6C, ...ARENAS_7]),
+  arenas: indexById(ARENAS_2),
   regions: indexById([...REGIONS, ...REGIONS_6C, ...REGIONS_7]),
   marketEvents: indexById(MARKET_EVENTS),
   grimoires: indexById([...GRIMOIRES, ...GRIMOIRES_5]),

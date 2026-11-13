@@ -40,15 +40,17 @@ Resumen para retomar en un chat nuevo. El diseño completo está en `docs/GAME_D
 - **Darles más vida a los lugares ilustrados.** El estilo está bien, pero falta lo que hace que se sientan naturales: árboles, plantas y faroles afuera de cada tienda, gente y cosas en la calle (bancos, macetas, carros, perros) y bordes que no terminen en vacío. Se puede resolver pidiendo nuevas versiones de las ilustraciones (sumando eso al pedido de interiores en `src/tools/assetList.ts`) o agregando adornos por código sobre la imagen.
 - **En curso: rehacer cómo funcionan las expediciones y las batallas.** Abajo está cómo funcionan hoy. Plan aprobado en 4 etapas:
   1. **Cámara giratoria en combate (hecha).** La arena gira de a 90° con transición (⟲ ⟳ o Q/E), se arrastra, se acerca con dos dedos o la rueda, ⤢/R alterna entre la arena entera y la vista cercana, y lo que tapa a una figura se vuelve transparente. Todo pasa por `IsoView` (`src/game/render/view.ts`); la interfaz le habla a la escena por `src/bridge/combatView.ts`.
-  2. **Arenas nuevas** (en curso). Primera tanda hecha:
-     - Motor: casillas vacías (' ') para siluetas irregulares, obstáculos con tipo ('T' árbol, 'R' roca, 'C' columna), superficies (':' sendero, '=' losas), alturas de 0 a 9 y emboscadas (`ambushSpawns`, más seguido de noche, nunca con jefes ni en mazmorras).
+  2. **Arenas nuevas (hecha).**
+     - Motor: casillas vacías (' ') para siluetas irregulares, obstáculos con tipo ('T' árbol, 'R' roca, 'C' columna, 'K' carpa, 'X' cajón), superficies (':' sendero, '=' losas), alturas de 0 a 9 y emboscadas (`ambushSpawns`, más seguido de noche, nunca con jefes ni en mazmorras).
      - Línea de tiro (`hasSight` en `core/combat/grid.ts`): la cortan obstáculos y terreno más alto que la recta; desde arriba se tira por encima.
      - Grupo de 4 (5 con el cuarto), +1 de movimiento para todos.
      - La IA se acerca por el camino real, respetando el salto.
      - Dibujo: el suelo se ordena junto con las figuras (una loma de adelante tapa), marcas de casilla por pieza, silueta de quien queda tapado, barras de vida siempre arriba.
      - Chequeo de arenas en `core/combat/arenaCheck.ts`: en las nuevas, se llega a todo con salto 1.
-     - 3 arenas de muestra en `data/arenas2.ts` (`gen: 2`): pradera_terrazas, bosque_hondonada y colinas_mesetas. Si un bioma tiene arenas nuevas, solo se usan esas (`arenasFor`).
-     - Falta la segunda tanda: las otras 21 arenas (cuevas, cripta, montaña, pantano, ruinas, volcán, campamento y jefes) y, al reemplazar las viejas, migrar partidas guardadas en medio de un combate.
+     - 23 arenas, todas en `data/arenas2.ts` (`gen: 2`): 2 por bioma común (12×12) y las de jefe (14×14 las de región baja, 16×16 las grandes; el primer lugar de enemigo es el del jefe). Las viejas se sacaron.
+     - Partidas guardadas en medio de un combate: al cargar, `repairCombat` (`arenaCheck.ts`, desde `syncWithContent`) cambia una arena retirada por su reemplazo (`RETIRED_ARENAS`) y corre a cada figura a una casilla válida.
+     - Los tests de reglas de combate usan escenarios fijos (`core/combat/testArenas.ts`), no las arenas del juego.
+     - Balance: zona por zona queda parecido; las peleas duran cerca de una ronda más y la cumbre de las Montañas Grises es algo más dura.
   3. **Expediciones, dos formatos a prueba en Linde de Brezal:** A, mapa de rutas con paradas; B, exploración libre mejorada (caminar solo hasta donde se toca, mapa más lleno, recolectar en una acción). El usuario elige uno y se extiende a todas las regiones.
   4. **Arte nuevo** para lo anterior, pedido desde `herramientas/arte.html`.
 
@@ -107,6 +109,6 @@ Resumen para retomar en un chat nuevo. El diseño completo está en `docs/GAME_D
 
 - **Regiones:** `src/data/regions.ts` y `content6c.ts`/`content7.ts`.
 - **Monstruos:** `monsters*.ts`.
-- **Arenas:** `arenas.ts`.
+- **Arenas:** `arenas2.ts` (formato en `ArenaDef`, chequeo en `core/combat/arenaCheck.ts`).
 - **Habilidades:** `combatSkills.ts` y `abilities.ts`.
 - **Mazmorras:** `dungeons.ts`.

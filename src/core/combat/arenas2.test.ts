@@ -4,10 +4,13 @@ import { BALANCE } from '../../config/balance';
 import { setup } from '../testUtils';
 import type { MonsterGroup } from '../world/types';
 import { dbgHire } from '../../debug/commands';
-import { arenaProblems } from './arenaCheck';
+import { arenaProblems, repairCombat, RETIRED_ARENAS } from './arenaCheck';
 import { buildCombat } from './engine';
 import { arenasFor, hasSight, isFloor } from './grid';
 import type { ArenaDef } from './types';
+import { useTestArenas } from './testArenas';
+
+useTestArenas(c);
 
 /** Arena de prueba: todo suelo a la altura 0 salvo lo que se indique. */
 function flat(rows: string[], heights?: string[]): ArenaDef {
@@ -86,14 +89,14 @@ describe('arenas nuevas: armado del combate', () => {
     expect(new Set(party.map((u) => `${u.x},${u.y}`)).size).toBe(5);
   });
 
-  it('en las arenas viejas (4 lugares) el quinto va a la casilla libre más cercana', () => {
+  it('con 4 lugares para el grupo, el quinto va a la casilla libre más cercana', () => {
     const { s, ctx } = setup();
     s.workshop.cuarto = 1;
     for (const id of ['brunilda', 'ciro', 'nayra', 'gualterio']) dbgHire(s, ctx, id);
-    const cs = buildCombat(c, s, group(['gelin_verde']), 'pradera_loma', s.party);
+    const cs = buildCombat(c, s, group(['gelin_verde']), 'prueba_loma', s.party);
     const spots = cs.units.map((u) => `${u.x},${u.y}`);
     expect(new Set(spots).size).toBe(spots.length);
-    for (const u of cs.units) expect(isFloor(c.arenas.pradera_loma, u.x, u.y)).toBe(true);
+    for (const u of cs.units) expect(isFloor(c.arenas.prueba_loma, u.x, u.y)).toBe(true);
   });
 
   it('en una emboscada, los últimos del grupo aparecen detrás o al costado', () => {
@@ -118,5 +121,38 @@ describe('arenas nuevas: armado del combate', () => {
     const cs = buildCombat(c, s, group(['lobo_gris']), 'pradera_terrazas', ['herrero']);
     const wolf = cs.units.find((u) => u.side === 'enemy')!;
     expect(wolf.move).toBe(c.monsters.lobo_gris.move + BALANCE.combat.monsterMoveBonus);
+  });
+});
+
+describe('partidas guardadas en medio de un combate', () => {
+  const group = (monsters: string[]): MonsterGroup => ({ id: 'g', x: 0, y: 0, zone: 0, monsters, threat: 0, aggressive: false });
+
+  it('si la arena se retiró, pasa a la que la reemplaza y cada figura queda sobre el suelo', () => {
+    const { s } = setup();
+    const cs = buildCombat(c, s, group(['lobo_gris', 'lobo_gris']), 'pradera_terrazas', ['herrero']);
+    cs.arenaId = 'pradera_loma';
+    // Posiciones de la arena vieja: alguna cae en el vacío de la nueva, y dos quedan encimadas.
+    cs.units[0].x = 0; cs.units[0].y = 0;
+    cs.units[1].x = 9; cs.units[1].y = 5;
+    cs.units[2].x = 9; cs.units[2].y = 5;
+    expect(repairCombat(c, cs)).toBe(true);
+    expect(cs.arenaId).toBe(RETIRED_ARENAS.pradera_loma);
+    const a = c.arenas[cs.arenaId];
+    for (const u of cs.units) expect(isFloor(a, u.x, u.y)).toBe(true);
+    expect(new Set(cs.units.map((u) => `${u.x},${u.y}`)).size).toBe(cs.units.length);
+  });
+
+  it('un combate que ya está bien no se toca', () => {
+    const { s } = setup();
+    const cs = buildCombat(c, s, group(['lobo_gris']), 'cueva_lava', ['herrero']);
+    const before = JSON.stringify(cs);
+    expect(repairCombat(c, cs)).toBe(false);
+    expect(JSON.stringify(cs)).toBe(before);
+  });
+
+  it('las arenas retiradas tienen reemplazo y ninguna arena del juego quedó sin rediseñar', () => {
+    for (const id of Object.values(RETIRED_ARENAS)) expect(c.arenas[id]).toBeTruthy();
+    const old = Object.values(c.arenas).filter((a) => a.gen !== 2 && !a.id.startsWith('prueba_'));
+    expect(old.map((a) => a.id)).toEqual([]);
   });
 });

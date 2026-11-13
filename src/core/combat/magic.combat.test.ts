@@ -8,9 +8,13 @@ import type { MonsterGroup } from '../world/types';
 import { buildCombat, usePotion, useSkill } from './engine';
 import { applyTerrain, areaTiles, terrainFxAt } from './terrain';
 import type { CombatUnit } from './types';
+import { CONTENT } from '../../data';
+import { useTestArenas } from './testArenas';
+
+useTestArenas(CONTENT);
 
 /** Combate mínimo con el herrero (y su equipo) contra los monstruos dados. */
-function fight(s: GameState, ctx: ReturnType<typeof setup>['ctx'], monsters: string[], arena = 'pradera_loma') {
+function fight(s: GameState, ctx: ReturnType<typeof setup>['ctx'], monsters: string[], arena = 'prueba_loma') {
   const group: MonsterGroup = { id: 'g1', x: 5, y: 5, zone: 0, monsters, threat: 0, aggressive: false };
   s.expedition = {
     regionId: 'linde_brezal', pos: { x: 4, y: 5 }, energy: 20, maxEnergy: 20, spent: 0, bag: {}, capacity: 30,

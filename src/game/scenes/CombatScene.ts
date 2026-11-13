@@ -64,7 +64,7 @@ const OBSTACLE: Record<string, string> = {
   montana: 'prop.rock', pantano: 'prop.tree', ruinas: 'prop.pillar', volcan: 'prop.basalt',
 };
 /** Obstáculos con tipo propio (los '#' usan el del bioma). */
-const OBSTACLE_KIND: Record<string, string> = { T: 'prop.tree', R: 'prop.rock', C: 'prop.pillar' };
+const OBSTACLE_KIND: Record<string, string> = { T: 'prop.tree', R: 'prop.rock', C: 'prop.pillar', K: 'prop.tent', X: 'prop.crate' };
 /** Superficies que no son el suelo del bioma. */
 const SURFACE: Record<string, string> = { ':': 'tile.dirt', '=': 'tile.stone', w: 'tile.water', l: 'tile.lava' };
 const STATUS_ICON: Record<string, string> = {

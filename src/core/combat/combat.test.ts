@@ -11,6 +11,10 @@ import { beginTurn, buildCombat, currentUnit, endTurn, moveUnit, useSkill } from
 import { attackSide, reachable } from './grid';
 import { resolveCombat } from './result';
 import type { CombatUnit } from './types';
+import { CONTENT } from '../../data';
+import { useTestArenas } from './testArenas';
+
+useTestArenas(CONTENT);
 
 function arm(s: GameState, ctx: ReturnType<typeof setup>['ctx']) {
   const daga = makeItem(s, 'daga', { hoja: 'hierro', guarda: 'hierro', mango: 'pino' }, 70);
@@ -19,7 +23,7 @@ function arm(s: GameState, ctx: ReturnType<typeof setup>['ctx']) {
 }
 
 /** Arma una expedición mínima con un combate contra los monstruos dados. */
-function fight(monsters: string[], arena = 'pradera_loma', seed = 7) {
+function fight(monsters: string[], arena = 'prueba_loma', seed = 7) {
   const { s, ctx } = setup(seed);
   arm(s, ctx);
   const group: MonsterGroup = { id: 'g1', x: 5, y: 5, zone: 0, monsters, threat: 0, aggressive: false };
@@ -113,7 +117,7 @@ describe('combate: turnos y resultado', () => {
   });
 
   it('sin cuchillo de desuello no hay cuero', () => {
-    const { s, ctx, cs } = fight(['lobo_gris'], 'bosque_claro');
+    const { s, ctx, cs } = fight(['lobo_gris'], 'prueba_bosque');
     cs.units.filter((u) => u.side === 'enemy').forEach((u) => { u.alive = false; u.hp = 0; u.killedBy = { damageType: 'cortante' }; });
     cs.outcome = 'victory';
     resolveCombat(ctx.c, s, fixedRng([0]));

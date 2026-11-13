@@ -1,4 +1,4 @@
-import type { ArenaDef, CombatSkill, MonsterDef } from '../core/combat/types';
+import type { CombatSkill, MonsterDef } from '../core/combat/types';
 import type { QuestDef } from '../core/town/types';
 import type { Material, QuenchMedium, Synergy } from '../core/types';
 import type { RegionDef, ZoneDef } from '../core/world/types';
@@ -153,20 +153,6 @@ export const MONSTERS_7: MonsterDef[] = [
     loot: [{ material: 'corazon_dragon', chance: 1, qty: [1, 1] }, { material: 'escama_dragon', chance: 1, qty: [3, 5] }, { material: 'colmillo_wyvern', chance: 1, qty: [1, 2] }],
     sprite: { key: 'mon.dragon', tint: 0xb8301a, scale: 1.5 }, description: 'La dragona más vieja del valle. Antes de soltar el aliento se le ve el fuego en la garganta: es el momento de salir de adelante.',
   },
-];
-
-// ───────────────────────── Arenas ─────────────────────────
-
-const PARTY = [{ x: 0, y: 3 }, { x: 0, y: 4 }, { x: 1, y: 2 }, { x: 1, y: 5 }];
-const ENEMY = [{ x: 9, y: 1 }, { x: 8, y: 2 }, { x: 9, y: 3 }, { x: 8, y: 4 }, { x: 9, y: 5 }, { x: 8, y: 6 }, { x: 9, y: 7 }];
-const FLAT = Array(8).fill('0000000000');
-export const ARENAS_7: ArenaDef[] = [
-  { id: 'ruinas_patio', biome: 'ruinas', terrain: ['..........', '..#....#..', '..........', '....,,....', '....,,....', '..........', '..#....#..', '..........'], heights: FLAT, partySpawns: PARTY, enemySpawns: ENEMY },
-  { id: 'ruinas_derrumbe', biome: 'ruinas', terrain: ['##........', '#...#.....', '..........', '...##..#..', '......,,..', '..#.......', '.....#....', '........#.'], heights: ['0000001111', '0000001111', '0000001111', '0000001111', '0000001111', '0000001111', '0000001111', '0000001111'], partySpawns: PARTY, enemySpawns: ENEMY },
-  { id: 'ruinas_grieta', biome: 'jefe', look: 'ruinas', terrain: ['..........', '..#....#..', '..........', '....ll....', '....ll....', '..........', '..#....#..', '..........'], heights: FLAT, partySpawns: PARTY, enemySpawns: ENEMY },
-  { id: 'volcan_llanos', biome: 'volcan', terrain: ['..........', '...#......', '......ll..', '..........', '..ll......', '.......#..', '...l......', '..........'], heights: FLAT, partySpawns: PARTY, enemySpawns: ENEMY },
-  { id: 'volcan_nidos', biome: 'volcan', terrain: ['#.........', '..........', '...#..#...', '..........', '..........', '...#..#...', '..........', '#.........'], heights: ['0001221000', '0012332100', '0012332100', '0012332100', '0012332100', '0012332100', '0012332100', '0001221000'], partySpawns: PARTY, enemySpawns: ENEMY },
-  { id: 'volcan_caldera', biome: 'jefe', look: 'volcan', terrain: ['ll......ll', 'l........l', '..........', '..........', '..........', '..........', 'l........l', 'll......ll'], heights: FLAT, partySpawns: PARTY, enemySpawns: ENEMY },
 ];
 
 // ───────────────────────── Regiones ─────────────────────────

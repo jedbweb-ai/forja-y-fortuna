@@ -1,8 +1,9 @@
 import { BALANCE } from '../../config/balance';
-import { heightAt, inBounds, isFloor, type Pt } from './grid';
-import type { ArenaDef } from './types';
+import type { Content } from '../content';
+import { freeTileNear, heightAt, inBounds, isFloor, type Pt } from './grid';
+import type { ArenaDef, CombatState } from './types';
 
-const CHARS = new Set([...'.:=,wl #TRC']);
+const CHARS = new Set([...'.:=,wl #TRCKX']);
 const STEPS: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
 /** Casillas a las que se llega caminando desde `from` subiendo y bajando de a un nivel. */
@@ -52,4 +53,53 @@ export function arenaProblems(a: ArenaDef): string[] {
     for (const p of spots) if (!reach.has(`${p.x},${p.y}`)) out.push(`${where}: (${p.x},${p.y}) queda aislada (con salto 1 no se llega)`);
   }
   return out;
+}
+
+/** Arenas que se sacaron del juego y la que toma su lugar (para partidas guardadas en medio de un combate). */
+export const RETIRED_ARENAS: Record<string, string> = {
+  pradera_loma: 'pradera_terrazas',
+  bosque_claro: 'bosque_hondonada',
+  colinas_escalones: 'colinas_mesetas',
+  cripta_sarcofagos: 'cripta_columnas',
+};
+
+/**
+ * Pone al día un combate guardado con las arenas actuales: si su arena ya no existe, usa la que la reemplaza;
+ * si alguna figura quedó fuera del suelo (la arena cambió de forma) o encima de otra, la corre a la casilla
+ * libre más cercana; descarta efectos de terreno en casillas que ya no son suelo y prende la lava de la arena.
+ * Devuelve si cambió algo.
+ */
+export function repairCombat(c: Content, cs: CombatState): boolean {
+  let changed = false;
+  if (!c.arenas[cs.arenaId]) {
+    cs.arenaId = RETIRED_ARENAS[cs.arenaId] ?? Object.keys(c.arenas)[0];
+    changed = true;
+  }
+  const a = c.arenas[cs.arenaId];
+  const { cols, rows } = { cols: a.terrain[0].length, rows: a.terrain.length };
+  const taken: Pt[] = [];
+  for (const u of cs.units.filter((x) => x.alive)) {
+    const clash = taken.some((t) => t.x === u.x && t.y === u.y);
+    if (!isFloor(a, u.x, u.y) || clash) {
+      const start = { x: Math.min(cols - 1, Math.max(0, u.x)), y: Math.min(rows - 1, Math.max(0, u.y)) };
+      Object.assign(u, freeTileNear(a, start, taken));
+      changed = true;
+    }
+    taken.push({ x: u.x, y: u.y });
+  }
+  for (const k of Object.keys(cs.terrainFx)) {
+    const [x, y] = k.split(',').map(Number);
+    if (!isFloor(a, x, y)) {
+      delete cs.terrainFx[k];
+      changed = true;
+    }
+  }
+  a.terrain.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch === 'l' && !cs.terrainFx[`${x},${y}`]) {
+      cs.terrainFx[`${x},${y}`] = { kind: 'llamas', turns: 999 };
+      changed = true;
+    }
+  }));
+  if (cs.pending) cs.pending = cs.pending.filter((p) => p.tiles.every((t) => isFloor(a, t.x, t.y)));
+  return changed;
 }

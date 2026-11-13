@@ -125,7 +125,7 @@ export type Biome = 'pradera' | 'bosque' | 'colinas' | 'campamento' | 'cripta' |
  * Arena de combate. `terrain`, un carácter por casilla:
  * '.' suelo del bioma, ':' sendero de tierra, '=' losas de piedra, ',' hierba alta, 'w' agua baja, 'l' lava,
  * ' ' vacío (no hay casilla: la arena tiene silueta irregular),
- * obstáculos que tapan el paso y el tiro: '#' el del bioma, 'T' árbol, 'R' roca, 'C' columna o ruina.
+ * obstáculos que tapan el paso y el tiro: '#' el del bioma, 'T' árbol, 'R' roca, 'C' columna o ruina, 'K' carpa, 'X' cajón.
  * `heights`: un dígito de altura por casilla (0 a 9).
  */
 export interface ArenaDef {

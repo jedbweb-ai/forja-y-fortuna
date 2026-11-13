@@ -37,7 +37,7 @@ export function heightAt(a: ArenaDef, x: number, y: number): number {
 }
 
 /** Obstáculos: tapan el paso y el tiro. */
-const OBSTACLES = new Set(['#', 'T', 'R', 'C']);
+const OBSTACLES = new Set(['#', 'T', 'R', 'C', 'K', 'X']);
 
 /** Casilla que no existe (borde irregular de la arena, o fuera de ella). */
 export function isVoid(a: ArenaDef, x: number, y: number): boolean {

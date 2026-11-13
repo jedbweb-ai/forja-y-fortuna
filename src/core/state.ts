@@ -1,4 +1,5 @@
 import { BALANCE } from '../config/balance';
+import { repairCombat } from './combat/arenaCheck';
 import type { Content } from './content';
 import { createHerrero } from './party/progression';
 import { RELATION_LEVELS, type GameState, type RelationLevel, type SkillId } from './types';
@@ -13,6 +14,8 @@ export const EMPTY_SKILLS: Record<SkillId, number> = {
  * Así los datos se pueden ampliar sin romper partidas guardadas.
  */
 export function syncWithContent(s: GameState, c: Content) {
+  // Un combate guardado puede venir de una arena que cambió o ya no existe.
+  if (s.expedition?.combat) repairCombat(c, s.expedition.combat);
   for (const id of Object.keys(c.npcs)) s.npcs[id] ??= newNpcState(c, id);
   for (const p of Object.values(c.potions)) if (!p.secret && !s.discoveredPotions.includes(p.id)) s.discoveredPotions.push(p.id);
 }
