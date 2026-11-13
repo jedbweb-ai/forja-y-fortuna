@@ -6,6 +6,7 @@ import { ServantsPanel } from './panels/ServantsPanel';
 import { TalentsPanel } from './panels/TalentsPanel';
 import { TravelPanel } from './panels/TravelPanel';
 import { WorkshopPanel } from './panels/WorkshopPanel';
+import { StaffPanel } from './panels/StaffPanel';
 import { BookPanel } from './panels/BookPanel';
 import { DebugPanel } from './panels/DebugPanel';
 import { ExpeditionPanel } from './panels/ExpeditionPanel';
@@ -70,6 +71,7 @@ export function App() {
           {ui.panel === 'talents' && <TalentsPanel />}
           {ui.panel === 'workshop' && <WorkshopPanel />}
           {ui.panel === 'travel' && <TravelPanel />}
+          {ui.panel === 'staff' && <StaffPanel />}
           {ui.panel === 'debug' && ui.debug && <DebugPanel />}
           {ui.dialogue && <DialogueBox />}
           {ui.itemCard && (

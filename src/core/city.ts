@@ -3,6 +3,7 @@ import { GameError, type Content, type Ctx } from './content';
 import { currentCity, homeCity } from './state';
 import { roadEncounter } from './world/expedition';
 import { isServantNpc, servantLocation } from './town/servants';
+import { isWorkerNpc, staffShopOf } from './staff/staff';
 import { advanceTime, sleep, slotName } from './time';
 import type { CityLocation, GameEvent, GameState } from './types';
 
@@ -32,7 +33,9 @@ export function npcsAt(c: Content, s: GameState, locationId: string): string[] {
   return Object.values(c.npcs)
     .filter((n) => {
       if (s.party.includes(n.id) || s.characters[n.id]?.dead) return false;
-      if (s.assistant === n.id) return locationId === 'herreria';
+      const shop = staffShopOf(s, n.id);
+      if (shop) return locationId === shop;
+      if (isWorkerNpc(c, n.id)) return false;
       return isServantNpc(c, n.id) ? servantLocation(s, n.id) === locationId : n.routine[slot] === locationId;
     })
     .map((n) => n.id);

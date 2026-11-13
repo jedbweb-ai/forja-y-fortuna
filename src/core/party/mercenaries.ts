@@ -13,7 +13,7 @@ const M = BALANCE.mercenaries;
 
 /** Mercenarios disponibles en la taberna (los que no están en tu grupo). */
 export function availableMercenaries(c: Content, s: GameState): MercenaryDef[] {
-  return Object.values(c.mercenaries).filter((m) => m.kind !== 'esclavo' && !s.party.includes(m.id) && s.assistant !== m.id && !s.characters[m.id]?.dead);
+  return Object.values(c.mercenaries).filter((m) => m.kind !== 'esclavo' && !s.party.includes(m.id) && !s.characters[m.id]?.dead);
 }
 
 export function hireMercenary(s: GameState, { c }: Ctx, id: string): GameEvent[] {
@@ -45,7 +45,6 @@ export function dismissMercenary(s: GameState, _ctx: Ctx, id: string): GameEvent
   if (id === 'herrero') throw new GameError('No podés despedirte a vos mismo.');
   if (s.expedition) throw new GameError('No podés despedir a nadie en plena expedición.');
   if (!s.party.includes(id)) throw new GameError('No está en tu grupo.');
-  if (s.assistant === id) s.assistant = null;
   // Los compañeros comprados (o liberados) no se van: se quedan esperando en la herrería.
   if (s.characters[id]?.bond) {
     s.party = s.party.filter((p) => p !== id);
@@ -59,8 +58,9 @@ export function dismissMercenary(s: GameState, _ctx: Ctx, id: string): GameEvent
 /** Al empezar un día: se paga a cada mercenario. Si no alcanza, la relación baja y puede irse. */
 export function payWages(s: GameState): GameEvent[] {
   const events: GameEvent[] = [];
-  const assistant = s.assistant ? s.characters[s.assistant] : undefined;
-  for (const ch of [...partyMembers(s), ...(assistant ? [assistant] : [])]) {
+  // También cobran los liberados que trabajan en la herrería.
+  const working = Object.values(s.staff.shops).flatMap((st) => st.staff.map((m) => s.characters[m.id])).filter((ch) => !!ch);
+  for (const ch of [...partyMembers(s), ...working]) {
     if (ch.id === 'herrero' || !ch.wage) continue;
     const wage = wageFor(s, ch);
     if (s.gold >= wage) {

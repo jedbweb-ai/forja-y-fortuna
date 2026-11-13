@@ -5,6 +5,7 @@ import { Panel, Tabs } from '../components/Panel';
 import { MATERIAL_TYPE_LABEL, money, RARITY_CLASS } from '../format';
 import { store, useGame } from '../hooks';
 import { Swatch, itemIcon } from '../components/Swatch';
+import { toggleReserved } from '../../core/staff/staff';
 
 export function InventoryPanel() {
   const s = useGame();
@@ -20,12 +21,18 @@ export function InventoryPanel() {
       {tab === 'items' && (
         <>
           {!s.items.length && <p className="muted">Todavía no forjaste nada.</p>}
+          {s.items.length > 0 && <p className="small muted">🔒 Reservado: el encargado de la herrería no lo pone en la vidriera. Lo comprado en la subasta tampoco lo toca.</p>}
           <ul className="item-rows">
             {s.items.map((i) => (
               <li key={i.uid} className={`clickable ${RARITY_CLASS[i.rarity]}`} onClick={() => setOpen(i)}>
                 <Swatch icon={itemIcon(i)} color={i.color} />
                 <span className="grow"><b>{i.name}</b> <small className="muted">{i.rarity} · calidad {i.quality}{i.quantity > 1 ? ` · ×${i.quantity}` : ''}</small></span>
                 <span>🪙 {money(i.value)}{i.quantity > 1 ? ' c/u' : ''}</span>
+                <button
+                  className="btn"
+                  title={i.reserved ? 'Reservado: el encargado no lo pone en la vidriera. Tocá para liberarlo.' : 'Tocá para reservarlo: el encargado no lo va a poner en la vidriera.'}
+                  onClick={(e) => { e.stopPropagation(); store.run(toggleReserved, i.uid); }}
+                >{i.reserved ? '🔒' : '🔓'}</button>
               </li>
             ))}
           </ul>

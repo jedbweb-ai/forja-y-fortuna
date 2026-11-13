@@ -13,8 +13,10 @@ import type { Content } from '../../core/content';
 import { Panel, Tabs } from '../components/Panel';
 import { Portrait } from '../components/Swatch';
 import { store, useGame } from '../hooks';
+import { isHiringBoard } from '../../core/staff/staff';
+import { WorkersOffer } from './WorkersOffer';
 
-type Tab = 'news' | 'offers' | 'contracts' | 'journal';
+type Tab = 'news' | 'offers' | 'workers' | 'contracts' | 'journal';
 
 function objectiveText(c: Content, o: QuestObjective): string {
   switch (o.kind) {
@@ -42,6 +44,7 @@ export function QuestsPanel() {
   const tabs: { id: Tab; label: string }[] = [
     ...(news ? [{ id: 'news' as Tab, label: '📢 Avisos' }] : []),
     ...(here === 'tablon' || here === 'gremio' ? [{ id: 'offers' as Tab, label: here === 'gremio' ? 'Encargos del gremio' : 'Encargos del tablón' }] : []),
+    ...(isHiringBoard(c, s) ? [{ id: 'workers' as Tab, label: '🧑‍🏭 Bolsa de trabajo' }] : []),
     { id: 'contracts', label: `Contratos (${s.contracts.active.length})` },
     { id: 'journal', label: `Mis encargos (${s.quests.active.length})` },
   ];
@@ -53,6 +56,7 @@ export function QuestsPanel() {
       <Tabs value={tab} onChange={setTab} options={tabs} />
       {tab === 'news' && <News />}
       {tab === 'offers' && <Offers board={here === 'gremio' ? 'gremio' : 'tablon'} />}
+      {tab === 'workers' && <WorkersOffer />}
       {tab === 'contracts' && <Contracts />}
       {tab === 'journal' && <Journal />}
     </Panel>

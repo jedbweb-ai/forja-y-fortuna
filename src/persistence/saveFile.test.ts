@@ -67,7 +67,6 @@ describe('guardado', () => {
     expect(out.version).toBe(SAVE_VERSION);
     expect(out.state.talents).toEqual({});
     expect(out.state.workshop).toEqual({});
-    expect(out.state.assistant).toBeNull();
     expect(out.state.settings.permadeath).toBe(false);
   });
 

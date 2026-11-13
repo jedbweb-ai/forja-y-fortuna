@@ -9,6 +9,7 @@ import type { MarketEventDef, RegionDef } from './world/types';
 import type { AuctionLotDef, BidderDef, CityEventDef, ContractDef, QuestDef } from './town/types';
 import type { DungeonDef, RiddleDef, RoomPiece, TrapDef, TrapKind } from './dungeon/types';
 import type { TalentDef, UpgradeDef } from './progress/types';
+import type { WorkerDef, WorkTraitDef } from './staff/types';
 
 /** Todo el contenido del juego, indexado por id. El core lo recibe por parámetro. */
 export interface Content {
@@ -48,6 +49,9 @@ export interface Content {
   // ── Fase 6 ──
   talents: Record<string, TalentDef>;
   upgrades: Record<string, UpgradeDef>;
+  // ── Personal ──
+  workers: Record<string, WorkerDef>;
+  workTraits: Record<string, WorkTraitDef>;
 }
 
 export function indexById<T extends { id: string }>(list: T[]): Record<string, T> {

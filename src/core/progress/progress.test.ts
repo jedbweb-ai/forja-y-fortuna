@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
 import { buildCombat } from '../combat/engine';
-import { runCommand } from '../commands';
 import { toggleExhibit } from '../economy/shop';
 import { forgeBegin } from '../forge/commands';
 import { failChance } from '../magic/alchemy';
@@ -9,10 +8,9 @@ import { dbgHire } from '../../debug/commands';
 import { startDungeon } from '../dungeon/dungeon';
 import { xpForLevel } from '../state';
 import { makeItem, setup } from '../testUtils';
-import { advanceTime } from '../time';
 import { permadeath } from '../world/expedition';
 import {
-  assignAssistant, bonus, buyUpgrade, displaySlots, learnTalent, maxPartySize, talentBlock, talentPoints,
+  bonus, buyUpgrade, displaySlots, learnTalent, maxPartySize, talentBlock, talentPoints,
 } from './progress';
 
 describe('talentos', () => {
@@ -67,23 +65,6 @@ describe('mejoras de la herrería', () => {
     expect(maxPartySize(ctx.c, s)).toBe(4);
     for (const id of ['brunilda', 'ciro', 'nayra']) dbgHire(s, ctx, id);
     expect(s.party).toHaveLength(4);
-  });
-});
-
-describe('ayudante', () => {
-  it('solo un compañero de confianza atiende, y vende lo exhibido mientras no estás', () => {
-    const { s, ctx } = setup();
-    dbgHire(s, ctx, 'brunilda');
-    expect(() => assignAssistant(s, ctx, 'brunilda')).toThrow(/confianza/);
-    s.npcs.brunilda.relation = 50;
-    assignAssistant(s, ctx, 'brunilda');
-    expect(s.assistant).toBe('brunilda');
-    expect(s.party).not.toContain('brunilda');
-    for (let i = 0; i < 6; i++) makeItem(s, 'daga', { hoja: 'hierro', guarda: 'hierro', mango: 'pino' }, 50).exhibited = true;
-    const gold = s.gold;
-    runCommand(s, ctx, (st) => advanceTime(st, 6));
-    expect(s.items.filter((i) => i.exhibited).length).toBeLessThan(6);
-    expect(s.gold).toBeGreaterThan(gold - 100);
   });
 });
 

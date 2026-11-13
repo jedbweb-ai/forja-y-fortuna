@@ -92,6 +92,14 @@ export const UPGRADES: UpgradeDef[] = [
     ],
   },
   {
+    id: 'personal', name: 'Puestos de trabajo', icon: '🧑‍🏭', description: 'Lugar para que trabaje más gente en la herrería.',
+    levels: [
+      { cost: { gold: 150, materials: [{ id: 'roble', qty: 6 }] }, effect: { personal: 1 }, description: 'Mostrador grande: 2 puestos de trabajo.' },
+      { cost: { gold: 350, materials: [{ id: 'hierro', qty: 10 }, { id: 'acero', qty: 4 }] }, effect: { personal: 1 }, description: 'Segundo yunque: 3 puestos.' },
+      { cost: { gold: 600, materials: [{ id: 'roble', qty: 10 }, { id: 'cuero_curtido', qty: 4 }] }, effect: { personal: 1 }, description: 'Trastienda: 4 puestos.', reputationMin: 50 },
+    ],
+  },
+  {
     id: 'cuarto', name: 'Cuarto para compañeros', icon: '🛏️', description: 'Un lugar para que viva un compañero más: el grupo pasa a ser de 4.',
     levels: [
       { cost: { gold: 600, materials: [{ id: 'roble', qty: 10 }, { id: 'cuero_curtido', qty: 6 }] }, effect: { grupo: 1 }, description: 'El grupo puede ser de 4.', reputationMin: 70 },

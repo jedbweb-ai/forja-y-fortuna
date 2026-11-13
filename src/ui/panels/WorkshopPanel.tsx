@@ -1,18 +1,12 @@
-import { BALANCE } from '../../config/balance';
-import {
-  assignAssistant, assistantBlock, buyUpgrade, displaySlots, maxPartySize, removeAssistant, upgradeBlock, upgradeLevel,
-} from '../../core/progress/progress';
-import { relationLevel } from '../../core/state';
+import { buyUpgrade, displaySlots, maxPartySize, upgradeBlock, upgradeLevel } from '../../core/progress/progress';
+import { peekShop, staffSlots } from '../../core/staff/staff';
 import { Panel } from '../components/Panel';
-import { Portrait } from '../components/Swatch';
 import { store, useGame } from '../hooks';
 
-/** La herrería: mejoras con niveles y el ayudante que atiende la tienda. */
+/** La herrería: mejoras con niveles y acceso al personal. */
 export function WorkshopPanel() {
   const s = useGame();
   const c = store.content;
-  const candidates = Object.values(s.characters).filter((ch) => ch.id !== 'herrero' && c.mercenaries[ch.id] && !ch.escaped && !ch.dead);
-  const assistant = s.assistant ? s.characters[s.assistant] : null;
 
   return (
     <Panel
@@ -20,35 +14,12 @@ export function WorkshopPanel() {
       subtitle={`Exhibición ${displaySlots(c, s)} lugares · Grupo de hasta ${maxPartySize(c, s)} · 🪙 ${Math.floor(s.gold)}`}
       wide
     >
-      <h4>Ayudante en la tienda</h4>
+      <h4>Personal</h4>
       <p className="small muted">
-        Cuando no atendés vos, el ayudante vende lo que está exhibido: sin regatear, al {Math.round(BALANCE.assistant.priceRatio * 100)}% de lo que pagaría el cliente.
-        Tiene que ser un compañero con relación «{BALANCE.assistant.minLevel}» o más, o uno liberado. Mientras atiende, no sale de expedición.
+        Quién atiende, arma la vidriera y forja mientras no estás: {peekShop(s).staff.length}/{staffSlots(c, s)} puestos ocupados.
+        La mejora «Puestos de trabajo» suma lugar para más gente.
       </p>
-      {assistant ? (
-        <div className="row">
-          <Portrait id={assistant.id} look={c.mercenaries[assistant.id]?.look ?? c.npcs[assistant.id]?.look} size="small" />
-          <span className="grow"><b>{assistant.name}</b> atiende la tienda.</span>
-          <button className="btn" onClick={() => store.run(removeAssistant)}>Sacarlo de la tienda</button>
-        </div>
-      ) : (
-        <ul className="item-rows">
-          {candidates.map((ch) => {
-            const block = assistantBlock(c, s, ch.id);
-            return (
-              <li key={ch.id}>
-                <Portrait id={ch.id} look={c.mercenaries[ch.id]?.look ?? c.npcs[ch.id]?.look} size="small" />
-                <span className="grow">
-                  <b>{ch.name}</b> <small className="muted">relación {relationLevel(s.npcs[ch.id]?.relation ?? 0)}{ch.bond === 'liberado' ? ' · libre' : ''}</small>
-                  {block && <small className="muted block">{block}</small>}
-                </span>
-                <button className="btn" disabled={!!block} onClick={() => store.run(assignAssistant, ch.id)}>Dejarlo a cargo</button>
-              </li>
-            );
-          })}
-          {!candidates.length && <p className="muted small">Todavía no tenés compañeros. Contratá mercenarios en la taberna o comprá en el mercado de esclavos.</p>}
-        </ul>
-      )}
+      <button className="btn" onClick={() => store.openPanel('staff')}>🧑‍🏭 Ver el personal</button>
 
       <h4>Mejoras</h4>
       <div className="quest-grid">

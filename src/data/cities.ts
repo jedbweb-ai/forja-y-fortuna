@@ -58,6 +58,7 @@ export const CITIES: City[] = [
             // Mercenario a cargo de la tienda: detrás del mostrador.
             brunilda: { x: 5, y: 7 }, ciro: { x: 5, y: 7 }, nayra: { x: 5, y: 7 }, gualterio: { x: 5, y: 7 },
           },
+          staffSpots: { vendedor: [{ x: 5, y: 5 }, { x: 6, y: 5 }], aprendiz: [{ x: 4, y: 2 }, { x: 3, y: 3 }], encargado: [{ x: 7, y: 1 }, { x: 6, y: 2 }] },
           // Adentro del taller no anda nadie: la gente pasa por la calle.
           ambient: { 'mañana': 0, tarde: 0, noche: 0 },
           carts: true,

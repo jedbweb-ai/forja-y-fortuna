@@ -7,6 +7,7 @@ import { dailyDemand } from './demand';
 import { dailyQuests, refreshQuestOffers } from './quests';
 import { claimPerks, dailyRelations } from './relations';
 import { dailyServants, refreshServantMarket } from './servants';
+import { dailyStaff, refreshWorkerMarket } from '../staff/staff';
 
 /** Lo que pasa en la ciudad cada mañana (una vez por día que pasó). */
 export function townMorning(s: GameState, { c, rng }: Ctx): GameEvent[] {
@@ -17,6 +18,7 @@ export function townMorning(s: GameState, { c, rng }: Ctx): GameEvent[] {
     ...dailyAuction(s, c, rng),
     ...dailyRelations(s, c, rng),
     ...dailyServants(s),
+    ...dailyStaff(s, rng),
   ];
   dailyDemand(s, c);
   return events;
@@ -28,5 +30,6 @@ export function townUpkeep(s: GameState, { c, rng }: Ctx): GameEvent[] {
   const events = refreshContractOffers(s, c, rng);
   prepareLots(s, c, rng);
   refreshServantMarket(s, c, rng);
+  refreshWorkerMarket(s, c, rng);
   return [...events, ...claimPerks(s, c)];
 }

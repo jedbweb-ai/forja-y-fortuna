@@ -414,11 +414,50 @@ export const BALANCE = {
     defeatGoldLoss: 0.15,
   },
 
-  assistant: {
-    /** Relación mínima para dejar a un compañero a cargo de la tienda (los liberados siempre pueden). */
-    minLevel: 'amigo',
-    /** Vende sin regatear: cobra esta parte de lo que pagaría el cliente. */
-    priceRatio: 0.8,
+  /** Personal de la herrería (src/core/staff). */
+  staff: {
+    /** Puestos de trabajo sin mejoras (las mejoras «Puestos de trabajo» suman más). */
+    baseSlots: 1,
+    maxLevel: 10,
+    /** Experiencia de cada oficio: nivel n desde (n - 1)² × xpFactor. */
+    xpFactor: 40,
+    /** Al llegar a estos niveles de un oficio se elige un rasgo nuevo entre pickOptions. */
+    pickAtLevels: [3, 5, 7] as number[],
+    pickOptions: 3,
+    /** Vendedor: vende sin regatear y cobra esta parte de lo que pagaría el cliente, según su nivel de Ventas. */
+    priceBase: 0.7,
+    pricePerLevel: 0.03,
+    priceMax: 0.97,
+    /** Cada vendedor de más atiende otro cliente por franja. */
+    extraCustomersPerSeller: 1,
+    /** Encargado: cuánto se equivoca al elegir qué exhibir (baja con el Criterio). Desde swapFromLevel cambia lo que no se vende. */
+    noiseBase: 0.6,
+    noisePerLevel: 0.07,
+    swapFromLevel: 3,
+    swapMargin: 1.3,
+    /** Aprendiz: golpes que da (hitsBase + nivel de Forja), riesgo de defecto que acepta y defectos que tolera. */
+    hitsBase: 2,
+    maxRisk: 0.3,
+    maxDefects: 2,
+    maxOrderQty: 50,
+    xpSlot: 2,
+    xpSale: 4,
+    xpSalePerGold: 25,
+    xpPerChange: 2,
+    xpPiece: 10,
+    xpPerQuality: 0.2,
+    xpRuined: 4,
+    /** Cuánto rinde un esclavo según su lealtad. */
+    loyaltyRate: { hostil: 0.5, desconfiado: 0.7, neutral: 0.85, conocido: 0.95, amigo: 1, aliado: 1 } as Record<string, number>,
+    /** Un esclavo hostil que trabaja solo puede escaparse cada mañana con parte de la caja. */
+    escapeChance: 0.06,
+    escapeGoldShare: 0.1,
+    escapeGoldMax: 80,
+    /** Candidatos del tablón de cada ciudad. */
+    offerSize: 3,
+    refreshDays: 7,
+    fireRelation: -10,
+    refuseRelation: -40,
   },
 
   workshop: {

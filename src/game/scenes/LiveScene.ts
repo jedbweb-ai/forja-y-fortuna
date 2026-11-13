@@ -61,6 +61,15 @@ export class LiveScene extends Phaser.Scene {
   }
 
   private npcSpot(id: string) {
+    // El personal de la herrería se para en el lugar de su puesto.
+    const staff = this.store.state.staff.shops[this.locId]?.staff ?? [];
+    const member = staff.find((m) => m.id === id);
+    if (member) {
+      const i = staff.filter((m) => m.role === member.role).indexOf(member);
+      const ill = this.ill?.spots?.staff?.[member.role];
+      const list = ill ? ill.map(([x, y]) => ({ x, y })) : this.def.staffSpots?.[member.role];
+      if (list?.length) return list[i % list.length];
+    }
     const s = this.ill?.spots?.npc?.[id];
     return s ? { x: s[0], y: s[1] } : this.def.npcSpots[id];
   }
@@ -105,6 +114,10 @@ export class LiveScene extends Phaser.Scene {
       ? this.ill.blocked.map(([x, y]) => `${x},${y}`)
       : this.def.props.filter((p) => p.blocks && this.textures.exists(p.key)).map((p) => `${p.x},${p.y}`));
     Object.keys(this.def.npcSpots).forEach((id) => { const p = this.npcSpot(id); this.blocked.add(`${p.x},${p.y}`); });
+    for (const m of state.staff.shops[this.locId]?.staff ?? []) {
+      const p = this.npcSpot(m.id);
+      if (p) this.blocked.add(`${p.x},${p.y}`);
+    }
     const spawn = this.spawnSpot();
     this.blocked.add(`${spawn.x},${spawn.y}`);
 
@@ -143,6 +156,13 @@ export class LiveScene extends Phaser.Scene {
       this.unsubs.push(this.store.subscribe(() => this.syncCustomer()));
       this.syncCustomer();
     }
+    // Si cambia quién trabaja acá (o en qué puesto), se vuelve a armar la escena.
+    const staffKey = (st: typeof state | null) => (st?.staff.shops[this.locId]?.staff ?? []).map((m) => `${m.id}:${m.role}`).join(',');
+    const before = staffKey(state);
+    this.unsubs.push(this.store.subscribe(() => {
+      const now = this.store.getSnapshot().state;
+      if (this.sys.isActive() && now && staffKey(now) !== before) this.scene.restart({ locationId: this.locId });
+    }));
     this.events.once('shutdown', () => {
       this.scale.off('resize', this.fit, this);
       this.unsubs.forEach((u) => u());
@@ -253,7 +273,9 @@ export class LiveScene extends Phaser.Scene {
       if (!spot) continue;
       const npc = c.npcs[npcId];
       const pos = this.at(spot.x, spot.y);
-      const key = `char.npc.${npcId}`;
+      // Un empleado sin dibujo propio todavía usa la figura de un vecino del pueblo.
+      const own = `char.npc.${npcId}`;
+      const key = isRealArt(own) || !c.workers[npcId] ? own : `char.amb.${[...npcId].reduce((a, ch) => a + ch.charCodeAt(0), 0) % AMBIENT_VARIANTS}`;
       this.add.image(pos.x, pos.y + 4, 'fx.shadow').setDepth(this.depth(spot.x, spot.y, 6));
       const s = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(this.fig(key)).setDepth(this.depth(spot.x, spot.y, 7));
       this.tweens.add({ targets: s, scaleY: s.scaleY * 1.03, yoyo: true, repeat: -1, duration: 700 + spot.x * 40 });

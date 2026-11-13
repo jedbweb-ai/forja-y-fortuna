@@ -1,7 +1,8 @@
 import type { Ctx } from './content';
 import { refreshMarket } from './economy/monsterMarket';
-import { assistantShift, closeShop } from './economy/shop';
+import { closeShop } from './economy/shop';
 import { payWages } from './party/mercenaries';
+import { payWorkers, staffReportEvents, staffShift } from './staff/staff';
 import { townMorning, townUpkeep } from './town/daily';
 import type { GameEvent, GameState } from './types';
 
@@ -16,11 +17,12 @@ export function runCommand<A extends unknown[]>(s: GameState, ctx: Ctx, cmd: Com
   const dayBefore = s.day;
   const slotBefore = s.day * 3 + s.slot;
   const events = cmd(s, ctx, ...args);
-  // Las franjas en las que no atendiste vos, atiende el ayudante (si tenés).
-  const passed = s.day * 3 + s.slot - slotBefore;
-  if (passed > 0 && s.assistant && (cmd as unknown) !== closeShop) events.push(...assistantShift(s, ctx.c, ctx.rng, passed));
-  for (let d = dayBefore; d < s.day; d++) events.push(...payWages(s), ...townMorning(s, ctx));
+  // En las franjas que pasaron trabaja el personal de cada herrería (si atendiste vos, los vendedores no venden).
+  const slotAfter = s.day * 3 + s.slot;
+  if (slotAfter > slotBefore) staffShift(s, ctx.c, ctx.rng, slotBefore, slotAfter, (cmd as unknown) === closeShop);
+  for (let d = dayBefore; d < s.day; d++) events.push(...payWages(s), ...payWorkers(s, ctx.c), ...townMorning(s, ctx));
   if (!s.market || s.market.day !== s.day) refreshMarket(s, ctx.c, ctx.rng);
   events.push(...townUpkeep(s, ctx));
+  events.push(...staffReportEvents(s));
   return events;
 }

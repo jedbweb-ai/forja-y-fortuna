@@ -1,9 +1,9 @@
 import { createHerrero } from '../core/party/progression';
-import { EMPTY_SKILLS, emptyTownState } from '../core/state';
+import { EMPTY_SKILLS, emptyStaffState, emptyTownState } from '../core/state';
 import type { GameState } from '../core/types';
 
 /** Versión actual del formato de guardado. Subirla junto con una migración. */
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 /**
  * Formato del guardado. Es JSON plano para que el mismo archivo pueda subirse
@@ -92,6 +92,21 @@ export const MIGRATIONS: Record<number, Migration> = {
     st.quests?.offers?.forEach((o) => { o.city ??= home; });
     st.contracts?.offers?.forEach((o) => { o.city ??= home; });
     return { ...save, version: 7, state: { ...st, city: home, demand: { [home]: st.demand ?? {} } } };
+  },
+  // Personal de la herrería: el ayudante pasa a ser el vendedor (si es un compañero comprado o liberado; un mercenario
+  // vuelve al grupo si hay lugar). El aprendiz solo repite planos que el herrero ya forjó: se toman de lo que hay hecho.
+  7: (save) => {
+    type Ch = { bond?: string };
+    type It = { uid: string; blueprintId: string; tags?: string[] };
+    const st = save.state as Record<string, unknown> & { assistant?: string | null; characters?: Record<string, Ch>; party?: string[]; items?: It[] };
+    const staff = emptyStaffState();
+    const id = st.assistant;
+    let party = st.party ?? ['herrero'];
+    if (id && st.characters?.[id]?.bond) staff.shops.herreria.staff.push({ id, role: 'vendedor' });
+    else if (id && party.length < 3 && !party.includes(id)) party = [...party, id];
+    staff.forged = [...new Set((st.items ?? []).filter((i) => i.uid.startsWith('it') && !(i.tags ?? []).includes('subasta')).map((i) => i.blueprintId))];
+    const { assistant: _gone, ...rest } = st;
+    return { ...save, version: 8, state: { ...rest, party, staff } };
   },
 };
 

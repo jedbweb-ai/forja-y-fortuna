@@ -3,6 +3,7 @@ import type { Blueprint, Material } from '../core/types';
 import { ABILITY_SKILLS } from './abilities';
 import { ARENAS } from './arenas';
 import { TALENTS, UPGRADES } from './progress';
+import { WORK_TRAITS, WORKER_DIALOGUES, WORKER_NPCS, WORKERS } from './workers';
 import { DUNGEONS, RIDDLES, ROOM_PIECES, TRAPS } from './dungeons';
 import { BLUEPRINTS_5, ENCHANTMENTS_5, GRIMOIRES_5, MATERIALS_5, POTIONS_5, QUENCH_5, SYNERGIES_5 } from './forge5';
 import { ARENAS_5, MONSTERS_5, SKILLS_5 } from './monsters5';
@@ -70,8 +71,8 @@ export const CONTENT: Content = {
   enchantments: indexById([...ENCHANTMENTS, ...ENCHANTMENTS_3, ...ENCHANTMENTS_5]),
   customers: indexById([...CUSTOMER_TYPES, ...CUSTOMERS_6B]),
   customerNames: CUSTOMER_NAMES,
-  npcs: indexById([...NPCS, ...MERCENARY_NPCS, ...NPCS_3, ...NPCS_4, ...SERVANT_NPCS, ...NPCS_6B, ...NPCS_6C]),
-  dialogues: indexById([...DIALOGUES, ...MERCENARY_DIALOGUES, ...DIALOGUES_3, ...DIALOGUES_4, ...SERVANT_DIALOGUES, ...DIALOGUES_6B, ...DIALOGUES_6C]),
+  npcs: indexById([...NPCS, ...MERCENARY_NPCS, ...NPCS_3, ...NPCS_4, ...SERVANT_NPCS, ...NPCS_6B, ...NPCS_6C, ...WORKER_NPCS]),
+  dialogues: indexById([...DIALOGUES, ...MERCENARY_DIALOGUES, ...DIALOGUES_3, ...DIALOGUES_4, ...SERVANT_DIALOGUES, ...DIALOGUES_6B, ...DIALOGUES_6C, ...WORKER_DIALOGUES]),
   cities: indexById([...CITIES, ...CITIES_6]),
   mercenaries: indexById([...MERCENARIES, ...SERVANTS]),
   skills: indexById([...COMBAT_SKILLS, ...ABILITY_SKILLS, ...SKILLS_5, ...SKILLS_6C, ...SKILLS_7]),
@@ -93,4 +94,6 @@ export const CONTENT: Content = {
   traps: TRAPS,
   talents: indexById(TALENTS),
   upgrades: indexById(UPGRADES),
+  workers: indexById(WORKERS),
+  workTraits: indexById(WORK_TRAITS),
 };

@@ -234,6 +234,7 @@ export function forgeComplete(s: GameState, { c, rng }: Ctx, picks: EnchantPick[
   s.items.push(item);
   s.forge = null;
   s.stats.itemsForged += 1;
+  if (!s.staff.forged.includes(bp.id)) s.staff.forged.push(bp.id);
 
   const newSynergies = item.synergies.filter((id) => !s.discoveredSynergies.includes(id));
   s.discoveredSynergies.push(...newSynergies);

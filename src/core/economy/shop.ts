@@ -130,7 +130,7 @@ export function nextCustomer(s: GameState, { c, rng }: Ctx): GameEvent[] {
 }
 
 /** Consumibles: la munición se compra por decenas; arrojadizos y pociones, de a pocos. */
-function bulkRange(type: CustomerType, item: ItemInstance): [number, number] | null {
+export function bulkRange(type: CustomerType, item: ItemInstance): [number, number] | null {
   if (item.category === 'municion' && type.bulk) return type.bulk;
   if (item.category === 'arrojadizo' || item.category === 'pocion') return [1, 3];
   return null;
@@ -235,46 +235,6 @@ export function declineCustomer(s: GameState, _ctx: Ctx): GameEvent[] {
   sh.status = 'resolved';
   sh.line = 'Bueno, otra vez será.';
   return [];
-}
-
-/**
- * El ayudante atiende mientras no estás: por cada franja, los clientes compran lo exhibido
- * sin regatear, a una parte de lo que habrían pagado.
- */
-export function assistantShift(s: GameState, c: Content, rng: Rng, slots: number): GameEvent[] {
-  if (!s.assistant || !s.characters[s.assistant] || slots <= 0) return [];
-  let sold = 0;
-  let earned = 0;
-  for (let i = 0; i < slots; i++) {
-    const home = homeCity();
-    for (const customer of generateCustomers(c, s, rng, home)) {
-      const type = c.customers[customer.typeId];
-      const candidates = exhibitedItems(s)
-        .map((item) => ({ item, score: interestScore(type, item) * (1 + (demandOf(s, item.category, home) - 1) * BALANCE.demand.customerWeight) }))
-        .filter(({ item, score }) => score > 0 && item.value <= customer.budget * 1.1);
-      if (!candidates.length) continue;
-      const { item } = rng.weighted(candidates.map((x) => [x, x.score] as const));
-      const range = bulkRange(type, item);
-      const qty = range ? Math.min(item.quantity, rng.int(range[0], range[1])) : 1;
-      const rep = s.reputation[home] ?? 0;
-      const valuation = item.value * qty * type.generosity * (1 + preferenceMatch(type, item)) * (0.9 + rep / 200) * demandOf(s, item.category, home);
-      const price = Math.max(1, Math.round(Math.min(valuation, customer.budget) * BALANCE.assistant.priceRatio));
-      item.quantity -= qty;
-      if (item.quantity <= 0) {
-        s.items = s.items.filter((x) => x.uid !== item.uid);
-        delete s.belt[item.uid];
-      }
-      registerSale(s, item.category, qty, home);
-      s.gold += price;
-      s.stats.goldEarned += price;
-      s.stats.itemsSold += qty;
-      changeReputation(s, home, S.repOnSale);
-      sold += qty;
-      earned += price;
-    }
-  }
-  if (!sold) return [];
-  return [{ type: 'toast', text: `${s.characters[s.assistant].name} atendió la tienda: vendió ${sold} por ${earned} de oro.`, tone: 'good' }];
 }
 
 export function closeShop(s: GameState, _ctx: Ctx): GameEvent[] {

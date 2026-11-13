@@ -206,6 +206,32 @@ src/
 - **Íconos y retratos**: el inventario, la forja, la tienda y el resto de los paneles muestran el ícono si existe. Los diálogos, el grupo y el combate muestran el retrato.
 - Los jefes pueden tener un dibujo propio (`mon.<id>`). Si no lo tienen, usan el de su especie, teñido y agrandado.
 
+## Personal de la herrería (etapa 1)
+
+Aprobado con estas recomendaciones. La lógica está en `src/core/staff/` y los datos en `src/data/workers.ts`.
+
+- **Quién trabaja**:
+  - Los compañeros comprados en el mercado de esclavos (o ya liberados) y los **empleados**, que se contratan en el tablón de cada ciudad (en Puertoseco, en la Casa de los Navegantes).
+  - Los mercenarios solo pelean.
+  - El "ayudante" de antes pasa a ser el vendedor. Si era un mercenario, vuelve al grupo.
+- **Puestos**:
+  - El **vendedor** vende lo exhibido sin regatear, a un 70–97% del precio según su nivel de Ventas. Cada vendedor de más atiende otro cliente por franja.
+  - El **encargado** arma la vidriera. No toca lo reservado (🔒 en el inventario) ni lo comprado en la subasta. Desde Criterio 3 cambia lo que no se vende.
+  - El **aprendiz** repite pedidos de piezas del yunque que el herrero ya forjó alguna vez, con los materiales del inventario. No juega el minijuego: da más golpes y arriesga menos según su nivel de Forja. Las piezas no llevan temple, acabado ni encantamientos, y se pueden arruinar.
+- **Cuándo trabajan**: en las franjas de la mañana y la tarde, esté o no el herrero. De noche solo trabajan los «Trasnochadores», a la mitad.
+- **Cómo aprenden**:
+  - Cada persona tiene un nivel en Ventas, Criterio y Forja, que sube con el trabajo.
+  - Al llegar a los niveles 3, 5 y 7 de un oficio elige un rasgo nuevo entre 3.
+  - Los empleados llegan con niveles y 1 o 2 rasgos propios, que pueden incluir defectos (Distraído, Charlatán, Perezoso).
+- **Esclavos**: rinden menos con poca lealtad (la mitad si son hostiles). Un esclavo hostil que trabaja solo puede escaparse a la mañana con parte de la caja.
+- **Puestos de trabajo**: hay 1 al principio y la mejora «Puestos de trabajo» del taller lleva a 4 (mostrador grande, segundo yunque, trastienda).
+- **Costos**: los empleados se pagan al contratarlos y cobran un sueldo por día. Si no se les paga 2 días, renuncian.
+- **Al volver a la herrería**, un aviso resume lo que hizo el personal: ventas, piezas forjadas, cambios en la vidriera y faltantes.
+- **En la escena**, cada uno se para en el lugar de su puesto. Los empleados sin dibujo propio usan por ahora la figura de un vecino.
+- **Próximas etapas**:
+  - Etapa 2: herrerías en Puertoseco y Fuerte Ceniza. El inventario sigue siendo uno solo y lo exhibido es de cada tienda.
+  - Etapa 3: dibujos y retratos de los empleados.
+
 ## Pendiente para próximas fases
 - **Arte definitivo**: generar la muestra de estilo (herrero, Brunilda, monstruos del Linde, texturas básicas, yunque y fragua, íconos y retrato del herrero), revisarla en el juego y seguir por tandas.
 - Tutorial (más adelante, a decidir).

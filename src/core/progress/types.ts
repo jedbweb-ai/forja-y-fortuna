@@ -16,7 +16,7 @@ export const BONUS_KEYS = [
   // Combate y expediciones (del herrero)
   'combateAtaque', 'combateDefensa', 'carga', 'energia',
   // Herrería
-  'exhibicion', 'atractivo', 'grupo',
+  'exhibicion', 'atractivo', 'grupo', 'personal',
 ] as const;
 export type BonusKey = (typeof BONUS_KEYS)[number];
 export type Bonuses = Partial<Record<BonusKey, number>>;

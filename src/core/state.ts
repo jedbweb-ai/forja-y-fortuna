@@ -22,6 +22,11 @@ export function newNpcState(c: Content, id: string): GameState['npcs'][string] {
   return { relation: c.mercenaries[id]?.startRelation ?? 0, lastTalkDay: 0, seenDialogues: [] };
 }
 
+/** Personal vacío: la herrería sin nadie trabajando. Lo usan la partida nueva y la migración. */
+export function emptyStaffState(): GameState['staff'] {
+  return { shops: { herreria: { staff: [], orders: [], report: { sold: 0, earned: 0, made: {}, ruined: 0, exhibited: 0, notes: [] } } }, workers: {}, hired: [], market: {}, forged: [] };
+}
+
 /** Estado vacío de la vida de la ciudad (Fase 4). Lo usan la partida nueva y la migración. */
 export function emptyTownState(): Pick<GameState, 'quests' | 'contracts' | 'demand' | 'cityEvents' | 'auction' | 'servantMarket'> {
   return {
@@ -69,7 +74,7 @@ export function createInitialState(c: Content, seed = Date.now() >>> 0): GameSta
     dungeons: { progress: {}, uniques: [] },
     talents: {},
     workshop: {},
-    assistant: null,
+    staff: emptyStaffState(),
     settings: { skipItemCard: false, fullscreenOnStart: true, permadeath: false },
     nextUid: 1,
   };

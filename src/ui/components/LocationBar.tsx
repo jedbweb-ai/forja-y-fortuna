@@ -45,6 +45,7 @@ export function LocationBar() {
   const npcs = npcsAt(c, state, state.location);
   const night = slotName(state) === 'noche';
   const damaged = damagedItems(state).length;
+  const staffPicks = Object.values(state.staff.workers).reduce((a, p) => a + p.picks.length, 0);
   const freePoints = (Object.keys(state.skills) as SkillId[]).reduce((a, k) => a + talentPoints(c, state, k).free, 0);
 
   return (
@@ -64,6 +65,7 @@ export function LocationBar() {
             )}
             <button className="btn" onClick={() => store.openPanel('alchemy')}>⚗️ Alquimia</button>
             <button className="btn" onClick={() => store.openPanel('workshop')}>🏗️ Taller</button>
+            <button className="btn" onClick={() => store.openPanel('staff')}>🧑‍🏭 Personal{staffPicks > 0 ? ` (${staffPicks})` : ''}</button>
             <button className="btn" onClick={() => store.openPanel('talents')}>📈 Talentos{freePoints > 0 ? ` (${freePoints})` : ''}</button>
             <button className="btn" data-key="t" onClick={() => store.openPanel('shop')}>{state.shop ? '🛎️ Tienda abierta' : '🛎️ Atender tienda'}</button>
             {damaged > 0 && <button className="btn" onClick={() => store.openPanel('repair')}>🛠️ Reparar ({damaged})</button>}

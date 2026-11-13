@@ -8,6 +8,7 @@ import { changeRelation, relationLevel } from '../state';
 import type { GameEvent, GameState } from '../types';
 import { refusesTrade, tradeMult } from './relations';
 import { maxPartySize } from '../progress/progress';
+import { isWorking } from '../staff/staff';
 
 // Mercado de esclavos y lealtad. La lealtad es la relación con el compañero:
 // arranca baja, sube con buen trato y charlas, y cambia cómo pelea (y si te obedece).
@@ -90,7 +91,7 @@ export function freeServant(s: GameState, { c }: Ctx, id: string): GameEvent[] {
 export function rejoinServant(s: GameState, { c }: Ctx, id: string): GameEvent[] {
   const ch = s.characters[id];
   if (!ch?.bond || ch.escaped || ch.dead) throw new GameError('No está con vos.');
-  if (s.assistant === id) throw new GameError(`${ch.name} está atendiendo la tienda.`);
+  if (isWorking(s, id)) throw new GameError(`${ch.name} está trabajando en la herrería: sacalo del puesto desde «Personal».`);
   if (s.expedition) throw new GameError('Estás de expedición.');
   if (s.party.includes(id)) throw new GameError('Ya está en el grupo.');
   if (s.location !== 'herreria') throw new GameError(`${ch.name} te espera en la herrería.`);

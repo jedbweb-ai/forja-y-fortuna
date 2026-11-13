@@ -82,7 +82,9 @@ export function validateContent(c: Content): string[] {
       const city = c.cities[npc.city];
       const loc = city?.locations.find((l) => l.id === locId);
       if (!loc) errors.push(`NPC ${npc.id}: rutina ${slot} en lugar inexistente "${locId}" de ${npc.city}`);
-      else if (!loc.scene?.npcSpots[npc.id]) errors.push(`NPC ${npc.id}: falta npcSpot en "${locId}"`);
+      // El personal se para donde dice su puesto (staffSpots), no en un lugar propio.
+      else if (!loc.scene?.npcSpots[npc.id] && !c.workers[npc.id]) errors.push(`NPC ${npc.id}: falta npcSpot en "${locId}"`);
+      else if (c.workers[npc.id] && !loc.scene?.staffSpots) errors.push(`empleado ${npc.id}: "${locId}" no tiene lugares para el personal`);
     }
   }
 
@@ -335,6 +337,18 @@ export function validateContent(c: Content): string[] {
   }
   for (const u of Object.values(c.upgrades)) {
     u.levels.forEach((l, i) => l.cost.materials.forEach((m) => mat(m.id, `mejora ${u.id} nivel ${i + 1}`)));
+  }
+
+  // Personal: rasgos de los empleados, que sean NPC y que haya rasgos para aprender en cada oficio.
+  for (const w of Object.values(c.workers)) {
+    w.traits.forEach((t) => { if (!c.workTraits[t]) errors.push(`empleado ${w.id}: rasgo de trabajo inexistente "${t}"`); });
+    if (!c.npcs[w.id]) errors.push(`empleado ${w.id}: falta su NPC`);
+    if (c.mercenaries[w.id]) errors.push(`empleado ${w.id}: ya es un mercenario o esclavo`);
+  }
+  for (const t of Object.values(c.workTraits)) {
+    for (const cat of t.effect.calidadEn?.categories ?? []) {
+      if (!Object.values(c.blueprints).some((b) => b.category === cat)) errors.push(`rasgo de trabajo ${t.id}: categoría sin planos "${cat}"`);
+    }
   }
 
   Object.keys(BALANCE.start.materials).forEach((m) => mat(m, 'balance.start.materials'));

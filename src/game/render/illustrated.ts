@@ -23,7 +23,7 @@ export interface IllustratedInterior {
   charScale: number;
   blocked: [number, number][];
   labels?: Record<string, Pt>;
-  spots?: { spawn?: [number, number]; npc?: Record<string, [number, number]>; customer?: [number, number] };
+  spots?: { spawn?: [number, number]; npc?: Record<string, [number, number]>; customer?: [number, number]; staff?: Partial<Record<'vendedor' | 'encargado' | 'aprendiz', [number, number][]>> };
 }
 
 /** Medida en la que se muestra la ilustración (la misma del mapa de la ciudad). */
@@ -61,6 +61,8 @@ export const ILLUSTRATED: Record<string, IllustratedInterior> = {
         brunilda: [4, 4], ciro: [4, 4], nayra: [4, 4], gualterio: [4, 4],
       },
       customer: [5, 7], // el cliente, delante del mostrador
+      // El personal: el vendedor detrás del mostrador, el aprendiz junto al yunque y el encargado cerca de los estantes.
+      staff: { vendedor: [[4, 4], [3, 4]], aprendiz: [[3, 2], [1, 2]], encargado: [[5, 1], [4, 1]] },
     },
   },
 };

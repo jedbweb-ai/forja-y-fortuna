@@ -1,3 +1,4 @@
+import type { StaffState } from './staff/types';
 // Tipos compartidos del núcleo del juego. Sin dependencias visuales.
 import type { CombatFx } from './combat/types';
 import type { AlchemyProps, ItemAbility, PotionData } from './magic/types';
@@ -354,6 +355,8 @@ export interface LiveSceneDef {
   hotspots: HotspotDef[];
   /** Dónde se para cada NPC con nombre cuando su rutina lo trae a este lugar. */
   npcSpots: Record<string, { x: number; y: number }>;
+  /** Herrería: dónde trabaja el personal según su puesto (uno por persona; si hay más, se repiten). */
+  staffSpots?: Partial<Record<'vendedor' | 'encargado' | 'aprendiz', { x: number; y: number }[]>>;
   ambient: Record<TimeSlot, number>;
   carts: boolean;
   animals: string[];
@@ -431,6 +434,10 @@ export interface ItemInstance {
   quantity: number;
   exhibited: boolean;
   createdDay: number;
+  /** Reservado: el encargado no lo pone en la vidriera ni lo saca. */
+  reserved?: boolean;
+  /** Lo hizo alguien del personal (id). */
+  madeBy?: string;
   color: string;
   /** Personaje que lo tiene equipado (no se puede vender ni exhibir). */
   equippedBy?: string;
@@ -567,8 +574,8 @@ export interface GameState {
   talents: Record<string, number>;
   /** Nivel de cada mejora de la herrería. */
   workshop: Record<string, number>;
-  /** Compañero a cargo de la tienda cuando el herrero no está. */
-  assistant: string | null;
+  /** Personal de la herrería: quién trabaja, en qué puesto, pedidos y candidatos del tablón. */
+  staff: StaffState;
   settings: GameSettings;
   nextUid: number;
 }
