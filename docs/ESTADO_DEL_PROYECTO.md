@@ -37,6 +37,7 @@ Resumen para retomar en un chat nuevo. El diseño completo está en `docs/GAME_D
 ## Pendiente
 
 - Ilustraciones de los dos talleres de las sucursales: los pedidos, con su plano, ya están en la herramienta. Cuando lleguen, se calibran como los demás interiores (`src/game/render/illustratedPlaces.ts`).
+- **Darles más vida a los lugares ilustrados.** El estilo está bien, pero falta lo que hace que se sientan naturales: árboles, plantas y faroles afuera de cada tienda, gente y cosas en la calle (bancos, macetas, carros, perros) y bordes que no terminen en vacío. Se puede resolver pidiendo nuevas versiones de las ilustraciones (sumando eso al pedido de interiores en ) o agregando adornos por código sobre la imagen.
 - **Próximo tema que propone el usuario: rehacer cómo funcionan las expediciones y las batallas.** Abajo está cómo funcionan hoy.
 
 ## Expediciones y combate hoy

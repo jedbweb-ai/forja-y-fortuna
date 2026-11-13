@@ -262,6 +262,7 @@ Aprobado con estas recomendaciones. La lógica está en `src/core/tutorial/`, lo
 ## Pendiente para próximas fases
 - **Arte definitivo**: generar la muestra de estilo (herrero, Brunilda, monstruos del Linde, texturas básicas, yunque y fragua, íconos y retrato del herrero), revisarla en el juego y seguir por tandas.
 - Ilustraciones de los dos talleres (sucursales): pedidos listos en la herramienta.
+- Más vida en los lugares ilustrados: árboles, plantas y faroles afuera de las tiendas, detalles en la calle y bordes que no terminen en vacío (ver docs/ESTADO_DEL_PROYECTO.md).
 
 ## Publicación
 
