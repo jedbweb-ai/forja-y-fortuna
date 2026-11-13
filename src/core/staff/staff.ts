@@ -1,7 +1,7 @@
 import { BALANCE } from '../../config/balance';
 import { cityLocation, cityOfLocation } from '../city';
 import { GameError, type Content, type Ctx } from '../content';
-import { computeDesign, isAllowed } from '../forge/design';
+import { allowedMaterials, computeDesign } from '../forge/design';
 import { defectChanceFor, rollTraits, strike, type ForgeMods } from '../forge/forging';
 import { buildItem } from '../forge/item';
 import { bulkRange, exhibitedItems, generateCustomers, interestScore, preferenceMatch } from '../economy/shop';
@@ -13,7 +13,7 @@ import { demandOf, registerSale } from '../town/demand';
 import { SLOTS, type ForgeSession, type GameEvent, type GameState, type ItemInstance, type RelationLevel, type TimeSlot } from '../types';
 import {
   OFICIO_NAMES, OFICIOS, ROLE_NAMES, ROLE_OFICIO, type Oficio, type ShopStaff, type StaffMember, type StaffReport, type StaffRole,
-  type WorkEffect, type WorkerProgress, type WorkOrder,
+  ORDER_MODE_NAMES, type OrderMode, type WorkEffect, type WorkerProgress, type WorkOrder,
 } from './types';
 
 // Personal de la herrería: quién trabaja, en qué puesto, cómo aprende y qué hace en cada franja que pasa.
@@ -371,35 +371,61 @@ export function canOrder(c: Content, s: GameState, blueprintId: string): boolean
   return !!bp && s.staff.forged.includes(blueprintId) && (bp.station === 'yunque' || bp.station === 'flecheria');
 }
 
-/** Piezas para encargar: los diseños guardados en el libro y las que ya hiciste (plano y materiales). */
-export function orderTemplates(c: Content, s: GameState): { name: string; blueprintId: string; materials: Record<string, string> }[] {
-  const out: { name: string; blueprintId: string; materials: Record<string, string> }[] = [];
-  const seen = new Set<string>();
-  const add = (name: string, blueprintId: string, materials: Record<string, string>) => {
-    const key = `${blueprintId}|${Object.entries(materials).sort().map(([k, v]) => `${k}=${v}`).join(',')}`;
-    if (seen.has(key) || !canOrder(c, s, blueprintId)) return;
-    seen.add(key);
-    out.push({ name, blueprintId, materials: { ...materials } });
-  };
-  for (const d of s.designs) add(d.name, d.blueprintId, d.materials);
-  for (const i of s.items) if (i.uid.startsWith('it') && !i.tags.includes('subasta')) add(baseName(c, i), i.blueprintId, i.materials);
-  return out;
+/** Planos que se le pueden encargar al aprendiz, en el orden del libro de planos. */
+export function orderableBlueprints(c: Content, s: GameState): string[] {
+  return Object.keys(c.blueprints).filter((id) => canOrder(c, s, id));
 }
 
-function baseName(c: Content, i: ItemInstance): string {
-  const mats = Object.values(i.materials).map((m) => c.materials[m]?.name).filter(Boolean);
-  return `${c.blueprints[i.blueprintId]?.name ?? i.name}${mats.length ? ` (${[...new Set(mats)].join(', ').toLowerCase()})` : ''}`;
+/**
+ * Materiales para una pieza, elegidos del inventario: para cada parte, el de nivel más alto (o el más bajo) que alcance.
+ * Si a alguna parte no le alcanza ningún material, devuelve cuál.
+ */
+export function pickOrderMaterials(c: Content, s: GameState, blueprintId: string, mode: OrderMode): { materials: Record<string, string> } | { missing: string } {
+  const bp = c.blueprints[blueprintId];
+  const used: Record<string, number> = {};
+  const have = (id: string) => (s.materials[id] ?? 0) - (used[id] ?? 0);
+  const dir = mode === 'alto' ? -1 : 1;
+  const materials: Record<string, string> = {};
+  for (const part of bp.parts) {
+    const pick = allowedMaterials(c, part)
+      .filter((m) => have(m.id) >= part.qty)
+      .sort((x, y) => dir * (x.tier - y.tier) || dir * (x.price - y.price) || x.id.localeCompare(y.id))[0];
+    if (!pick) return { missing: part.label };
+    materials[part.slot] = pick.id;
+    used[pick.id] = (used[pick.id] ?? 0) + part.qty;
+  }
+  return { materials };
 }
 
-export function addOrder(s: GameState, { c }: Ctx, blueprintId: string, materials: Record<string, string>, qty: number, name?: string): GameEvent[] {
+/** Los materiales de la próxima pieza de un pedido, o el aviso de lo que falta. */
+function orderMaterials(c: Content, s: GameState, order: WorkOrder): { materials: Record<string, string> } | { note: string } {
+  if (order.mode) {
+    const pick = pickOrderMaterials(c, s, order.blueprintId, order.mode);
+    return 'missing' in pick ? { note: `Falta material para «${order.name}» (${pick.missing.toLowerCase()}).` } : pick;
+  }
+  const materials = order.materials ?? {};
+  const missing = Object.entries(computeDesign(c, order.blueprintId, materials).needs).find(([id, q]) => !hasMaterial(s, id, q));
+  return missing ? { note: `Falta ${c.materials[missing[0]]?.name ?? missing[0]} para «${order.name}».` } : { materials };
+}
+
+/** Nombre del pedido con el material que usa (para la UI). */
+export function orderLabel(order: WorkOrder): string {
+  return order.mode ? `${order.name} · ${ORDER_MODE_NAMES[order.mode]}` : order.name;
+}
+
+/** Encarga piezas de un plano. Si ya hay un pedido igual, le suma la cantidad. */
+export function addOrder(s: GameState, { c }: Ctx, blueprintId: string, mode: OrderMode, qty: number): GameEvent[] {
   const shop = checkAtShop(c, s);
   if (!canOrder(c, s, blueprintId)) throw new GameError('El aprendiz solo repite piezas del yunque que ya forjaste vos.');
-  const bp = c.blueprints[blueprintId];
-  for (const part of bp.parts) if (!materials[part.slot] || !isAllowed(c, part, materials[part.slot])) throw new GameError(`Falta un material válido para: ${part.label}.`);
+  if (mode !== 'alto' && mode !== 'bajo') throw new GameError('Elegí qué material tiene que usar.');
   const n = Math.round(qty);
   if (!(n >= 1 && n <= ST.maxOrderQty)) throw new GameError(`Se encargan entre 1 y ${ST.maxOrderQty}.`);
-  shopStaff(s, shop).orders.push({ id: nextUid(s, 'wo'), name: name ?? bp.name, blueprintId, materials: { ...materials }, qty: n, done: 0 });
-  return [{ type: 'toast', text: `Pedido: ${n}× ${name ?? bp.name}.` }];
+  const bp = c.blueprints[blueprintId];
+  const orders = shopStaff(s, shop).orders;
+  const same = orders.find((o) => o.blueprintId === blueprintId && o.mode === mode);
+  if (same) same.qty = Math.min(same.done + ST.maxOrderQty, same.qty + n);
+  else orders.push({ id: nextUid(s, 'wo'), name: bp.name, blueprintId, mode, qty: n, done: 0 });
+  return [{ type: 'toast', text: `Pedido: ${n}× ${bp.name} (${ORDER_MODE_NAMES[mode]}).` }];
 }
 
 export function cancelOrder(s: GameState, { c }: Ctx, id: string): GameEvent[] {
@@ -414,7 +440,8 @@ export function cancelOrder(s: GameState, { c }: Ctx, id: string): GameEvent[] {
 function releasePiece(s: GameState, c: Content, m: StaffMember) {
   if (!m.piece) return;
   const order = Object.values(s.staff.shops).flatMap((st) => st.orders).find((o) => o.id === m.piece!.order);
-  if (order && !m.piece.free) for (const [id, q] of Object.entries(computeDesign(c, order.blueprintId, order.materials).needs)) addMaterial(s, id, q);
+  const materials = m.piece.materials ?? order?.materials;
+  if (order && materials && !m.piece.free) for (const [id, q] of Object.entries(computeDesign(c, order.blueprintId, materials).needs)) addMaterial(s, id, q);
   delete m.piece;
 }
 
@@ -539,15 +566,27 @@ function forgeWork(s: GameState, c: Content, rng: Rng, st: ShopStaff, m: StaffMe
   const name = workerName(c, s, m.id);
   if (!m.piece) {
     const busy = (o: WorkOrder) => st.staff.filter((x) => x.piece?.order === o.id).length;
-    const order = st.orders.find((o) => o.qty - o.done - busy(o) > 0);
-    if (!order) return note(st, `${name} no tiene pedidos: encargale piezas desde «Personal».`);
-    const needs = computeDesign(c, order.blueprintId, order.materials).needs;
-    const missing = Object.entries(needs).find(([id, q]) => !hasMaterial(s, id, q));
-    if (missing) return note(st, `Falta ${c.materials[missing[0]]?.name ?? missing[0]} para «${order.name}».`);
+    const pending = st.orders.filter((o) => o.qty - o.done - busy(o) > 0);
+    if (!pending.length) return note(st, `${name} no tiene pedidos: encargale piezas desde «Personal».`);
+    // Toma el primer pedido para el que haya materiales; si no alcanza para ninguno, avisa qué falta en el primero.
+    let order: WorkOrder | undefined;
+    let materials: Record<string, string> = {};
+    let missing = '';
+    for (const o of pending) {
+      const r = orderMaterials(c, s, o);
+      if ('materials' in r) {
+        order = o;
+        materials = r.materials;
+        break;
+      }
+      missing ||= r.note;
+    }
+    if (!order) return note(st, missing);
+    const needs = computeDesign(c, order.blueprintId, materials).needs;
     const p = workerProgress(c, s, m.id);
     const free = rng.chance(effectSum(c, p, 'ahorro'));
     if (!free) for (const [id, q] of Object.entries(needs)) addMaterial(s, id, -q);
-    m.piece = { order: order.id, work: 0, ...(free ? { free: true } : {}) };
+    m.piece = { order: order.id, work: 0, materials, ...(free ? { free: true } : {}) };
   }
   const order = st.orders.find((o) => o.id === m.piece!.order);
   if (!order) {
@@ -555,11 +594,12 @@ function forgeWork(s: GameState, c: Content, rng: Rng, st: ShopStaff, m: StaffMe
     return;
   }
   m.piece.work += rate;
+  const pieceMaterials = m.piece.materials ?? order.materials ?? {};
   levelNote(st, addWorkXp(c, s, rng, m.id, 'forja', ST.xpSlot));
   const bp = c.blueprints[order.blueprintId];
   if (m.piece.work < bp.slots) return;
   delete m.piece;
-  const item = makePiece(s, c, rng, m.id, order);
+  const item = makePiece(s, c, rng, m.id, order.blueprintId, pieceMaterials);
   if (!item) {
     st.report.ruined += 1;
     levelNote(st, addWorkXp(c, s, rng, m.id, 'forja', ST.xpRuined));
@@ -579,17 +619,17 @@ function forgeWork(s: GameState, c: Content, rng: Rng, st: ShopStaff, m: StaffMe
  * prudencia según su nivel de Forja: con más nivel da más golpes y se arriesga menos a los defectos.
  * Sin temple, acabado ni encantamientos. Puede arruinarse.
  */
-export function makePiece(s: GameState, c: Content, rng: Rng, id: string, order: WorkOrder): ItemInstance | null {
+export function makePiece(s: GameState, c: Content, rng: Rng, id: string, blueprintId: string, materials: Record<string, string>): ItemInstance | null {
   const p = workerProgress(c, s, id);
   const lvl = oficioLevel(p.xp.forja);
-  const bp = c.blueprints[order.blueprintId];
-  const design = computeDesign(c, order.blueprintId, order.materials);
+  const bp = c.blueprints[blueprintId];
+  const design = computeDesign(c, blueprintId, materials);
   const catBonus = p.traits.reduce((a, t) => {
     const e = c.workTraits[t]?.effect.calidadEn;
     return a + (e && e.categories.includes(bp.category) ? e.value : 0);
   }, 0);
   const session: ForgeSession = {
-    kind: 'pieza', blueprintId: order.blueprintId, materials: { ...order.materials }, stage: 'forging', hits: 0,
+    kind: 'pieza', blueprintId, materials: { ...materials }, stage: 'forging', hits: 0,
     quality: F.startQuality + workshopBonus(c, s, 'forjaCalidadInicial') + effectSum(c, p, 'calidad') + catBonus,
     defects: 0, traits: [], finish: [], instability: design.instability,
   };

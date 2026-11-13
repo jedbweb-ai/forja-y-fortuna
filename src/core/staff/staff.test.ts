@@ -12,7 +12,7 @@ import { advanceTime } from '../time';
 import type { GameState } from '../types';
 import {
   addOrder, assignStaff, branchBlock, buyBranch, displayCandidates, hireTarget, fireWorker, hireBlock, hireWorker, joinBlock, oficioLevel, refreshWorkerMarket,
-  removeStaff, setStaffRole, staffSlots,
+  pickOrderMaterials, removeStaff, setStaffRole, staffSlots,
 } from './staff';
 
 const DAGA = { hoja: 'hierro', guarda: 'hierro', mango: 'pino' };
@@ -100,9 +100,9 @@ describe('aprendiz', () => {
     const { s, ctx } = setup();
     buyServant(s, 'yago', 50);
     assignStaff(s, ctx, 'yago', 'aprendiz');
-    expect(() => addOrder(s, ctx, 'daga', DAGA, 3)).toThrow(/ya forjaste/);
+    expect(() => addOrder(s, ctx, 'daga', 'alto', 3)).toThrow(/ya forjaste/);
     s.staff.forged.push('daga');
-    addOrder(s, ctx, 'daga', DAGA, 3);
+    addOrder(s, ctx, 'daga', 'alto', 3);
     s.materials.hierro = 40;
     s.materials.pino = 20;
     const hierro = s.materials.hierro;
@@ -118,10 +118,36 @@ describe('aprendiz', () => {
     buyServant(s, 'yago', 50);
     assignStaff(s, ctx, 'yago', 'aprendiz');
     s.staff.forged.push('daga');
-    addOrder(s, ctx, 'daga', DAGA, 1);
+    addOrder(s, ctx, 'daga', 'alto', 1);
     s.materials = {};
     const text = toasts(pass(s, ctx, 1)).join(' ');
     expect(text).toMatch(/Falta/);
+  });
+
+  it('elige solo el material: el de nivel más alto o el más bajo que haya', () => {
+    const { s, ctx } = setup();
+    s.materials = { hierro: 5, acero: 1, cobre: 5, pino: 5, roble: 5 };
+    // Al acero le alcanza para una sola parte: la hoja lleva acero y la guarda el mejor que queda.
+    expect(pickOrderMaterials(ctx.c, s, 'daga', 'alto')).toEqual({ materials: { hoja: 'acero', guarda: 'hierro', mango: 'roble' } });
+    expect(pickOrderMaterials(ctx.c, s, 'daga', 'bajo')).toEqual({ materials: { hoja: 'cobre', guarda: 'cobre', mango: 'pino' } });
+    s.materials = { hierro: 5 };
+    expect(pickOrderMaterials(ctx.c, s, 'daga', 'alto')).toEqual({ missing: 'Mango' });
+  });
+
+  it('el mismo pedido se suma y cada pieza sale con lo que haya', () => {
+    const { s, ctx } = setup();
+    buyServant(s, 'yago', 50);
+    assignStaff(s, ctx, 'yago', 'aprendiz');
+    s.staff.forged.push('daga');
+    addOrder(s, ctx, 'daga', 'bajo', 2);
+    addOrder(s, ctx, 'daga', 'bajo', 2);
+    expect(s.staff.shops.herreria.orders).toHaveLength(1);
+    expect(s.staff.shops.herreria.orders[0].qty).toBe(4);
+    s.materials = { bronce: 10, roble: 10 };
+    pass(s, ctx, 9);
+    const made = s.items.filter((i) => i.madeBy === 'yago');
+    expect(made.length).toBeGreaterThan(0);
+    expect(made[0].materials).toEqual({ hoja: 'bronce', guarda: 'bronce', mango: 'roble' });
   });
 });
 

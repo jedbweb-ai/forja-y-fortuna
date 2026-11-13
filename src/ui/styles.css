@@ -640,3 +640,15 @@ kbd { font-family: inherit; font-size: 0.8rem; padding: 1px 5px; border: 1px sol
 .brew-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 .brew-buttons .btn.big { flex: 1 1 100%; }
 .brew-buttons .btn:not(.big) { flex: 1; }
+
+/* ── Pedidos del aprendiz: íconos de lo que se puede encargar ── */
+.order-icon { width: 32px; height: 32px; flex: none; }
+.order-initial { display: inline-grid; place-items: center; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); font-weight: 700; }
+.order-mode { margin-bottom: 0; }
+.order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin-top: 8px; }
+.order-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); cursor: pointer; min-height: var(--tap); color: inherit; }
+.order-tile small { font-size: 0.7rem; line-height: 1.15; text-align: center; color: var(--muted); }
+.order-tile .order-icon { width: 36px; height: 36px; }
+.order-tile.on { border-color: var(--accent); background: #4a2f2a; }
+.order-tile.on small { color: inherit; }
+.order-tile.nomat { opacity: 0.45; }

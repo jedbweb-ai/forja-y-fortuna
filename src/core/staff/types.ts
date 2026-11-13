@@ -89,15 +89,23 @@ export interface StaffMember {
   id: string;
   role: StaffRole;
   /** Aprendiz: la pieza en curso (de qué pedido) y cuánto trabajo lleva, en franjas. */
-  piece?: { order: string; work: number; free?: boolean };
+  piece?: { order: string; work: number; free?: boolean; materials?: Record<string, string> };
 }
 
-/** Pedido de trabajo para el aprendiz: repetir una pieza (plano y materiales) hasta hacer `qty`. */
+/** Qué material elige el aprendiz para cada parte: el de nivel más alto o el de nivel más bajo que haya en el inventario. */
+export type OrderMode = 'alto' | 'bajo';
+export const ORDER_MODE_NAMES: Record<OrderMode, string> = { alto: 'mejor material', bajo: 'material más barato' };
+
+/**
+ * Pedido de trabajo para el aprendiz: hacer `qty` piezas de un plano. Con `mode`, en cada pieza elige solo los
+ * materiales que tengas; los pedidos viejos traen `materials` fijos.
+ */
 export interface WorkOrder {
   id: string;
   name: string;
   blueprintId: string;
-  materials: Record<string, string>;
+  mode?: OrderMode;
+  materials?: Record<string, string>;
   qty: number;
   done: number;
 }
