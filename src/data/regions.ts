@@ -1,28 +1,38 @@
 import type { RegionDef } from '../core/world/types';
 
-// 24×16. Ver la leyenda en core/world/types.ts (RegionDef).
+// Ver la leyenda en core/world/types.ts (RegionDef).
+// Mapa del formato B (etapa 3): 32×24. Pradera al oeste con un río, bosque en el medio, colinas en terrazas al este.
+// q = evento, a = campamento. Lo armó un generador con semilla fija; se puede retocar a mano.
 const LINDE_TERRAIN = [
-  'TTTTTTTTTTTTTTTTTTTTTTTT',
-  'T..h..,,..T.t..T..RRRRRT',
-  'T..m..,,,....TT.m.Rg.vRT',
-  'T....h..t..T.t....=..B.T',
-  'T..v.......m..T..==..cRT',
-  'T......,,h....t.==..m..T',
-  'E=====....t..T.==...v..T',
-  'T....===========..R..g.T',
-  'T..,,....m.c.t...=..m..T',
-  'T..,,,.h.....T..t=.....T',
-  'T.m....v...t....m=.RR..T',
-  'T.....RR..g.TT...=..v..T',
-  'T..t..Rv...m.....==..h.T',
-  'T...c...t...t.....=..m.T',
-  'T...,,.....T.h..t.v.P..T',
-  'TTTTTTTTTTTTTTTTTTTTTTTT',
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+  'T,,..qww.m...,,........a....mR.T',
+  'T,,....ww..T.T,...t............T',
+  'T...t..ww.q.T,,....T..qRR.,,...T',
+  'T.....twc..T.T,Tm...q....R,t,m.T',
+  'T..m...ww,h.q....T..T...PmR,,..T',
+  'T......ww,..,,...T...q.g,,,q...T',
+  'T...,v.ww..h,,.T.m.T.....vR...RT',
+  'T..h,,.w........T.........R....T',
+  'T....======T...T.Tt.======..c..T',
+  'T....=ww..======T...=....=.....T',
+  'E=====,v....TT,======....====B.T',
+  'T....w.....T.TTTTTTTT.........,T',
+  'T...tww.m.q..Th.,t,g,T,....c,v,T',
+  'T....ww....Ta..T..T,T,,.Rv..,R.T',
+  'T.,,.wwq.,,,,.t.T.c....v....R..T',
+  'T.,h.w...,,Tm.T.....T...R.h...mT',
+  'T....ww..v....h...v.....R......T',
+  'T..m..ww....T...........,,...v.T',
+  'T....hww..hT..c.TT.m....,,.v.R.T',
+  'T..v.,,w.....T..h.....gRh....RmT',
+  'T....,,wwg.T.v....q.,,.........T',
+  'T..a.c.ww..m.T.TtTT.,v..RgR.Rq.T',
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
 ];
 
 // Las colinas (al este) van subiendo de a un nivel.
-const LINDE_HEIGHTS = LINDE_TERRAIN.map(() => '00000000000000111122222'.padEnd(24, '2'));
-const LINDE_ZONES = LINDE_TERRAIN.map(() => '1'.repeat(8) + '2'.repeat(8) + '3'.repeat(8));
+const LINDE_HEIGHTS = LINDE_TERRAIN.map(() => '0'.repeat(22) + '111222' + '3333');
+const LINDE_ZONES = LINDE_TERRAIN.map(() => '1'.repeat(11) + '2'.repeat(11) + '3'.repeat(10));
 
 export const REGIONS: RegionDef[] = [
   {

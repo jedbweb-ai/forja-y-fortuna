@@ -19,8 +19,10 @@ import { servantEscapes, servantsAfterCombat } from '../town/servants';
 import {
   checkLanding, discoverEntrance, dungeonDef, exhausted, expMap, grantUnique, onBossDefeated, recordLeave, revealAround, trapAt, triggerTrap,
 } from '../dungeon/dungeon';
-import { generateGroup, groupThreat } from './encounters';
-import { adjacent, bossFlag, findTiles, regionOpen, regionPath, zoneAt, type Pt } from './region';
+import { generateGroup, makeGroup } from './encounters';
+import { pickEvent } from './eventPick';
+import { generateRoute, routeNightSpawn } from './routes';
+import { adjacent, bossFlag, findTiles, regionOpen, regionPath, revealRegion, zoneAt, type Pt } from './region';
 import type { ExpeditionState, MonsterGroup, RegionDef } from './types';
 
 const EX = BALANCE.expedition;
@@ -108,6 +110,7 @@ function occupied(e: ExpeditionState, p: Pt) {
 function spawnGroups(c: Content, s: GameState, rng: Rng, count: number, slot = slotName(s)): number {
   const e = expedition(s);
   const r = region(c, s);
+  if (e.route) return routeNightSpawn(c, s, rng, r, count, slot);
   const spots = findTiles(r, 'm').filter((p) => !occupied(e, p) && Math.abs(p.x - e.pos.x) + Math.abs(p.y - e.pos.y) > 3);
   let added = 0;
   for (let i = 0; i < count && spots.length; i++) {
@@ -120,12 +123,7 @@ function spawnGroups(c: Content, s: GameState, rng: Rng, count: number, slot = s
   return added;
 }
 
-export function makeGroup(c: Content, e: ExpeditionState, p: Pt, zone: number, monsters: string[], extra: Partial<MonsterGroup> = {}): MonsterGroup {
-  return {
-    id: `g${e.nextId++}`, x: p.x, y: p.y, zone, monsters, threat: groupThreat(c, monsters),
-    aggressive: monsters.some((m) => c.monsters[m]?.aggressive), ...extra,
-  };
-}
+export { makeGroup };
 
 // ───────────────────────── Comandos ─────────────────────────
 
@@ -144,7 +142,13 @@ export function startExpedition(s: GameState, { c, rng }: Ctx, regionId: string)
     bag: {}, capacity: expeditionCapacity(s, members, c), nodes: [], groups: [], members, combat: null, report: null,
     nightSpawned: false, nextId: 1, home: s.location,
   };
-  populate(c, s, rng, r);
+  if ((s.settings.expeditionFormat ?? 'rutas') === 'rutas') {
+    s.expedition.route = generateRoute(c, s, rng, r);
+  } else {
+    populate(c, s, rng, r);
+    s.expedition.fog = r.terrain.map((row) => '0'.repeat(row.length));
+    revealRegion(s.expedition);
+  }
 
   s.outing = false;
   return [
@@ -181,6 +185,18 @@ export function populate(c: Content, s: GameState, rng: Rng, r: RegionDef, treas
     const secret = treasureRooms.includes(roomOf(p));
     if ((!secret && !rng.chance(BALANCE.chests.fill)) || !r.zoneDefs[zoneAt(r, p.x, p.y)].cofres) continue;
     e.nodes.push({ id: `n${e.nextId++}`, x: p.x, y: p.y, kind: 'cofre', material: '', tier: 0, qty: [0, 0], uses: 1, secret });
+  }
+  // Eventos ('q') y campamentos ('a').
+  const usedEvents: string[] = [];
+  for (const p of findTiles(r, 'q')) {
+    if (!rng.chance(EX.eventFill)) continue;
+    const ev = pickEvent(c, r.zoneDefs[zoneAt(r, p.x, p.y)], rng, usedEvents);
+    if (!ev) continue;
+    usedEvents.push(ev);
+    e.nodes.push({ id: `n${e.nextId++}`, x: p.x, y: p.y, kind: 'evento', event: ev, material: '', tier: 0, qty: [0, 0], uses: 1 });
+  }
+  for (const p of findTiles(r, 'a')) {
+    e.nodes.push({ id: `n${e.nextId++}`, x: p.x, y: p.y, kind: 'campamento', material: '', tier: 0, qty: [0, 0], uses: 1 });
   }
   // Llaves de las puertas cerradas (mazmorras).
   for (const p of findTiles(r, 'k')) {
@@ -247,6 +263,8 @@ function contact(e: ExpeditionState, p: Pt): MonsterGroup | undefined {
 
 export function expMove(s: GameState, { c, rng }: Ctx, x: number, y: number): GameEvent[] {
   const e = expedition(s);
+  if (e.route) throw new GameError('En el recorrido por paradas se avanza eligiendo la siguiente.');
+  if (e.event) throw new GameError('Primero resolvé lo que está pasando.');
   if (e.combat || e.report) throw new GameError('Primero terminá el combate.');
   if (e.energy <= 0 && !e.dungeon) throw new GameError('Sin energía: tenés que volver a la ciudad.');
   if (e.dungeon?.landing) e.dungeon.landing = false;
@@ -263,6 +281,7 @@ export function expMove(s: GameState, { c, rng }: Ctx, x: number, y: number): Ga
     walked.push(p);
     e.pos = { ...p };
     revealAround(e);
+    revealRegion(e);
     for (const g of e.groups) if (g.calm) g.calm -= 1;
     if (trapAt(e, p)) {
       trapped = true;
@@ -296,12 +315,24 @@ export function expMove(s: GameState, { c, rng }: Ctx, x: number, y: number): Ga
   return events;
 }
 
+/** Oficio y herramienta que pide cada tipo de recurso. */
+export const JOBS = {
+  veta: ['mineria', 'pico de minero'], gema: ['mineria', 'pico de minero'], arbol: ['tala', 'hacha de tala'], hierba: ['siega', 'hoz'],
+} as const satisfies Record<string, readonly ['mineria' | 'tala' | 'siega', string]>;
+
+/** ¿El grupo puede usar ese lugar? En el mapa, si está al lado; en el recorrido (formato A), si es el de la parada. */
+export function nodeInReach(e: ExpeditionState, node: { id: string; x: number; y: number }): boolean {
+  if (e.route) return e.route.stops.find((st) => st.id === e.route!.at)?.ref === node.id;
+  return adjacent(node, e.pos) || (node.x === e.pos.x && node.y === e.pos.y);
+}
+
 export function gather(s: GameState, { c, rng }: Ctx, nodeId: string): GameEvent[] {
   const e = expedition(s);
   if (e.combat || e.report) throw new GameError('Primero terminá el combate.');
   const node = e.nodes.find((n) => n.id === nodeId);
   if (!node) throw new GameError('Ahí ya no queda nada.');
-  if (!adjacent(node, e.pos)) throw new GameError('Acercate primero.');
+  if (!nodeInReach(e, node)) throw new GameError('Acercate primero.');
+  if (node.kind === 'evento' || node.kind === 'campamento') throw new GameError('Eso no se recolecta.');
   if (e.energy < EX.gatherEnergy && !e.dungeon) throw new GameError('No te queda energía para eso.');
   if (node.kind === 'cofre') return openChest(s, { c, rng }, node.id);
   if (node.kind === 'llave') {
@@ -309,7 +340,7 @@ export function gather(s: GameState, { c, rng }: Ctx, nodeId: string): GameEvent
     if (e.dungeon) e.dungeon.keys += 1;
     return [{ type: 'gathered', nodeId, material: '', qty: 0 }, { type: 'toast', text: 'Encontraste una llave de hierro.', tone: 'good' }];
   }
-  const job = { veta: ['mineria', 'pico de minero'], gema: ['mineria', 'pico de minero'], arbol: ['tala', 'hacha de tala'], hierba: ['siega', 'hoz'] }[node.kind] as ['mineria' | 'tala' | 'siega', string];
+  const job = JOBS[node.kind as keyof typeof JOBS];
   const tool = bestTool(s, job[0]);
   const mat = c.materials[node.material];
   if (!tool) throw new GameError(`Necesitás ${job[1] === 'hoz' ? 'una' : 'un'} ${job[1]}.`);

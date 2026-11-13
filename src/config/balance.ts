@@ -216,8 +216,8 @@ export const BALANCE = {
     baseEnergy: 20,
     /** Cada tantos puntos de energía gastada pasa una franja. */
     energyPerSlot: 10,
-    /** Casillas que se recorren por punto de energía. */
-    tilesPerEnergy: 2,
+    /** Casillas que se recorren por punto de energía (3 desde la etapa 3; antes 2). */
+    tilesPerEnergy: 3,
     gatherEnergy: 2,
     combatEnergy: 3,
     baseCapacity: 20,
@@ -238,6 +238,24 @@ export const BALANCE = {
      */
     dangerPowerFactor: 0.45,
     dangerThresholds: [0.35, 0.5, 0.7] as [number, number, number],
+    /**
+     * Recolectar un lugar entero de una vez. Rápido: poca energía y parte de lo que da.
+     * Con cuidado: todo, energía base + una por uso, y chance de sacar algo más raro de la zona.
+     */
+    harvest: { fastFactor: 0.6, fastEnergy: 2, carefulEnergy: 2, carefulEnergyPerUse: 1, rareChance: 0.2, rarePerLevel: 0.04 },
+    /** Campamento: energía que devuelve, vida que cura (fracción) y franjas que pasan. */
+    camp: { energy: 8, healPct: 0.3, slots: 1 },
+    /** Fracción de lugares de evento del mapa que tienen un evento en cada salida (formato B). */
+    eventFill: 0.75,
+    /** Radio de vista en el mapa de la región (formato B). */
+    fogSight: 4,
+    /** Formato A: energía por tramo, paradas por columna y pesos de cada tipo de parada. */
+    route: {
+      stepEnergy: 2,
+      colsPerZone: 2,
+      stopsPerCol: [2, 3] as [number, number],
+      weights: { recurso: 40, monstruos: 26, evento: 16, cofre: 8, campamento: 6, desafio: 4 },
+    },
   },
 
   tools: {

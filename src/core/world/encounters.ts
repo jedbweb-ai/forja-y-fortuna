@@ -3,7 +3,7 @@ import type { MonsterDef } from '../combat/types';
 import type { Content } from '../content';
 import type { Rng } from '../rng';
 import type { TimeSlot } from '../types';
-import type { ZoneDef } from './types';
+import type { ExpeditionState, MonsterGroup, ZoneDef } from './types';
 
 const MAX_ENEMIES = 7;
 const MIN_ENEMIES = 2;
@@ -44,4 +44,12 @@ export function generateGroup(c: Content, zone: ZoneDef, slot: TimeSlot, rng: Rn
 
 export function groupThreat(c: Content, monsters: string[]): number {
   return monsters.reduce((a, id) => a + (c.monsters[id]?.threat ?? 0), 0);
+}
+
+/** Grupo de monstruos parado en un lugar del mapa (o en una parada del recorrido, formato A). */
+export function makeGroup(c: Content, e: ExpeditionState, p: { x: number; y: number }, zone: number, monsters: string[], extra: Partial<MonsterGroup> = {}): MonsterGroup {
+  return {
+    id: `g${e.nextId++}`, x: p.x, y: p.y, zone, monsters, threat: groupThreat(c, monsters),
+    aggressive: monsters.some((m) => c.monsters[m]?.aggressive), ...extra,
+  };
 }

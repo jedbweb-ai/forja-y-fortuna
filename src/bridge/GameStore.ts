@@ -66,6 +66,8 @@ export interface UiState {
   busy: boolean;
   /** Consejo del maestro abierto (id de consejo, o 'fin' al terminar la guía). */
   tip: string | null;
+  /** Lugar de recolección elegido en la expedición: se muestra la tarjeta para elegir rápido o con cuidado. */
+  harvest?: string | null;
 }
 
 export interface Snapshot {

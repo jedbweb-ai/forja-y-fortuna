@@ -20,6 +20,7 @@ import { RepairPanel } from './panels/RepairPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 import { ShopPanel } from './panels/ShopPanel';
 import { CombatHud } from './components/CombatHud';
+import { EventCard, NodeCard, RouteView } from './components/ExploreUi';
 import { DialogueBox } from './components/DialogueBox';
 import { Hud } from './components/Hud';
 import { ItemCard } from './components/ItemCard';
@@ -46,7 +47,10 @@ export function App() {
         <>
           {!exp?.combat && <Hud />}
           {!exp && !ui.panel && !ui.dialogue && <LocationBar />}
+          {exp?.route && !exp.combat && !exp.report && !ui.panel && <RouteView />}
           {exp && !exp.combat && !ui.panel && !exp.dungeon && <RegionHud />}
+          {exp && !exp.combat && !exp.report && !ui.panel && <NodeCard />}
+          {exp && !exp.combat && !exp.report && !ui.panel && <EventCard />}
           {exp?.dungeon && !exp.combat && !ui.panel && !exp.dungeon.riddle && !exp.dungeon.landing && <DungeonHud />}
           {exp?.dungeon?.landing && !exp.combat && !exp.report && !ui.panel && <LandingBox />}
           {exp?.dungeon?.riddle && !exp.combat && !ui.panel && <RiddleBox />}

@@ -5,7 +5,8 @@ import type { GameEvent, GameState } from '../../core/types';
 import { dangerFor, expMove, gather } from '../../core/world/expedition';
 import { dungeonInteract, expMap, isSeen } from '../../core/dungeon/dungeon';
 import type { DungeonDef } from '../../core/dungeon/types';
-import { adjacent, heightAt, isWalkable, regionSize, tileAt, zoneAt } from '../../core/world/region';
+import { adjacent, heightAt, isWalkable, regionSize, seenTile, tileAt, zoneAt } from '../../core/world/region';
+import { openEvent } from '../../core/world/explore';
 import type { ExpeditionState, MonsterGroup, RegionDef } from '../../core/world/types';
 import { artScale, facing, installWalkBob, monsterLook } from '../render/assets';
 import { isoBounds, screenToIso } from '../render/iso';
@@ -29,6 +30,8 @@ export class RegionScene extends Phaser.Scene {
   private dynObjs = new Map<string, { ch: string; obj: Phaser.GameObjects.Image }>();
   private fog: Phaser.GameObjects.Graphics | null = null;
   private seenKey = '';
+  /** Lugar que se tocó de lejos: al terminar de caminar hasta al lado, se usa. */
+  private pending: string | null = null;
 
   constructor(private store: GameStore) {
     super('Region');
@@ -49,6 +52,7 @@ export class RegionScene extends Phaser.Scene {
     this.fog = null;
     this.seenKey = '';
     this.walking = false;
+    this.pending = null;
     const r = this.region;
     const { cols, rows } = regionSize(r);
     this.cameras.main.setBackgroundColor(this.dungeon ? 0x0c0a10 : 0x1d2a1d);
@@ -68,6 +72,10 @@ export class RegionScene extends Phaser.Scene {
       sideTint: () => 0x9a7a52,
     });
     if (!this.dungeon) this.drawDecor();
+    if (!this.dungeon && e.fog) {
+      this.fog = this.add.graphics().setDepth(8500);
+      this.syncRegionFog();
+    }
     this.syncNodes();
     this.syncGroups();
     this.createPlayer();
@@ -85,6 +93,7 @@ export class RegionScene extends Phaser.Scene {
     this.unsubs.push(this.store.subscribe(() => {
       if (!this.exp || !this.sys.isActive()) return;
       this.syncDungeon();
+      this.syncRegionFog();
       this.syncNodes();
       this.syncGroups();
       this.syncLight();
@@ -199,8 +208,33 @@ export class RegionScene extends Phaser.Scene {
   }
 
   private visible(x: number, y: number): boolean {
-    const m = this.exp?.dungeon?.map;
-    return !m || isSeen(m, x, y);
+    const e = this.exp;
+    const m = e?.dungeon?.map;
+    if (m) return isSeen(m, x, y);
+    return !e || seenTile(e, x, y);
+  }
+
+  /** Formato B: niebla sobre lo que todavía no se vio de la región (alta, para tapar también árboles y rocas). */
+  private syncRegionFog() {
+    const e = this.exp;
+    if (!e?.fog || !this.fog || e.dungeon) return;
+    const key = e.fog.join('');
+    if (key === this.seenKey) return;
+    this.seenKey = key;
+    const g = this.fog;
+    g.clear();
+    g.fillStyle(0x101a12, 0.94);
+    e.fog.forEach((row, y) => [...row].forEach((v, x) => {
+      if (v === '1') return;
+      const p = this.at(x, y);
+      g.fillPoints([
+        new Phaser.Math.Vector2(p.x - 33, p.y - 40), new Phaser.Math.Vector2(p.x, p.y - 58),
+        new Phaser.Math.Vector2(p.x + 33, p.y - 40), new Phaser.Math.Vector2(p.x + 33, p.y + 1),
+        new Phaser.Math.Vector2(p.x, p.y + 18), new Phaser.Math.Vector2(p.x - 33, p.y + 1),
+      ], true);
+    }));
+    for (const [k, objs] of this.nodeObjs) this.hideInFog(k, objs);
+    this.syncGroups();
   }
 
   private hideInFog(id: string, objs: Phaser.GameObjects.GameObject[]) {
@@ -256,6 +290,24 @@ export class RegionScene extends Phaser.Scene {
         this.tweens.add({ targets: keyImg, y: keyImg.y - 5, yoyo: true, repeat: -1, duration: 600 });
         this.nodeObjs.set(n.id, [keyImg]);
         this.hideInFog(n.id, [keyImg]);
+        continue;
+      }
+      if (n.kind === 'evento') {
+        const sign = this.add.image(p.x, p.y + 8, 'prop.sign').setOrigin(0.5, 1).setDepth(standDepth(n.x, n.y, 6));
+        const mark = this.add.text(p.x, p.y - 34, '?', {
+          fontFamily: 'system-ui, sans-serif', fontSize: '22px', fontStyle: 'bold', color: '#ffd04d', stroke: '#1a1220', strokeThickness: 4,
+        }).setOrigin(0.5, 1).setResolution(2).setDepth(standDepth(n.x, n.y, 7));
+        this.tweens.add({ targets: mark, y: mark.y - 6, yoyo: true, repeat: -1, duration: 700 });
+        this.nodeObjs.set(n.id, [sign, mark]);
+        this.hideInFog(n.id, [sign, mark]);
+        continue;
+      }
+      if (n.kind === 'campamento') {
+        const tent = this.add.image(p.x + 10, p.y + 8, 'prop.tent').setOrigin(0.5, 1).setDepth(standDepth(n.x, n.y, 6));
+        const fire = this.add.image(p.x - 14, p.y + 10, 'fx.flame').setOrigin(0.5, 1).setScale(1.2).setDepth(standDepth(n.x, n.y, 7));
+        this.tweens.add({ targets: fire, scaleY: 1.5, alpha: 0.8, yoyo: true, repeat: -1, duration: 300 });
+        this.nodeObjs.set(n.id, [tent, fire]);
+        this.hideInFog(n.id, [tent, fire]);
         continue;
       }
       if (n.kind === 'cofre') {
@@ -359,6 +411,7 @@ export class RegionScene extends Phaser.Scene {
         sprites.forEach((sp) => { sp.stop(); sp.setTexture(sp.getData('face') ?? sp.name); });
         this.walking = false;
         this.placePlayer();
+        this.usePending();
         return;
       }
       const t = path[i];
@@ -417,7 +470,8 @@ export class RegionScene extends Phaser.Scene {
   private tap(wx: number, wy: number) {
     const e = this.exp;
     const ui = this.store.getSnapshot().ui;
-    if (!e || e.combat || e.report || this.walking || ui.panel) return;
+    if (!e || e.combat || e.report || e.event || ui.harvest || this.walking || ui.panel) return;
+    this.pending = null;
     const r = this.region;
     const { cols, rows } = regionSize(r);
     const tile = screenToIso(wx, wy, (c, y) => (c >= 0 && y >= 0 && c < cols && y < rows ? heightAt(r, c, y) : null), 3);
@@ -429,10 +483,14 @@ export class RegionScene extends Phaser.Scene {
       else this.moveNextTo(tile);
       return;
     }
-    const node = e.nodes.find((n) => n.x === tile.x && n.y === tile.y);
+    const node = e.nodes.find((n) => n.x === tile.x && n.y === tile.y && this.visible(n.x, n.y));
     if (node) {
-      if (adjacent(node, e.pos)) this.store.run(gather, node.id);
-      else this.moveNextTo(tile);
+      if (adjacent(node, e.pos) || (node.x === e.pos.x && node.y === e.pos.y)) this.useNode(node.id);
+      else {
+        // Camina hasta al lado y, al llegar, se usa.
+        this.pending = node.id;
+        this.moveNextTo(tile);
+      }
       return;
     }
     if (isWalkable(r, tile.x, tile.y) || e.groups.some((g) => g.x === tile.x && g.y === tile.y)) {
@@ -440,6 +498,23 @@ export class RegionScene extends Phaser.Scene {
     } else {
       this.moveNextTo(tile);
     }
+  }
+
+  /** Usar un lugar: los eventos se abren; las llaves se juntan; lo demás abre la tarjeta (recolectar, abrir, descansar). */
+  private useNode(id: string) {
+    const n = this.exp?.nodes.find((x) => x.id === id);
+    if (!n) return;
+    if (n.kind === 'evento') this.store.run(openEvent, id);
+    else if (n.kind === 'llave') this.store.run(gather, id);
+    else this.store.setUi({ harvest: id });
+  }
+
+  private usePending() {
+    const e = this.exp;
+    const id = this.pending;
+    this.pending = null;
+    const n = id ? e?.nodes.find((x) => x.id === id) : undefined;
+    if (e && n && !e.combat && (adjacent(n, e.pos) || (n.x === e.pos.x && n.y === e.pos.y))) this.useNode(n.id);
   }
 
   /** Se acerca a la casilla libre más cercana al lado de un recurso o de un obstáculo. */

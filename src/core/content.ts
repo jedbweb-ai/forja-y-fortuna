@@ -5,7 +5,7 @@ import type { Rng } from './rng';
 import type {
   Blueprint, City, CustomerType, Dialogue, Enchantment, FinishOption, Material, Npc, QuenchMedium, Synergy, Trait,
 } from './types';
-import type { MarketEventDef, RegionDef } from './world/types';
+import type { ExpEventDef, MarketEventDef, RegionDef } from './world/types';
 import type { AuctionLotDef, BidderDef, CityEventDef, ContractDef, QuestDef } from './town/types';
 import type { DungeonDef, RiddleDef, RoomPiece, TrapDef, TrapKind } from './dungeon/types';
 import type { TalentDef, UpgradeDef } from './progress/types';
@@ -34,6 +34,8 @@ export interface Content {
   arenas: Record<string, ArenaDef>;
   regions: Record<string, RegionDef>;
   marketEvents: Record<string, MarketEventDef>;
+  /** Eventos que salen en las expediciones (viajeros, ruinas, hallazgos). */
+  expeditionEvents: Record<string, ExpEventDef>;
   grimoires: Record<string, GrimoireDef>;
   potions: Record<string, PotionDef>;
   // ── Fase 4 ──

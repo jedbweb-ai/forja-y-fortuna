@@ -48,6 +48,15 @@ export function SettingsPanel() {
           <small className="muted block">Los compañeros que caen en mazmorras de 5 estrellas o más no vuelven. El herrero nunca muere.</small>
         </span>
       </label>
+      <fieldset className="setting-choice">
+        <legend>🧭 Formato de las expediciones (prueba) <small className="muted block">Vale desde la próxima salida. Las mazmorras no cambian.</small></legend>
+        {([['rutas', 'A · Recorrido por paradas', 'Se elige el camino entre paradas; no se camina.'], ['libre', 'B · Exploración libre', 'Se camina por el mapa, con niebla que se va descubriendo.']] as const).map(([id, name, hint]) => (
+          <label key={id} className="setting">
+            <input type="radio" name="expedition-format" checked={(s.settings.expeditionFormat ?? 'rutas') === id} onChange={() => store.updateSettings({ expeditionFormat: id })} />
+            <span>{name} <small className="muted block">{hint}</small></span>
+          </label>
+        ))}
+      </fieldset>
       <label className="setting">
         <input type="checkbox" checked={!!s.settings.infiniteGold} onChange={(e) => store.setInfiniteGold(e.target.checked)} />
         <span>

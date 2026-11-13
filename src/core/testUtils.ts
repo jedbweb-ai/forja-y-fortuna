@@ -10,6 +10,8 @@ export function setup(seed = 42): { s: GameState; ctx: Ctx } {
   const s = createInitialState(CONTENT, seed);
   // La guía de primeros pasos da premios que cambiarían las cuentas de los tests (sus tests la prenden).
   s.tutorial.guide = false;
+  // Los tests de expediciones caminan por el mapa (formato B); los del recorrido por paradas lo eligen a mano.
+  s.settings.expeditionFormat = 'libre';
   return { s, ctx: { c: CONTENT, rng: createRng(seed) } };
 }
 

@@ -51,7 +51,11 @@ Resumen para retomar en un chat nuevo. El diseño completo está en `docs/GAME_D
      - Partidas guardadas en medio de un combate: al cargar, `repairCombat` (`arenaCheck.ts`, desde `syncWithContent`) cambia una arena retirada por su reemplazo (`RETIRED_ARENAS`) y corre a cada figura a una casilla válida.
      - Los tests de reglas de combate usan escenarios fijos (`core/combat/testArenas.ts`), no las arenas del juego.
      - Balance: zona por zona queda parecido; las peleas duran cerca de una ronda más y la cumbre de las Montañas Grises es algo más dura.
-  3. **Expediciones, dos formatos a prueba en Linde de Brezal:** A, mapa de rutas con paradas; B, exploración libre mejorada (caminar solo hasta donde se toca, mapa más lleno, recolectar en una acción). El usuario elige uno y se extiende a todas las regiones.
+  3. **Expediciones: dos formatos a prueba (en curso: hechos, falta que el usuario elija).** Se elige en Ajustes → «Formato de las expediciones» (`settings.expeditionFormat`, por defecto 'rutas'); vale desde la salida siguiente. Las mazmorras no cambian de formato.
+     - Base común (`core/world/explore.ts`): recolectar un lugar entero de una vez, rápido o con cuidado (`harvest`; con cuidado da todo y chance de algo raro de la zona); campamentos (`restAtCamp`); eventos de expedición con opciones (`data/expeditionEvents.ts`, 13; efectos en `ExpEffect`).
+     - A, recorrido por paradas (`core/world/routes.ts`, interfaz `RouteView` en `ui/components/ExploreUi.tsx`): columnas por zona hasta la guarida del jefe; cada tramo cuesta energía; los monstruos atacan al llegar, desafíos y jefe esperan a que elijas pelear; la entrada escondida a la mazmorra es una parada de hallazgo; de noche aparecen monstruos en paradas no visitadas. Sirve para cualquier región sin datos nuevos. De fondo se ve el mapa del mundo.
+     - B, exploración libre: Linde de Brezal tiene un mapa nuevo de 32×24 con 'q' (eventos) y 'a' (campamentos); niebla (`e.fog`, `revealRegion`); caminar rinde más (3 casillas por energía); tocar un lugar lejano camina hasta al lado y lo usa (tarjeta `NodeCard` o cartel `EventCard`).
+     - Los tests usan el formato B (`testUtils.setup`); los del recorrido lo eligen a mano.
   4. **Arte nuevo** para lo anterior, pedido desde `herramientas/arte.html`.
 
 ## Expediciones y combate hoy

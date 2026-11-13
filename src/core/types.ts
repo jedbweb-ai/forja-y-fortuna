@@ -535,6 +535,11 @@ export interface GameSettings {
   infiniteGold?: boolean;
   /** Oro real guardado al activar el modo prueba; se devuelve al apagarlo. */
   goldBeforeInfinite?: number;
+  /**
+   * Formato de las expediciones (prueba de la etapa 3): 'rutas' = recorrido por paradas (A);
+   * 'libre' = caminar por el mapa (B). Si falta, 'rutas'. Vale desde la expedición siguiente.
+   */
+  expeditionFormat?: 'rutas' | 'libre';
 }
 
 export interface GameState {

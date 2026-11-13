@@ -28,7 +28,7 @@ export function RegionHud() {
         <button className="btn primary" data-key="v" onClick={() => store.run(returnHome)}>🏠 Volver</button>
       </div>
       {e.energy <= 0 && <div className="region-hint">Sin energía: volvé a la ciudad.</div>}
-      {e.energy > 0 && <div className="region-hint">Tocá el mapa para caminar · Tocá vetas y árboles para recolectar · Los grupos de monstruos pelean al contacto</div>}
+      {e.energy > 0 && !e.route && <div className="region-hint">Tocá el mapa para caminar · Tocá un lugar para usarlo (se camina solo hasta ahí) · Los grupos de monstruos pelean al contacto</div>}
     </div>
   );
 }

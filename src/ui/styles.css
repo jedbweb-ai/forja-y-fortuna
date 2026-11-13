@@ -261,6 +261,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 
 /* ── Ajustes y debug ── */
 .setting { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; padding: 6px 0; }
+.setting-choice { border: 0; padding: 0; margin: 6px 0; }
+.setting-choice legend { padding: 0; margin-bottom: 2px; font-weight: 700; }
 .setting input { width: 22px; height: 22px; accent-color: var(--accent); margin-top: 2px; }
 .volume { display: grid; grid-template-columns: 90px 1fr 44px; gap: 10px; align-items: center; padding: 4px 0; }
 .volume input { width: 100%; height: var(--tap); accent-color: var(--accent); }
@@ -542,3 +544,78 @@ kbd { font-family: inherit; font-size: 0.8rem; padding: 1px 5px; border: 1px sol
 .tip-card p { margin: 0; line-height: 1.45; }
 .tip-card .btn { align-self: flex-end; }
 .linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-2); text-decoration: underline; cursor: pointer; }
+
+/* ───────────── Etapa 3: exploración (tarjeta de lugar, eventos, recorrido por paradas) ───────────── */
+.explore-card {
+  width: min(440px, 100%); max-height: 100%; overflow-y: auto; display: grid; gap: 10px;
+  background: linear-gradient(180deg, #34263a, #241a26); border: 2px solid var(--line); border-radius: 16px; padding: 14px 16px;
+  animation: rise 0.18s ease-out;
+}
+.explore-card h3 { margin: 0; font-size: 1.15rem; color: var(--accent-2); }
+.explore-card p { margin: 0; }
+.explore-head { display: flex; gap: 10px; align-items: center; }
+.harvest-choices { display: grid; gap: 8px; }
+.harvest-choices .btn, .event-options .btn { text-align: left; justify-content: flex-start; min-height: 48px; }
+.harvest-choices small, .event-options small { display: block; }
+.event-card { border-color: var(--accent-2); }
+.event-options { display: grid; gap: 8px; }
+.event-result { padding: 8px 10px; border-radius: 10px; background: rgba(255, 195, 90, 0.08); border: 1px solid rgba(255, 195, 90, 0.3); }
+
+.route-view {
+  position: absolute; top: 48px; bottom: 64px; left: 0; right: 0; display: flex; flex-direction: column;
+  background: radial-gradient(ellipse at center, rgba(40, 30, 22, 0.86), rgba(20, 14, 18, 0.94));
+}
+.route-scroll { flex: 1; overflow: auto; scrollbar-width: thin; display: flex; }
+.route-map { position: relative; margin: auto; flex-shrink: 0; }
+.route-zone {
+  position: absolute; top: 0; bottom: 0; border-left: 1px dashed rgba(255, 220, 160, 0.15);
+  display: flex; justify-content: center; pointer-events: none;
+}
+.route-zone span { font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: rgba(255, 220, 160, 0.45); padding-top: 2px; }
+.route-zone.zone-1 { background: rgba(60, 90, 50, 0.08); }
+.route-zone.zone-2 { background: rgba(110, 80, 50, 0.1); }
+.route-lines { position: absolute; inset: 0; pointer-events: none; }
+.route-lines line { stroke: rgba(255, 220, 160, 0.22); stroke-width: 3; stroke-dasharray: 6 6; }
+.route-lines line.walked { stroke: rgba(255, 195, 90, 0.55); stroke-dasharray: none; }
+.route-lines line.live { stroke: var(--accent-2); stroke-width: 3.5; stroke-dasharray: none; }
+.route-stop {
+  position: absolute; transform: translate(-50%, -50%); width: 46px; height: 46px; border-radius: 50%;
+  display: grid; place-items: center; padding: 0; cursor: pointer; color: var(--text);
+  background: #2f2430; border: 2px solid var(--line); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.route-stop:disabled { cursor: default; }
+.route-stop .route-icon { font-size: 1.35rem; line-height: 1; }
+.route-label {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 2px; white-space: nowrap;
+  font-size: 0.7rem; line-height: 1.2; color: var(--muted); text-shadow: 0 1px 2px #000; pointer-events: none;
+}
+.route-label em { font-style: normal; }
+.route-stop.visited { opacity: 0.55; }
+.route-stop.here { border-color: var(--accent-2); box-shadow: 0 0 0 4px rgba(255, 195, 90, 0.35); opacity: 1; }
+.route-stop.here .route-label { color: var(--accent-2); font-weight: 700; }
+.route-stop.next { border-color: var(--accent); animation: route-pulse 1.4s ease-in-out infinite; }
+.route-stop.next .route-label { color: var(--text); }
+.route-stop.danger-easy { background: #23402a; }
+.route-stop.danger-even { background: #4a4020; }
+.route-stop.danger-hard { background: #50301c; }
+.route-stop.danger-deadly { background: #551f22; }
+@keyframes route-pulse { 50% { box-shadow: 0 0 0 6px rgba(255, 138, 61, 0.25); } }
+.chip.danger-easy { color: var(--good); }
+.chip.danger-even { color: var(--accent-2); }
+.chip.danger-hard { color: var(--accent); }
+.chip.danger-deadly { color: var(--bad); }
+.stop-panel {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 6px calc(10px + var(--safe-r)) 6px calc(10px + var(--safe-l));
+  background: rgba(20, 12, 20, 0.85); border-top: 1px solid var(--line);
+}
+.stop-title { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+.stop-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 1; }
+.stop-actions .harvest-choices { display: flex; gap: 8px; }
+.stop-actions .harvest-choices .btn { min-height: 40px; }
+@media (max-height: 460px) {
+  .route-view { top: 44px; bottom: 56px; }
+  .stop-panel { flex-wrap: nowrap; overflow-x: auto; }
+  .stop-actions { flex-wrap: nowrap; }
+  .stop-actions > * { flex-shrink: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .route-stop.next { animation: none; } }

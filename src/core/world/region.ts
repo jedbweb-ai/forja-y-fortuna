@@ -1,6 +1,7 @@
 import { homeCity } from '../state';
 import type { GameState } from '../types';
-import type { RegionDef } from './types';
+import { BALANCE } from '../../config/balance';
+import type { ExpeditionState, RegionDef } from './types';
 
 export interface Pt {
   x: number;
@@ -21,6 +22,24 @@ export function regionOpen(s: GameState, r: RegionDef): boolean {
   if (u.reputationMin !== undefined && (s.reputation[homeCity()] ?? 0) < u.reputationMin) return false;
   if (u.bossOf && !s.flags[bossFlag(u.bossOf)]) return false;
   return true;
+}
+
+/** Formato B: marca como vistas las casillas alrededor del grupo. */
+export function revealRegion(e: ExpeditionState, sight = BALANCE.expedition.fogSight) {
+  if (!e.fog) return;
+  const { x, y } = e.pos;
+  for (let dy = -sight; dy <= sight; dy++) {
+    const row = e.fog[y + dy];
+    if (row === undefined) continue;
+    const chars = [...row];
+    for (let dx = -sight; dx <= sight; dx++) if (Math.abs(dx) + Math.abs(dy) <= sight + 1 && chars[x + dx] !== undefined) chars[x + dx] = '1';
+    e.fog[y + dy] = chars.join('');
+  }
+}
+
+/** ¿Ya se vio esa casilla? (sin niebla, todo se ve) */
+export function seenTile(e: ExpeditionState, x: number, y: number): boolean {
+  return !e.fog || e.fog[y]?.[x] === '1';
 }
 
 export function regionSize(r: RegionDef) {

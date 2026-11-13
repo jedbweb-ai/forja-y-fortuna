@@ -1,5 +1,6 @@
 import type { Biome, CombatReport, CombatState } from '../combat/types';
 import type { DungeonRun } from '../dungeon/types';
+import type { SkillId } from '../types';
 
 // ───────────────────────── Datos de regiones ─────────────────────────
 
@@ -47,7 +48,7 @@ export interface ChestLoot {
  * 'v' lugar de veta, 't' árbol talable, 'h' hierbas, 'g' depósito de gemas, 'c' cofre,
  * 'm' lugar de monstruos, 'B' guarida del jefe, 'E' entrada, 'P' entrada escondida a una mazmorra.
  * En los pisos de mazmorra además: 'S' escalera, 'F' pared falsa, 'G' reja, 'L' palanca, 'D' puerta cerrada,
- * 'k' llave, 'I' inscripción, 'R' columna.
+ * 'k' llave, 'I' inscripción, 'R' columna. Etapa 3: 'q' lugar de evento, 'a' campamento.
  * `heights`: un dígito de altura por casilla. `zones`: un dígito por casilla que indica la zona (índice + 1).
  */
 export interface RegionDef {
@@ -81,7 +82,9 @@ export interface ResourceNode {
   id: string;
   x: number;
   y: number;
-  kind: 'veta' | 'arbol' | 'hierba' | 'gema' | 'cofre' | 'llave';
+  kind: 'veta' | 'arbol' | 'hierba' | 'gema' | 'cofre' | 'llave' | 'evento' | 'campamento';
+  /** En los lugares de evento: cuál es (id de ExpEventDef). */
+  event?: string;
   material: string;
   tier: number;
   qty: [number, number];
@@ -132,6 +135,88 @@ export interface ExpeditionState {
   /** Encuentro en el camino entre ciudades: al terminar el combate se sigue viaje. */
   travel?: { to: string; slotsLeft: number };
   nextId: number;
+  /** Evento abierto: se espera la elección (y después se muestra el resultado). */
+  event?: ActiveEvent | null;
+  /** Formato A: el recorrido por paradas (si no está, se camina por el mapa: formato B). */
+  route?: RouteState;
+  /** Formato B: casillas ya vistas del mapa de la región, una fila de '0'/'1' por fila del mapa. */
+  fog?: string[];
+}
+
+// ───────────────────────── Eventos de expedición ─────────────────────────
+
+/** Lo que puede pasar al elegir una opción de un evento. */
+export type ExpEffect =
+  | { kind: 'gold'; amount: [number, number] }
+  | { kind: 'material'; material: string; qty: [number, number] }
+  /** Un material de la zona: de sus vetas, árboles, hierbas, gemas o de lo que guardan sus cofres. */
+  | { kind: 'zoneMaterial'; pool: 'vetas' | 'arboles' | 'hierbas' | 'gemas' | 'cofre'; qty: [number, number] }
+  | { kind: 'energy'; amount: number }
+  /** Cura (o lastima, si es negativo) a todo el grupo: fracción de la vida máxima. */
+  | { kind: 'health'; pct: number }
+  /** Sale una pelea con un grupo de la zona (presupuesto × mult). */
+  | { kind: 'fight'; budgetMult: number }
+  /** Uno de los grimorios que guardan los cofres de la zona, si queda alguno por conseguir. */
+  | { kind: 'grimoire' }
+  | { kind: 'xp'; skill: SkillId; amount: number }
+  | { kind: 'time'; slots: number };
+
+export interface ExpEventOutcome {
+  weight: number;
+  text: string;
+  effects: ExpEffect[];
+}
+
+export interface ExpEventOption {
+  text: string;
+  /** Lo que cuesta elegirla (se paga) o lo que pide saber (oficio a cierto nivel). */
+  requires?: { gold?: number; material?: { id: string; qty: number }; skill?: { id: SkillId; level: number } };
+  outcomes: ExpEventOutcome[];
+}
+
+export interface ExpEventDef {
+  id: string;
+  title: string;
+  text: string;
+  /** Biomas donde puede salir (si no, en todos). */
+  biomes?: Biome[];
+  /** Peligro mínimo de la zona. */
+  minDanger?: number;
+  weight: number;
+  options: ExpEventOption[];
+}
+
+export interface ActiveEvent {
+  id: string;
+  /** Lugar del evento (se saca del mapa al resolverlo). */
+  nodeId: string;
+  zone: number;
+  /** Texto del resultado, cuando ya se eligió. */
+  result?: string;
+}
+
+// ───────────────────────── Formato A: rutas ─────────────────────────
+
+export type RouteStopKind = 'entrada' | 'recurso' | 'monstruos' | 'desafio' | 'evento' | 'cofre' | 'campamento' | 'hallazgo' | 'jefe';
+
+/** Una parada del recorrido. `ref`: el lugar (ResourceNode) o el grupo de monstruos que hay ahí. */
+export interface RouteStop {
+  id: string;
+  col: number;
+  row: number;
+  kind: RouteStopKind;
+  zone: number;
+  /** Paradas de la columna siguiente a las que se puede seguir. */
+  links: string[];
+  ref?: string;
+  visited?: boolean;
+}
+
+export interface RouteState {
+  stops: RouteStop[];
+  /** Parada donde está el grupo. */
+  at: string;
+  cols: number;
 }
 
 /** Noticia del día que mueve stock y precios de ciertas partes de monstruo. */

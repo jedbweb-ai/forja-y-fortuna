@@ -98,6 +98,21 @@ export function validateContent(c: Content): string[] {
     m.halfHp?.summon?.forEach((id) => { if (!c.monsters[id]) errors.push(`monstruo ${m.id}: invoca "${id}" inexistente`); });
   }
   for (const a of Object.values(c.arenas)) errors.push(...arenaProblems(a));
+  // Eventos de expedición: materiales y oficios que existan, y al menos una opción con un resultado.
+  const SKILL_IDS = ['herreria', 'armeria', 'flecheria', 'comercio', 'runas', 'combate', 'mineria', 'tala', 'desuello', 'joyeria', 'alquimia', 'siega'];
+  for (const ev of Object.values(c.expeditionEvents)) {
+    const where = `evento ${ev.id}`;
+    if (!ev.options.length) errors.push(`${where}: sin opciones`);
+    ev.options.forEach((opt, oi) => {
+      if (!opt.outcomes.length) errors.push(`${where}: la opción ${oi + 1} no tiene resultados`);
+      if (opt.requires?.material) mat(opt.requires.material.id, where);
+      if (opt.requires?.skill && !SKILL_IDS.includes(opt.requires.skill.id)) errors.push(`${where}: oficio inexistente "${opt.requires.skill.id}"`);
+      for (const o of opt.outcomes) for (const fx of o.effects) {
+        if (fx.kind === 'material') mat(fx.material, where);
+        if (fx.kind === 'xp' && !SKILL_IDS.includes(fx.skill)) errors.push(`${where}: oficio inexistente "${fx.skill}"`);
+      }
+    });
+  }
   for (const r of Object.values(c.regions).filter((x) => x.available)) {
     if (r.bossArena && !c.arenas[r.bossArena]) errors.push(`región ${r.id}: arena de jefe inexistente "${r.bossArena}"`);
     if (r.unlock?.bossOf && !c.regions[r.unlock.bossOf]?.boss) errors.push(`región ${r.id}: se abre con el jefe de "${r.unlock.bossOf}", que no tiene jefe`);
