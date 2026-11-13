@@ -58,7 +58,9 @@ const TEMPLATE: Record<AssetType, string> = {
 /** El pedido completo para copiar en ChatGPT. */
 export function promptFor(e: AssetEntry): string {
   const tail = e.key.endsWith('_b') ? ' Es el segundo cuadro de la caminata: la misma figura con un pie adelante.' : '';
-  return `${BASE_PROMPT}\n\n${TEMPLATE[e.type]} ${e.detail}${tail}`;
+  // Un interior es una escena entera: sin el fondo magenta ni la regla de la sombra de las figuras sueltas.
+  const base = e.type === 'interior' ? BASE_PROMPT.replace(' Fondo plano de un solo color magenta #FF00FF.', '').replace(', sin sombra en el piso', '') : BASE_PROMPT;
+  return `${base}\n\n${TEMPLATE[e.type]} ${e.detail}${tail}`;
 }
 
 // ───────────────────────── Modo hoja: varios assets en una sola imagen ─────────────────────────
