@@ -359,6 +359,24 @@ const CITY_ART: Record<string, string> = {
     + 'en el medio, la herrería del protagonista (techo rojo oscuro, fragua de piedra y yunque afuera, del otro lado del río), el mercado en la plaza central (puestos con toldos a rayas), la taberna (techo verde musgo, mesas afuera) y el gremio de aventureros (techo azul, estandartes); '
     + 'abajo, el aserradero (techo oliva, troncos y una rueda de sierra, junto al río), el tablón de anuncios (un tablero techado en una placita) y el mercado de esclavos (techo marrón oscuro, rejas y antorchas, más apartado y sombrío). '
     + 'Cada edificio aparece una sola vez, sin quedar tapado, con un lugar libre delante (calle, patio o placita) para poner su nombre encima en el juego.',
+  puertoseco: 'La ciudad de Puertoseco: un puerto de pescadores y contrabandistas sobre una bahía, con la misma forma que en el plano: la ciudad baja en terrazas desde unas colinas secas hasta el mar. '
+    + 'Una muralla de piedra clara la rodea por tierra y termina en el agua con dos torres. Adentro, cientos de casas comunes chicas y apretadas de paredes blancas y crema, con techos de teja naranja y algunos azules, '
+    + 'escaleras entre terrazas, callejones y patios con macetas. Una calle ancha (la rambla) baja desde la puerta de la muralla hasta el puerto. '
+    + 'El mar azul turquesa, con muelles de madera, barcos de pesca y un par de barcos grandes con las velas recogidas, redes, cajones y barriles; un faro de piedra en la punta de la bahía. Afuera de la muralla, colinas secas con matorrales y olivos. '
+    + 'Los 5 edificios del juego, en el mismo lugar que en el plano y dibujados más grandes que las casas comunes (unas tres o cuatro veces), bien reconocibles y parecidos a los del plano: '
+    + 'la Posada del Faro (techo rojo, cartel de jarra y bandera con ancla), la Casa de los Navegantes (techo azul, timón en la fachada y bandera con estrella), '
+    + 'el Mercado de la Rambla (puestos con toldos y pescado sobre la rambla), la Taberna La Ballena Seca (techo marrón, cartel con una ballena) '
+    + 'y el muelle (galpón de techo azul sobre un muelle de madera, con una grúa con red y un bote). '
+    + 'Cada edificio aparece una sola vez, sin quedar tapado, con un lugar libre delante para poner su nombre encima en el juego.',
+  fuerte_ceniza: 'Fuerte Ceniza: la última fortaleza antes de la frontera, con la misma forma que en el plano, sobre una meseta de tierra y roca gris con poca vegetación. '
+    + 'Una muralla alta y gruesa de piedra gris en forma de estrella, con torres en las puntas, almenas, pasarelas y portones grandes donde entran los caminos. '
+    + 'Adentro, cuarteles, establos, depósitos y casas comunes de piedra gris con techos de pizarra oscura y algunos de teja marrón, apretados en calles rectas que llevan a una gran plaza de armas empedrada. '
+    + 'Detalles: armeros, carros de suministros, pilas de leña, barriles, estandartes rojos, una forja militar y un campo de entrenamiento con muñecos de paja. Afuera de la muralla, tierra seca, rocas y un camino que se pierde hacia la frontera. '
+    + 'Los 5 edificios del juego, en el mismo lugar que en el plano y dibujados más grandes que las casas comunes (unas tres o cuatro veces), bien reconocibles y parecidos a los del plano: '
+    + 'la plaza de armas (patio empedrado con estandartes, armero de lanzas y el tablón de avisos techado), la Intendencia (edificio de piedra con techo de pizarra y columnas), '
+    + 'el Mercado de la guarnición (toldos rojos, armas y armaduras en venta), la Cantina El Escudo Roto (techo marrón oscuro, cartel con un escudo roto) '
+    + 'y el Cuartel de huéspedes (techo de pizarra, catres bajo un alero). '
+    + 'Cada edificio aparece una sola vez, sin quedar tapado, con un lugar libre delante para poner su nombre encima en el juego.',
 };
 
 
