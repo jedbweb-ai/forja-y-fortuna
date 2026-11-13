@@ -41,6 +41,16 @@ export function DesignStep({ station }: { station: 'yunque' | 'joyeria' }) {
   const hiddenActive = preview.synergies.length - visibleSynergies.length;
   const missing = Object.entries(preview.needs).filter(([id, q]) => (s.materials[id] ?? 0) < q);
 
+  // Prendido: elegir un material en una parte lo pone también en todas las partes que lo aceptan.
+  // Apagado: cada parte se elige sola (para combinar, por ejemplo hoja de acero y guarda de bronce).
+  const [linked, setLinked] = useState(true);
+  const pickMaterial = (slot: string, id: string) => {
+    if (!linked) return setMaterials({ ...materials, [slot]: id });
+    const next = { ...materials };
+    for (const p of bp.parts) if (p.slot === slot || allowedMaterials(c, p).some((m) => m.id === id)) next[p.slot] = id;
+    setMaterials(next);
+  };
+
   const pickBlueprint = (id: string) => {
     setBpId(id);
     setMaterials(defaultMaterials(c.blueprints[id], s));
@@ -79,6 +89,12 @@ export function DesignStep({ station }: { station: 'yunque' | 'joyeria' }) {
 
       <div className="parts">
         <p className="muted">{bp.description}</p>
+        {bp.parts.length > 1 && (
+          <label className="setting link-parts">
+            <input type="checkbox" checked={linked} onChange={(e) => setLinked(e.target.checked)} />
+            <span>🔗 Mismo material en todas las partes <small className="muted block">Al elegir un material se pone en todas las partes que lo aceptan. Apagalo para combinar.</small></span>
+          </label>
+        )}
         {bp.parts.map((part) => (
           <div key={part.slot} className="part">
             <h4>{part.label} <small className="muted">×{part.qty}</small></h4>
@@ -91,7 +107,7 @@ export function DesignStep({ station }: { station: 'yunque' | 'joyeria' }) {
                     key={m.id}
                     className={`mat ${materials[part.slot] === m.id ? 'on' : ''} ${enough ? '' : 'lack'}`}
                     title={m.description}
-                    onClick={() => setMaterials({ ...materials, [part.slot]: m.id })}
+                    onClick={() => pickMaterial(part.slot, m.id)}
                   >
                     <Swatch icon={`icon.${m.id}`} color={m.color} />
                     {m.name} <small>{owned}</small>

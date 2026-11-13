@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BALANCE } from '../../config/balance';
-import { brew, failChance, matchRecipe, mixProps, potencyFor, type Heat } from '../../core/magic/alchemy';
+import { brew, brewSlots, failChance, matchRecipe, mixProps, potencyFor, type Heat } from '../../core/magic/alchemy';
 import { ALCHEMY_PROPS, type AlchemyProp } from '../../core/magic/types';
 import { skillLevel } from '../../core/state';
 import { bonus } from '../../core/progress/progress';
@@ -14,6 +14,8 @@ const PROP_LABEL: Record<AlchemyProp, string> = {
   fuego: 'Fuego', hielo: 'Hielo', rayo: 'Rayo', sagrado: 'Sagrado', veneno: 'Veneno',
 };
 const HEAT_LABEL: Record<Heat, string> = { suave: 'Suave', medio: 'Medio', fuerte: 'Fuerte' };
+/** Cuántas tandas seguidas se ofrecen. */
+const REPEATS = [1, 5, 10] as const;
 
 /** Mesa de alquimia: se mezclan 2 o 3 ingredientes; sus propiedades eligen la receta. */
 export function AlchemyPanel() {
@@ -29,9 +31,11 @@ export function AlchemyPanel() {
   const known = recipe && s.discoveredPotions.includes(recipe.id);
   const potency = recipe ? potencyFor(recipe, props, BALANCE.alchemy.heat[heat].potency) : 0;
   const away = s.location !== 'herreria';
+  // Cuántas veces se puede repetir la mezcla con los ingredientes que hay.
+  const maxTimes = mix.length ? Math.min(...[...new Set(mix)].map((id) => Math.floor((s.materials[id] ?? 0) / count(id)))) : 0;
 
   return (
-    <Panel title="Mesa de alquimia" subtitle={`Alquimia nv ${skillLevel(s.skills.alquimia)} · cada tanda lleva una franja`} wide>
+    <Panel title="Mesa de alquimia" subtitle={`Alquimia nv ${skillLevel(s.skills.alquimia)} · una tanda lleva una franja; en serie, media franja cada una`} wide>
       <Tabs value={tab} onChange={setTab} options={[{ id: 'mix', label: 'Destilar' }, { id: 'recipes', label: 'Recetas conocidas' }]} />
       {away && <p className="bad-text">La mesa de alquimia está en tu herrería.</p>}
       {tab === 'mix' && (
@@ -58,13 +62,25 @@ export function AlchemyPanel() {
             </ul>
           </div>
           <div className="side">
-            <button
-              className="btn primary big"
-              disabled={away || mix.length < 2}
-              onClick={() => { if (store.run(brew, mix, heat)) setMix([]); }}
-            >
-              ⚗️ Destilar · 1 franja
-            </button>
+            <div className="brew-buttons">
+              {REPEATS.map((n) => {
+                const enough = n <= maxTimes;
+                return (
+                  <button
+                    key={n}
+                    className={`btn ${n === 1 ? 'primary big' : ''}`}
+                    data-key={n === 1 ? 'enter' : undefined}
+                    disabled={away || mix.length < 2 || !enough}
+                    title={!enough && mix.length >= 2 ? `Alcanza para ${maxTimes} ${maxTimes === 1 ? 'tanda' : 'tandas'}` : undefined}
+                    // La mezcla queda en el caldero: así se puede volver a destilar sin armarla de nuevo.
+                    onClick={() => store.run(brew, mix, heat, n)}
+                  >
+                    ⚗️ {n === 1 ? 'Destilar' : `×${n}`} <small>· {brewSlots(n)} franja{brewSlots(n) > 1 ? 's' : ''}</small>
+                  </button>
+                );
+              })}
+            </div>
+            {mix.length >= 2 && <small className="muted">Con lo que tenés alcanza para {maxTimes} {maxTimes === 1 ? 'tanda' : 'tandas'}. En serie, cada tanda lleva media franja.</small>}
             <div className="row tight" role="radiogroup" aria-label="Fuego">
               {(['suave', 'medio', 'fuerte'] as Heat[]).map((h) => (
                 <button

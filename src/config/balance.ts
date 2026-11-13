@@ -350,6 +350,9 @@ export const BALANCE = {
     failReductionPerLevel: 0.02,
     healPerPotency: 0.15,
     xpPerBrew: 6,
+    /** Repetir la misma mezcla: hasta cuántas tandas seguidas y cuánto tiempo lleva cada una (media franja). */
+    maxRepeat: 10,
+    repeatSlotsPerBatch: 0.5,
   },
 
   chests: {

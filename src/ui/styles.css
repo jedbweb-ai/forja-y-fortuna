@@ -619,3 +619,8 @@ kbd { font-family: inherit; font-size: 0.8rem; padding: 1px 5px; border: 1px sol
   .stop-actions > * { flex-shrink: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .route-stop.next { animation: none; } }
+
+/* Mesa de alquimia: destilar una vez o varias seguidas. */
+.brew-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.brew-buttons .btn.big { flex: 1 1 100%; }
+.brew-buttons .btn:not(.big) { flex: 1; }

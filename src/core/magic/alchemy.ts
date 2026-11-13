@@ -46,31 +46,57 @@ export function potionItem(s: GameState, def: PotionDef, potency: number, qty: n
   };
 }
 
-/** Destilar en la mesa de alquimia: 2 o 3 ingredientes y un fuego. Consume una franja. */
-export function brew(s: GameState, { c, rng }: Ctx, ingredients: string[], heat: Heat): GameEvent[] {
+/** Tiempo de destilar `times` tandas seguidas: una franja la tanda suelta; en serie, media franja cada una (redondeando para arriba). */
+export function brewSlots(times: number): number {
+  return times <= 1 ? 1 : Math.ceil(times * AL.repeatSlotsPerBatch);
+}
+
+/**
+ * Destilar en la mesa de alquimia: 2 o 3 ingredientes y un fuego, repetido `times` veces (1 a AL.maxRepeat).
+ * Cada tanda gasta sus ingredientes y tira su propio riesgo de arruinarse. El tiempo lo da brewSlots.
+ */
+export function brew(s: GameState, { c, rng }: Ctx, ingredients: string[], heat: Heat, times = 1): GameEvent[] {
   if (s.location !== 'herreria' || s.expedition) throw new GameError('La mesa de alquimia está en tu herrería.');
   if (s.forge || s.shop) throw new GameError('Ahora no podés destilar.');
   if (ingredients.length < 2 || ingredients.length > 3) throw new GameError('Elegí entre 2 y 3 ingredientes.');
+  if (!Number.isInteger(times) || times < 1 || times > AL.maxRepeat) throw new GameError(`Se pueden repetir entre 1 y ${AL.maxRepeat} tandas.`);
   const needs: Record<string, number> = {};
   for (const id of ingredients) {
     if (!c.materials[id]?.alchemy) throw new GameError(`${c.materials[id]?.name ?? id} no sirve para alquimia.`);
     needs[id] = (needs[id] ?? 0) + 1;
   }
-  for (const [id, q] of Object.entries(needs)) if (!hasMaterial(s, id, q)) throw new GameError(`Te falta ${c.materials[id].name}.`);
-  for (const [id, q] of Object.entries(needs)) addMaterial(s, id, -q);
+  for (const [id, q] of Object.entries(needs)) {
+    if (!hasMaterial(s, id, q * times)) throw new GameError(times > 1 ? `No alcanza ${c.materials[id].name} para ${times} tandas.` : `Te falta ${c.materials[id].name}.`);
+  }
+  for (const [id, q] of Object.entries(needs)) addMaterial(s, id, -q * times);
 
   const props = mixProps(c, ingredients);
   const def = matchRecipe(c, props);
   const events: GameEvent[] = [];
-  if (!def || rng.chance(failChance(s, heat, bonus(c, s, 'alquimiaFalla')))) {
-    addXp(s, 'alquimia', 2);
-    events.push({ type: 'toast', text: def ? '¡El fuego fue demasiado fuerte y se arruinó la tanda!' : 'Salió un brebaje turbio que no sirve para nada.', tone: 'bad' });
-    return [...events, ...advanceTime(s, 1)];
+  const slots = brewSlots(times);
+  if (!def) {
+    addXp(s, 'alquimia', 2 * times);
+    events.push({ type: 'toast', text: `Salió un brebaje turbio que no sirve para nada${times > 1 ? ` (${times} tandas)` : ''}.`, tone: 'bad' });
+    return [...events, ...advanceTime(s, slots)];
   }
   const potency = potencyFor(def, props, AL.heat[heat].potency);
+  const perBatch = def.qty + bonus(c, s, 'alquimiaExtra');
+  let good = 0;
+  for (let i = 0; i < times; i++) {
+    if (rng.chance(failChance(s, heat, bonus(c, s, 'alquimiaFalla')))) addXp(s, 'alquimia', 2);
+    else {
+      good++;
+      addXp(s, 'alquimia', AL.xpPerBrew + potency);
+    }
+  }
+  const ruined = times - good;
+  if (!good) {
+    events.push({ type: 'toast', text: times > 1 ? `¡El fuego fue demasiado fuerte: se arruinaron las ${times} tandas!` : '¡El fuego fue demasiado fuerte y se arruinó la tanda!', tone: 'bad' });
+    return [...events, ...advanceTime(s, slots)];
+  }
   const discovered = !s.discoveredPotions.includes(def.id);
   if (discovered) s.discoveredPotions.push(def.id);
-  const qty = def.qty + bonus(c, s, 'alquimiaExtra');
+  const qty = perBatch * good;
   if (def.output.kind === 'material') {
     addMaterial(s, def.output.material, qty);
   } else {
@@ -78,10 +104,10 @@ export function brew(s: GameState, { c, rng }: Ctx, ingredients: string[], heat:
     if (same) same.quantity += qty;
     else s.items.push(potionItem(s, def, potency, qty));
   }
-  addXp(s, 'alquimia', AL.xpPerBrew + potency);
   events.push({ type: 'brewed', recipe: def.id, name: def.name, qty, discovered });
-  events.push({ type: 'toast', text: `${discovered ? '¡Receta nueva! ' : ''}${def.name} ×${qty}${def.output.kind === 'pocion' ? ` (potencia ${potency})` : ''}.`, tone: 'good' });
-  return [...events, ...advanceTime(s, 1)];
+  const lost = ruined ? ` · ${ruined === 1 ? 'se arruinó 1 tanda' : `se arruinaron ${ruined} tandas`}` : '';
+  events.push({ type: 'toast', text: `${discovered ? '¡Receta nueva! ' : ''}${def.name} ×${qty}${def.output.kind === 'pocion' ? ` (potencia ${potency})` : ''}${lost}.`, tone: ruined ? 'info' : 'good' });
+  return [...events, ...advanceTime(s, slots)];
 }
 
 // ───────────────────────── Cinturón de pociones del grupo ─────────────────────────

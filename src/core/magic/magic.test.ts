@@ -4,8 +4,9 @@ import { goTo } from '../city';
 import { equipItem } from '../party/equipment';
 import { characterProfile } from '../party/stats';
 import { fixedRng } from '../rng';
+import { SLOTS } from '../types';
 import { makeItem, setup, withRng } from '../testUtils';
-import { brew, matchRecipe, mixProps, setBelt } from './alchemy';
+import { brew, brewSlots, matchRecipe, mixProps, setBelt } from './alchemy';
 import { computeAbilities } from './abilities';
 import { acquireGrimoire, buyBlueprint, buyGrimoire, readGrimoire } from './grimoires';
 
@@ -83,6 +84,36 @@ describe('alquimia', () => {
     s.materials.hoja_alivio = 2;
     brew(s, withRng(ctx, fixedRng([0])), ['hoja_alivio', 'hoja_alivio'], 'fuerte');
     expect(s.items.some((i) => i.potion)).toBe(false);
+  });
+
+  it('se puede repetir la mezcla: gasta los ingredientes de cada tanda y lleva media franja por tanda', () => {
+    const { s, ctx } = setup();
+    s.materials.hoja_alivio = 12;
+    const t0 = s.day * SLOTS.length + s.slot;
+    brew(s, withRng(ctx, fixedRng([0.99])), ['hoja_alivio', 'hoja_alivio'], 'suave', 5);
+    expect(s.materials.hoja_alivio).toBe(2);
+    const pot = s.items.find((i) => i.potion)!;
+    expect(pot.quantity).toBe(5 * 3);
+    expect(s.day * SLOTS.length + s.slot - t0).toBe(brewSlots(5));
+    expect(brewSlots(5)).toBe(3);
+    expect(brewSlots(10)).toBe(5);
+    expect(brewSlots(1)).toBe(1);
+  });
+
+  it('repetir no deja pasarse de los ingredientes ni del máximo', () => {
+    const { s, ctx } = setup();
+    s.materials.hoja_alivio = 9;
+    expect(() => brew(s, withRng(ctx, fixedRng([0.99])), ['hoja_alivio', 'hoja_alivio'], 'suave', 5)).toThrow(/alcanza/);
+    expect(s.materials.hoja_alivio).toBe(9);
+    expect(() => brew(s, ctx, ['hoja_alivio', 'hoja_alivio'], 'suave', 11)).toThrow();
+  });
+
+  it('en serie, cada tanda tira su propio riesgo', () => {
+    const { s, ctx } = setup();
+    s.materials.hoja_alivio = 6;
+    // Fuego fuerte: la primera tanda se arruina (0) y las otras dos salen (0.99).
+    brew(s, withRng(ctx, fixedRng([0, 0.99, 0.99])), ['hoja_alivio', 'hoja_alivio'], 'fuerte', 3);
+    expect(s.items.find((i) => i.potion)!.quantity).toBe(2 * 3);
   });
 
   it('el cinturón del grupo tiene un límite', () => {
