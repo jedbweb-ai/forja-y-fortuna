@@ -1,5 +1,5 @@
 import { CONTENT } from '../data';
-import { ART } from '../game/render/assets';
+import { ART, isHd } from '../game/render/assets';
 import { buildAssetList, frontKey, isBack, pendingSheets, promptFor, SHEET_GRID, sheetPromptFor, type AssetEntry, type AssetType } from './assetList';
 import { processArt, splitByFigures, splitGrid, type Fit, type Img } from './artProcess';
 
@@ -18,6 +18,8 @@ type Mode = 'pedidos' | 'una' | 'hoja';
 const entries = buildAssetList(CONTENT);
 let current: AssetEntry | null = null;
 let source: Img | null = null;
+/** La imagen tal cual la dio ChatGPT: se guarda junto con lo procesado. */
+let sourceBlob: Blob | null = null;
 let dir: FileSystemDirectoryHandle | null = null;
 let sheetMode = false;
 let mode: Mode = 'pedidos';
@@ -39,8 +41,8 @@ function renderList() {
   list.innerHTML = '';
   let group = '';
   for (const e of entries) {
-    const done = !!ART[e.key];
-    if (onlyPending && done) continue;
+    const isDone = done(e.key);
+    if (onlyPending && isDone) continue;
     if (q && !e.name.toLowerCase().includes(q) && !e.key.includes(q)) continue;
     if (e.group !== group) {
       group = e.group;
@@ -50,14 +52,13 @@ function renderList() {
       list.append(g);
     }
     const row = document.createElement('div');
-    row.className = `entry${done ? ' done' : ''}${current?.key === e.key || inSheet.has(e.key) ? ' on' : ''}`;
-    row.innerHTML = `<span class="st">${done ? '✓' : '·'}</span><span></span><small>${e.w}×${e.h}</small>`;
+    row.className = `entry${isDone ? ' done' : ''}${current?.key === e.key || inSheet.has(e.key) ? ' on' : ''}`;
+    row.innerHTML = `<span class="st">${isDone ? '✓' : '·'}</span><span></span><small>${e.w}×${e.h}</small>`;
     row.children[1].textContent = e.name;
     row.onclick = () => select(e);
     list.append(row);
   }
-  const done = entries.filter((e) => ART[e.key]).length;
-  $('count').textContent = `Hechos ${done} de ${entries.length}`;
+  $('count').textContent = `Hechos ${entries.filter((e) => done(e.key)).length} de ${entries.length}${hdOn() ? ' en alta calidad' : ''}`;
 }
 
 /** En modo hoja: el elegido y los que siguen del mismo tipo que todavía no tienen arte, hasta llenar la grilla. */
@@ -65,7 +66,7 @@ function sheetEntries(): AssetEntry[] {
   if (!current) return [];
   const size = Number($<HTMLInputElement>('cols').value) * Number($<HTMLInputElement>('rows').value);
   const from = entries.indexOf(current);
-  const next = entries.slice(from + 1).filter((e) => e.type === current!.type && !ART[e.key]);
+  const next = entries.slice(from + 1).filter((e) => e.type === current!.type && !done(e.key));
   return [current, ...next].slice(0, Math.max(1, size));
 }
 
@@ -85,7 +86,9 @@ function select(e: AssetEntry) {
 
 function showPrompt() {
   if (!current) return;
-  $('ref').hidden = !isBack(current.type);
+  const refList = sheetMode ? sheetEntries() : [current];
+  $('ref').hidden = !refList.some((e) => ART[frontKey(e.key)]);
+  $('ref').textContent = isBack(current.type) ? '🖼️ Bajar la referencia de frente (adjuntala con el pedido)' : '🖼️ Bajar la referencia: cómo se ve hoy (adjuntala con el pedido)';
   if (!sheetMode) {
     $('title').textContent = current.name;
     $('meta').innerHTML = `Archivo <code>${current.folder}/${current.key}.png</code> · dibujo de <b>${current.w}×${current.h}</b> píxeles${ART[current.key] ? ' · <b>ya tiene arte</b> (si guardás, se reemplaza)' : ''}`;
@@ -104,7 +107,7 @@ function showPrompt() {
     li.textContent = e.name + (ART[e.key] ? ' (ya tiene arte: se reemplaza)' : '');
     ol.append(li);
   }
-  $<HTMLTextAreaElement>('prompt').value = sheetPromptFor(list, cols, rows);
+  $<HTMLTextAreaElement>('prompt').value = sheetPromptFor(list, cols, rows, !isBack(current.type) && list.some((e) => ART[e.key]));
 }
 
 function setMode(m: Mode) {
@@ -138,12 +141,12 @@ const skipped = (): string[] => {
 
 /** Muestra la primera hoja que falta (sin las salteadas), con su grilla y su pedido. */
 function nextSheet() {
-  const sheets = pendingSheets(entries, (key) => !!ART[key]);
+  const sheets = pendingSheets(entries, done);
   const skip = skipped();
   const sheet = sheets.find((x) => !skip.includes(x.entries[0].key));
-  const done = entries.filter((e) => ART[e.key]).length;
+  const ready = entries.filter((e) => done(e.key)).length;
   $('unskip').hidden = !skip.length;
-  $('qbar').style.width = `${Math.round((done / entries.length) * 100)}%`;
+  $('qbar').style.width = `${Math.round((ready / entries.length) * 100)}%`;
   if (!sheet) {
     $('qtitle').textContent = sheets.length ? 'Solo quedan las hojas salteadas.' : '¡No falta nada! Todo el arte está en el juego.';
     $('qcount').textContent = '';
@@ -169,6 +172,7 @@ function nextSheet() {
 // ───────────────────────── Imagen ─────────────────────────
 
 async function loadImage(blob: Blob) {
+  sourceBlob = blob;
   const bmp = await createImageBitmap(blob);
   const c = document.createElement('canvas');
   c.width = bmp.width;
@@ -195,11 +199,19 @@ function bitmap(img: Img): HTMLCanvasElement {
   return tmp;
 }
 
+/** Alta calidad (lo normal ahora): 4 píxeles por píxel de arte, colores de ChatGPT y bordes suaves. */
+const hdOn = () => $<HTMLInputElement>('hdq').checked;
+const hdFactor = (e: AssetEntry) => (e.type === 'mapa' ? 2 : 4);
+/** ¿Ya está hecho? En alta calidad, solo cuenta lo que ya tiene su versión en alta. */
+// Las texturas del terreno el juego las usa en su medida de arte: en alta no ganan nada, alcanza con que existan.
+const done = (key: string) => (hdOn() && !key.startsWith('tex.') ? isHd(key) : !!ART[key]);
+
 function options(e: AssetEntry, trim: boolean) {
+  const k = hdOn() ? hdFactor(e) : 1;
   return {
-    w: e.w, h: e.h, fit: FIT[e.type], tolerance: Number($<HTMLInputElement>('tol').value),
+    w: e.w * k, h: e.h * k, fit: FIT[e.type], tolerance: Number($<HTMLInputElement>('tol').value),
     // Las texturas y el mapa conservan sus colores: la paleta en superficies grandes las ensucia.
-    palette: $<HTMLInputElement>('pal').checked && FIT[e.type] !== 'llenar', trim,
+    palette: !hdOn() && $<HTMLInputElement>('pal').checked && FIT[e.type] !== 'llenar', trim, soft: hdOn(),
   };
 }
 
@@ -265,11 +277,13 @@ function updateSaveAll() {
 /** Vista previa en el juego: la figura sobre una casilla de pasto, o la textura proyectada sobre casillas. */
 function drawScene(canvas: HTMLCanvasElement, entry: AssetEntry, img: Img) {
   const ctx = canvas.getContext('2d')!;
-  const W = Math.max(144, img.w * 2 + 16);
-  const H = Math.max(110, img.h * 2 + 56);
+  // Se muestra al tamaño del juego: 2 por píxel de arte (las de alta calidad traen 4).
+  const ps = img.w > entry.w * 1.5 ? 2 / hdFactor(entry) : 2;
+  const W = Math.max(144, img.w * ps + 16);
+  const H = Math.max(110, img.h * ps + 56);
   canvas.width = W;
   canvas.height = H;
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = ps < 2;
   const diamond = (cx: number, cy: number, fill: (u: number, v: number) => string) => {
     // Rombo de 32×16 píxeles de arte, a ×2.
     for (let y = 0; y < 16; y++) {
@@ -292,12 +306,13 @@ function drawScene(canvas: HTMLCanvasElement, entry: AssetEntry, img: Img) {
   }
   if (entry.type === 'lado' || entry.type === 'muro' || entry.type === 'decoracion' || entry.type === 'icono' || entry.type === 'retrato' || entry.type === 'mapa') {
     // Sin casilla: la imagen sola, ampliada.
-    const z = Math.max(1, Math.floor(Math.min((W - 8) / img.w, (H - 8) / img.h)));
+    const fitZ = Math.min((W - 8) / img.w, (H - 8) / img.h);
+    const z = ps < 2 ? Math.min(1, fitZ) : Math.max(1, Math.floor(fitZ));
     ctx.drawImage(bitmap(img), (W - img.w * z) / 2, (H - img.h * z) / 2, img.w * z, img.h * z);
     return;
   }
   diamond(W / 2, H - 22, () => '#5a8a38');
-  ctx.drawImage(bitmap(img), W / 2 - img.w, H - 22 - img.h * 2 + 6, img.w * 2, img.h * 2);
+  ctx.drawImage(bitmap(img), W / 2 - (img.w * ps) / 2, H - 22 - img.h * ps + 6, img.w * ps, img.h * ps);
 }
 
 // ───────────────────────── Guardar ─────────────────────────
@@ -310,7 +325,9 @@ async function write(entry: AssetEntry, img: Img) {
   const blob = await pngBlob(img);
   const name = `${entry.key}.png`;
   if (dir) {
-    const folder = await dir.getDirectoryHandle(entry.folder, { create: true });
+    const folder = hdOn()
+      ? await (await dir.getDirectoryHandle('hd', { create: true })).getDirectoryHandle(entry.folder, { create: true })
+      : await dir.getDirectoryHandle(entry.folder, { create: true });
     const file = await folder.getFileHandle(name, { create: true });
     const w = await file.createWritable();
     await w.write(blob);
@@ -375,6 +392,15 @@ async function save(only: typeof results) {
     return;
   }
   for (const r of only) await write(r.entry, r.img);
+  // El original de ChatGPT se guarda aparte (no se carga en el juego), por si hay que volver a procesarlo.
+  if (dir && sourceBlob) {
+    const orig = await dir.getDirectoryHandle('originales', { create: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const file = await orig.getFileHandle(`${stamp} ${only[0].entry.group}.png`, { create: true });
+    const w = await file.createWritable();
+    await w.write(sourceBlob);
+    await w.close();
+  }
   const names = only.map((r) => `${r.entry.folder}/${r.entry.key}.png`);
   $('saved').textContent = dir
     ? `Guardados ${names.length}: ${names.join(', ')}. El juego los toma solo al recargar.`
@@ -389,6 +415,7 @@ $('filter').oninput = renderList;
 $('pending').onchange = renderList;
 $('tol').oninput = run;
 $('pal').onchange = run;
+$('hdq').onchange = () => (mode === 'pedidos' ? nextSheet() : (showPrompt(), renderList(), run()));
 for (const id of ['cols', 'rows']) $(id).oninput = () => { showPrompt(); renderList(); run(); };
 $('mode-queue').onclick = () => setMode('pedidos');
 $('mode-one').onclick = () => setMode('una');

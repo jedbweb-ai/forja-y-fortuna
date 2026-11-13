@@ -125,7 +125,7 @@ export class CityMapScene extends Phaser.Scene {
 
     const state = this.store.getSnapshot().state;
     if (state?.location === loc.id) {
-      const marker = this.add.sprite(w / 2 - 6, h * 0.25, 'char.herrero').setScale(2).setOrigin(0.5, 1);
+      const marker = this.add.sprite(w / 2 - 6, h * 0.25, 'char.herrero').setScale(artScale('char.herrero', 2)).setOrigin(0.5, 1);
       c.add(marker);
       this.tweens.add({ targets: marker, y: marker.y - 4, yoyo: true, repeat: -1, duration: 600 });
     }

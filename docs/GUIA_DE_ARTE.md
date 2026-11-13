@@ -101,6 +101,15 @@ Con `npm run dev` corriendo, abrir la **herramienta de arte**: http://localhost:
 5. **Guardar.** La primera vez se elige la carpeta `src/assets/arte`, y después cada imagen va sola a su subcarpeta. Si el navegador no permite elegir carpetas, se descarga y se copia a mano.
 6. El juego la usa al recargar. Lo que no tiene imagen sigue con el gráfico provisorio, así se puede reemplazar de a poco.
 
+### Alta calidad (lo normal)
+
+La herramienta guarda cada imagen **en alta calidad**: 4 píxeles por píxel de arte, con los colores de ChatGPT, sin paleta y con bordes suaves (sin el reflejo rosado del magenta). Van a `src/assets/arte/hd/<carpeta>/<clave>.png` y el juego las prefiere a las de pixel art, que quedan de respaldo. Además guarda la imagen original de ChatGPT en `src/assets/arte/originales/` (no se carga en el juego), por si hay que volver a procesarla.
+
+- Personajes, monstruos y animales se muestran en alta de verdad; escenario, edificios y marcadores se preparan al cargar al tamaño de pantalla, suavizados.
+- Las texturas del terreno y las paredes se siguen armando en su medida de arte (en alta no ganarían nada).
+- Si el frente de un personaje todavía está en pixel art, su espalda en alta se lleva a la misma medida, así no cambia de tamaño al darse vuelta.
+- Para rehacer algo que ya existe en pixel art, la herramienta ofrece **🖼️ Bajar la referencia: cómo se ve hoy** y el pedido pide redibujarlo igual, con más detalle.
+
 ### Pedidos en orden (lo más rápido)
 
 Es el modo con el que abre la herramienta. Te lleva por todo lo que falta, hoja por hoja, en orden de prioridad:

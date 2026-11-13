@@ -180,7 +180,7 @@ export class LiveScene extends Phaser.Scene {
       const pos = isoToScreen(spot.x, spot.y);
       const key = `char.npc.${npcId}`;
       this.add.image(pos.x, pos.y + 4, 'fx.shadow').setDepth(isoDepth(spot.x, spot.y, 6));
-      const s = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(CHAR_SCALE).setDepth(isoDepth(spot.x, spot.y, 7));
+      const s = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(artScale(key, CHAR_SCALE)).setDepth(isoDepth(spot.x, spot.y, 7));
       this.tweens.add({ targets: s, scaleY: CHAR_SCALE * 1.03, yoyo: true, repeat: -1, duration: 700 + spot.x * 40 });
       const name = this.add.text(pos.x, pos.y - 50, npc.name, {
         fontFamily: 'system-ui, sans-serif', fontSize: '15px', fontStyle: 'bold', color: '#ffe9a8', stroke: '#1a1220', strokeThickness: 4,
@@ -206,7 +206,7 @@ export class LiveScene extends Phaser.Scene {
     const { x, y } = this.def.spawn;
     const pos = isoToScreen(x, y);
     this.add.image(pos.x, pos.y + 4, 'fx.shadow').setDepth(isoDepth(x, y, 6));
-    const s = this.add.sprite(pos.x, pos.y + 6, 'char.herrero').setOrigin(0.5, 1).setScale(CHAR_SCALE).setDepth(isoDepth(x, y, 7));
+    const s = this.add.sprite(pos.x, pos.y + 6, 'char.herrero').setOrigin(0.5, 1).setScale(artScale('char.herrero', CHAR_SCALE)).setDepth(isoDepth(x, y, 7));
     s.setData('player', true);
     this.tweens.add({ targets: s, scaleY: CHAR_SCALE * 1.04, yoyo: true, repeat: -1, duration: 650 });
     this.add.text(pos.x, pos.y - 50, 'Vos', {
@@ -260,7 +260,7 @@ export class LiveScene extends Phaser.Scene {
       const key = guard ? `char.guard.${i % GUARD_VARIANTS}` : `char.amb.${(i * 3 + this.locId.length) % AMBIENT_VARIANTS}`;
       const t = Phaser.Utils.Array.GetRandom(free);
       const pos = isoToScreen(t.x, t.y);
-      const s = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(CHAR_SCALE).setDepth(isoDepth(t.x, t.y, 7));
+      const s = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(artScale(key, CHAR_SCALE)).setDepth(isoDepth(t.x, t.y, 7));
       s.setData({ tile: t, key });
       this.walkers.push(s);
       this.time.delayedCall(Phaser.Math.Between(0, 2000), () => this.nextAction(s));
@@ -339,7 +339,7 @@ export class LiveScene extends Phaser.Scene {
       const key = `animal.${kind}`;
       const t = Phaser.Utils.Array.GetRandom(free);
       const pos = isoToScreen(t.x, t.y);
-      const a = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(2).setDepth(isoDepth(t.x, t.y, 6));
+      const a = this.add.sprite(pos.x, pos.y + 6, key).setOrigin(0.5, 1).setScale(artScale(key, 2)).setDepth(isoDepth(t.x, t.y, 6));
       const hop = () => {
         if (!a.active) return;
         const cur = a.getData('tile') ?? t;
@@ -410,7 +410,7 @@ export class LiveScene extends Phaser.Scene {
     const tex = `char.amb.${(shop!.index * 7 + current.name.length) % AMBIENT_VARIANTS}`;
     const start = isoToScreen(door.x, door.y);
     const end = isoToScreen(spot.x, spot.y);
-    const s = this.add.sprite(start.x, start.y + 6, tex).setOrigin(0.5, 1).setScale(CHAR_SCALE).setDepth(isoDepth(spot.x, spot.y, 7));
+    const s = this.add.sprite(start.x, start.y + 6, tex).setOrigin(0.5, 1).setScale(artScale(tex, CHAR_SCALE)).setDepth(isoDepth(spot.x, spot.y, 7));
     const go = facing(tex, end.x - start.x, end.y - start.y);
     // En el mostrador queda mirando hacia él (hacia -y en la grilla).
     const atCounter = facing(tex, 1, -1);

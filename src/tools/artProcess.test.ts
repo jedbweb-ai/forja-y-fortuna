@@ -114,6 +114,20 @@ describe('preparación de arte', () => {
     }
   });
 
+  it('alta calidad: conserva los colores, el borde queda suave y sin reflejo rosado', () => {
+    // Figura verde con un contorno rosado (como el suavizado de ChatGPT contra el magenta).
+    const src = picture(40, 40, { x: 10, y: 10, w: 20, h: 20 }, [60, 140, 60]);
+    for (let y = 9; y <= 30; y++) for (const x of [9, 30]) src.data.set([200, 90, 190, 255], (y * 40 + x) * 4);
+    const out = processArt(src, { w: 44, h: 44, fit: 'centro', tolerance: 60, palette: false, soft: true });
+    const inner = (22 * 44 + 22) * 4;
+    expect([...out.data.slice(inner, inner + 3)]).toEqual([60, 140, 60]); // sin paleta
+    let pinkEdges = 0;
+    for (let i = 0; i < out.data.length; i += 4) {
+      if (out.data[i + 3] && Math.min(out.data[i], out.data[i + 2]) - out.data[i + 1] > 12) pinkEdges++;
+    }
+    expect(pinkEdges).toBe(0);
+  });
+
   it('el pedido de una hoja numera los assets en orden y pide la grilla', () => {
     const list = buildAssetList(CONTENT).filter((e) => e.type === 'retrato').slice(0, 9);
     const p = sheetPromptFor(list, 3, 3);

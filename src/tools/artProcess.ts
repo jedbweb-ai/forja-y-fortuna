@@ -23,6 +23,31 @@ export interface ProcessOptions {
   palette: boolean;
   /** Con "llenar": recortar antes el fondo magenta (texturas que vienen en una hoja con separaciones). */
   trim?: boolean;
+  /** Alta calidad: bordes suaves (semitransparentes) y sin el reflejo rosado del fondo magenta. */
+  soft?: boolean;
+}
+
+/**
+ * Saca el tinte magenta que queda en el borde de las figuras (ChatGPT suaviza el contorno contra el fondo):
+ * en los píxeles del borde, el exceso de rojo y azul por sobre el verde se recorta.
+ */
+export function despill(img: Img) {
+  const { w, h, data } = img;
+  const alphaAt = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : data[(y * w + x) * 4 + 3]);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (!data[i + 3]) continue;
+      // Borde: semitransparente, o con algún vecino (a 2 píxeles) vacío.
+      let edge = data[i + 3] < 255;
+      for (let d = 1; d <= 2 && !edge; d++) edge = !alphaAt(x - d, y) || !alphaAt(x + d, y) || !alphaAt(x, y - d) || !alphaAt(x, y + d);
+      if (!edge) continue;
+      const excess = Math.min(data[i], data[i + 2]) - data[i + 1];
+      if (excess <= 12) continue;
+      data[i] -= excess;
+      data[i + 2] -= excess;
+    }
+  }
 }
 
 /**
@@ -228,17 +253,21 @@ export function processArt(src: Img, o: ProcessOptions): Img {
           n++;
         }
       }
-      // Si más de la mitad del bloque es fondo, el píxel queda transparente (una textura nunca: se rellena después).
-      if (!n || (!fill && n / total < 0.5)) continue;
+      // Pixel art: si más de la mitad del bloque es fondo, el píxel queda transparente.
+      // Alta calidad (soft): el borde queda semitransparente según cuánto del bloque es figura.
+      // Una textura nunca queda transparente: se rellena después.
+      const cover = n / total;
+      if (!n || (!fill && (o.soft ? cover < 0.1 : cover < 0.5))) continue;
       let rgb: Rgb = [r / n, g / n, b / n];
       if (o.palette) rgb = nearest(rgb);
       const j = ((oy + y) * o.w + ox + x) * 4;
       out.data[j] = rgb[0];
       out.data[j + 1] = rgb[1];
       out.data[j + 2] = rgb[2];
-      out.data[j + 3] = 255;
+      out.data[j + 3] = o.soft && !fill ? Math.round(255 * Math.min(1, cover * 1.1)) : 255;
     }
   }
+  if (o.soft && !fill) despill(out);
   // Una textura no puede tener huecos: cada píxel vacío toma el color del más cercano de su columna.
   if (fill) {
     for (let x = 0; x < o.w; x++) {

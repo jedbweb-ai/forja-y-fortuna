@@ -1,4 +1,4 @@
-import { ART } from '../../game/render/assets';
+import { ART, isHd } from '../../game/render/assets';
 import type { ItemInstance } from '../../core/types';
 
 /** Clave del ícono de un objeto: el de su plano, su receta de poción o su runa. */
@@ -10,7 +10,7 @@ export function itemIcon(item: ItemInstance): string {
 export function Swatch({ icon, color, big }: { icon: string; color: string; big?: boolean }) {
   const url = ART[icon];
   const cls = big ? 'item-swatch' : 'swatch';
-  if (url) return <img className={`${cls} art-icon`} src={url} alt="" />;
+  if (url) return <img className={`${cls} art-icon${isHd(icon) ? ' hd' : ''}`} src={url} alt="" />;
   return <span className={cls} style={{ background: color }} />;
 }
 
@@ -30,7 +30,7 @@ export function Portrait({ id, look, size }: { id: string; look?: { body: number
   const style = look ? { background: hex(look.body), borderColor: hex(look.accent) } : undefined;
   return (
     <span className={`portrait${size ? ` ${size}` : ''}`} style={style}>
-      {url ? <img className="art-portrait" src={url} alt="" /> : look && <span style={{ background: hex(look.hair) }} />}
+      {url ? <img className={`art-portrait${isHd(`retrato.${id}`) ? ' hd' : ''}`} src={url} alt="" /> : look && <span style={{ background: hex(look.hair) }} />}
     </span>
   );
 }

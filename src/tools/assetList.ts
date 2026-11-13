@@ -82,11 +82,13 @@ const SHEET_ITEMS: Record<AssetType, string> = {
 };
 
 /** Pedido para una hoja: una sola imagen con todos, en grilla, numerados en el orden en que se cortan. */
-export function sheetPromptFor(list: AssetEntry[], cols: number, rows: number): string {
+export function sheetPromptFor(list: AssetEntry[], cols: number, rows: number, redo = false): string {
   const empty = list.length < cols * rows ? ' Las celdas que sobran quedan vacías, solo con fondo magenta.' : '';
   const ref = isBack(list[0].type)
     ? ` Te adjunto una imagen de referencia con estos mismos ${list.length}, en la misma grilla y el mismo orden, vistos de frente: dibujá exactamente los mismos (misma ropa, colores, peinado, armas y proporciones) y en el mismo lugar de la grilla, pero de espalda.`
-    : '';
+    : redo
+      ? ` Te adjunto una imagen de referencia con estos mismos ${list.length}, en la misma grilla y el mismo orden, como se ven hoy en baja resolución: redibujalos iguales (misma ropa, colores, forma y proporciones) y en el mismo lugar de la grilla, pero con más detalle y nitidez.`
+      : '';
   return `${BASE_PROMPT}\n\nUna sola imagen con ${list.length} ${SHEET_ITEMS[list[0].type]}, ordenados en una grilla pareja de ${cols} columnas por ${rows} filas. `
     + `Cada uno centrado en su celda, todos del mismo tamaño y en el mismo estilo, bien separados entre sí, sin tocarse ni cortarse en los bordes.${empty}${ref} `
     + `En orden, de izquierda a derecha y de arriba a abajo:\n\n${list.map((e, i) => `${i + 1}. ${e.detail}`).join('\n')}`;
@@ -109,7 +111,7 @@ export interface PendingSheet {
   rows: number;
 }
 
-/** Lo que todavía no tiene arte, repartido en hojas con la grilla de cada tipo (ver docs/PEDIDOS_DE_ARTE.md). */
+/** Lo que todavía no tiene arte, repartido en hojas con la grilla de cada tipo (el modo "Pedidos en orden" de la herramienta). */
 export function pendingSheets(list: AssetEntry[], hasArt: (key: string) => boolean): PendingSheet[] {
   const out: PendingSheet[] = [];
   const types = [...PRIORITY, ...[...new Set(list.map((e) => e.type))].filter((t) => !PRIORITY.includes(t))];

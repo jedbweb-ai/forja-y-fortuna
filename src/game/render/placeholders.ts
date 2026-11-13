@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Content } from '../../core/content';
 import { generateWorldPlaceholders } from './worldPlaceholders';
 import { generateDungeonPlaceholders } from './dungeonPlaceholders';
-import { isRealArt } from './assets';
+import { isHd, isRealArt } from './assets';
 import { AMBIENT_VARIANTS, GUARD_VARIANTS } from './variants';
 
 // Gráficos placeholder generados por código. Cada textura se registra con una clave
@@ -87,7 +87,8 @@ function drawChar(g: G, look: CharLook, step: boolean) {
 
 /** Animación de caminar de 2 cuadros. Si el arte definitivo trae un solo cuadro, lo repite. */
 export function walkAnim(scene: Phaser.Scene, key: string, rate: number) {
-  const second = isRealArt(key) && !isRealArt(`${key}_b`) ? key : `${key}_b`;
+  // Sin segundo cuadro propio (o si uno está en alta calidad y el otro no), se repite el primero.
+  const second = isRealArt(key) && (!isRealArt(`${key}_b`) || isHd(key) !== isHd(`${key}_b`)) ? key : `${key}_b`;
   scene.anims.create({ key: `${key}.walk`, frames: [{ key }, { key: second }], frameRate: rate, repeat: -1 });
 }
 

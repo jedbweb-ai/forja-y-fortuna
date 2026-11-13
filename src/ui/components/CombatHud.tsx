@@ -1,3 +1,4 @@
+import { isHd } from '../../game/render/assets';
 import { activePartyUnit, attackPreview, effectiveMode, selectPotion, selectSkill } from '../../bridge/combatInput';
 import { ammoBonus } from '../../core/combat/damage';
 import { canUseSkill, currentUnit, fleeChance } from '../../core/combat/engine';
@@ -40,7 +41,7 @@ export function CombatHud() {
         {me ? (
           <>
             <div className="combat-unit">
-              {me.charId && portraitUrl(me.charId) && <img className="art-portrait combat-portrait" src={portraitUrl(me.charId)} alt="" />}
+              {me.charId && portraitUrl(me.charId) && <img className={`art-portrait combat-portrait${isHd(`retrato.${me.charId}`) ? ' hd' : ''}`} src={portraitUrl(me.charId)} alt="" />}
               <b>{me.name}</b>
               <div className="meter thin hp"><span style={{ width: `${(me.hp / me.maxHp) * 100}%` }} /></div>
               <small className="muted">❤️ {me.hp}/{me.maxHp}{me.statuses.length ? ` · ${me.statuses.map((x) => x.id).join(', ')}` : ''}</small>

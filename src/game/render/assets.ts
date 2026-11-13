@@ -3,14 +3,21 @@ import { LEVEL_H, TILE_H, TILE_W } from './iso';
 
 // Arte definitivo. Cada PNG de src/assets/arte/ (en cualquier subcarpeta) se carga con su nombre como clave:
 // "monstruos/mon.lobo.png" reemplaza al placeholder "mon.lobo". Lo que no tiene imagen sigue con el placeholder.
+// En alta calidad (src/assets/arte/hd/<carpeta>/<clave>.png) el dibujo viene a 4 píxeles por píxel de arte, con los
+// colores de ChatGPT y bordes suaves; tiene prioridad sobre el de pixel art. Los originales no se cargan.
 // Ver docs/GUIA_DE_ARTE.md (medidas, escala 2x y nombres).
 
-const FILES = import.meta.glob('/src/assets/arte/**/*.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const FILES = import.meta.glob(['/src/assets/arte/**/*.png', '!/src/assets/arte/originales/**'], { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const FOUND = Object.entries(FILES).map(([path, url]) => ({ key: path.split('/').pop()!.replace(/\.png$/, ''), url, hd: path.includes('/arte/hd/') }));
 
-/** Clave → URL de cada imagen de arte que existe. */
-export const ART: Record<string, string> = Object.fromEntries(
-  Object.entries(FILES).map(([path, url]) => [path.split('/').pop()!.replace(/\.png$/, ''), url]),
-);
+/** Clave → URL de cada imagen de arte que existe (la de alta calidad, si la hay). */
+export const ART: Record<string, string> = Object.fromEntries([...FOUND.filter((f) => !f.hd), ...FOUND.filter((f) => f.hd)].map((f) => [f.key, f.url]));
+
+const HD = new Set(FOUND.filter((f) => f.hd).map((f) => f.key));
+/** ¿Esta clave tiene arte en alta calidad? */
+export const isHd = (key: string) => HD.has(key);
+/** Píxeles de imagen por píxel de arte en alta calidad (el mapa del mundo ya viene al tamaño de pantalla). */
+const hdFactor = (key: string) => (key === 'world.mapa' ? 2 : 4);
 
 /**
  * Los placeholders de escenario, terreno y mapa están dibujados en píxeles de pantalla; el arte se dibuja a la mitad
@@ -36,7 +43,7 @@ const FIGURES = ['char.', 'mon.', 'animal.'];
  */
 export function artScale(key: string, scale: number): number {
   if (!real.has(key)) return scale;
-  if (FIGURES.some((p) => key.startsWith(p))) return 2;
+  if (FIGURES.some((p) => key.startsWith(p))) return HD.has(key) ? 2 / hdFactor(key) : 2;
   const k = isUpscaled(key) ? 2 : 1;
   return Math.max(1, Math.round(scale * k)) / k;
 }
@@ -47,9 +54,9 @@ export function artScale(key: string, scale: number): number {
  */
 export function monsterLook(sprite: { key: string; tint?: number; scale?: number }, monsterId: string | undefined, placeholderScale: number) {
   const own = monsterId ? `mon.${monsterId}` : '';
-  if (own && real.has(own)) return { key: own, scale: 2, tint: undefined };
+  if (own && real.has(own)) return { key: own, scale: artScale(own, 2), tint: undefined };
   const mult = sprite.scale ?? 1;
-  if (real.has(sprite.key)) return { key: sprite.key, scale: Math.max(2, Math.round(2 * mult)), tint: sprite.tint };
+  if (real.has(sprite.key)) return { key: sprite.key, scale: Math.max(2, Math.round(2 * mult)) * (HD.has(sprite.key) ? 1 / hdFactor(sprite.key) : 1), tint: sprite.tint };
   return { key: sprite.key, scale: placeholderScale * mult, tint: sprite.tint };
 }
 
@@ -110,7 +117,7 @@ export function installWalkBob(scene: Phaser.Scene) {
 export function ensureWalkAnims(scene: Phaser.Scene) {
   for (const key of real) {
     if (!/^(mon|char|animal)\./.test(key) || key.endsWith('_b') || scene.anims.exists(`${key}.walk`)) continue;
-    const second = real.has(`${key}_b`) ? `${key}_b` : key;
+    const second = real.has(`${key}_b`) && HD.has(`${key}_b`) === HD.has(key) ? `${key}_b` : key;
     scene.anims.create({ key: `${key}.walk`, frames: [{ key }, { key: second }], frameRate: 5, repeat: -1 });
   }
 }
@@ -123,22 +130,28 @@ export function loadArt(scene: Phaser.Scene) {
 /** Agranda al doble sin suavizar (para que siga siendo pixel art). */
 function upscale(scene: Phaser.Scene, key: string) {
   const src = scene.textures.get(key + SRC).getSourceImage() as HTMLImageElement;
-  const canvas = scene.textures.createCanvas(key, src.width * 2, src.height * 2)!;
+  // Pixel art: al doble sin suavizar. Alta calidad: al tamaño de pantalla (2 por píxel de arte), suavizado.
+  const k = HD.has(key) ? 2 / hdFactor(key) : 2;
+  const canvas = scene.textures.createCanvas(key, Math.round(src.width * k), Math.round(src.height * k))!;
   const ctx = canvas.getContext();
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(src, 0, 0, src.width * 2, src.height * 2);
+  ctx.imageSmoothingEnabled = HD.has(key);
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
   canvas.refresh();
+  if (HD.has(key)) canvas.setFilter(Phaser.Textures.FilterMode.LINEAR);
 }
 
 /** Lee una textura cuadrada como lista de píxeles (para proyectarla sobre el rombo). */
 function pixels(scene: Phaser.Scene, key: string) {
   const img = scene.textures.get(key + SRC).getSourceImage() as HTMLImageElement;
+  const k = HD.has(key) ? 1 / hdFactor(key) : 1;
   const c = document.createElement('canvas');
-  c.width = img.width;
-  c.height = img.height;
+  c.width = Math.max(1, Math.round(img.width * k));
+  c.height = Math.max(1, Math.round(img.height * k));
   const ctx = c.getContext('2d')!;
-  ctx.drawImage(img, 0, 0);
-  return { w: img.width, h: img.height, data: ctx.getImageData(0, 0, img.width, img.height).data };
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  return { w: c.width, h: c.height, data: ctx.getImageData(0, 0, c.width, c.height).data };
 }
 
 type Px = ReturnType<typeof pixels>;
@@ -228,9 +241,23 @@ function sideFromTexture(scene: Phaser.Scene, key: string, tex: Px, lip: Px | un
  * (agrandar al doble, casillas desde texturas cuadradas) y anota qué claves tienen arte real.
  */
 export function prepareArt(scene: Phaser.Scene) {
+  // Una espalda en alta calidad con el frente todavía en pixel art se lleva a la medida del frente, así la figura
+  // no cambia de tamaño ni de estilo al darse vuelta. Cuando el frente esté en alta, quedan las dos en alta.
+  for (const key of [...HD].filter((k) => k.endsWith('.espalda') && !HD.has(k.slice(0, -'.espalda'.length)) && ART[k.slice(0, -'.espalda'.length)])) {
+    const src = scene.textures.get(key).getSourceImage() as HTMLImageElement;
+    const k = 1 / hdFactor(key);
+    scene.textures.remove(key);
+    const canvas = scene.textures.createCanvas(key, Math.round(src.width * k), Math.round(src.height * k))!;
+    const ctx = canvas.getContext();
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
+    canvas.refresh();
+    HD.delete(key);
+  }
   for (const key of Object.keys(ART)) {
     if (key.startsWith('tex.')) continue;
     if (isUpscaled(key)) upscale(scene, key);
+    else if (HD.has(key)) scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
     real.add(key);
   }
   // tex.<suelo>.png → tile.<suelo> (tapa); tex.<suelo>.lado.png → tile.<suelo>.side, .side.1… (franjas de la pared).

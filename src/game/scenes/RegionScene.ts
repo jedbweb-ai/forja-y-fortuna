@@ -339,7 +339,7 @@ export class RegionScene extends Phaser.Scene {
       const key = `char.npc.${id}`;
       this.player.add(this.add.sprite(i ? 12 : -12, -6, key).setOrigin(0.5, 1).setScale(artScale(key, 1.6)).setName(key));
     });
-    this.player.add(this.add.sprite(0, 0, 'char.herrero').setOrigin(0.5, 1).setScale(2).setName('char.herrero'));
+    this.player.add(this.add.sprite(0, 0, 'char.herrero').setOrigin(0.5, 1).setScale(artScale('char.herrero', 2)).setName('char.herrero'));
     this.placePlayer();
   }
 

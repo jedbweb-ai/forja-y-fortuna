@@ -1,3 +1,4 @@
+import { isHd } from '../../game/render/assets';
 import { useState } from 'react';
 import { maxPartySize } from '../../core/progress/progress';
 import { BALANCE } from '../../config/balance';
@@ -46,7 +47,7 @@ export function PartyPanel() {
 
       <div className="party-grid">
         <section>
-          <h3>{portraitUrl(ch.id) && <img className="art-portrait portrait-inline" src={portraitUrl(ch.id)} alt="" />}{ch.name} <small className="muted">· {SPECIALTY[ch.specialty]} · nivel {ch.level}</small></h3>
+          <h3>{portraitUrl(ch.id) && <img className={`art-portrait portrait-inline${isHd(`retrato.${ch.id}`) ? ' hd' : ''}`} src={portraitUrl(ch.id)} alt="" />}{ch.name} <small className="muted">· {SPECIALTY[ch.specialty]} · nivel {ch.level}</small></h3>
           <div className="meter-label small"><span>Experiencia</span><span>{ch.xp}/{xpToNext(ch.level)}</span></div>
           <div className="meter thin"><span style={{ width: `${(ch.xp / xpToNext(ch.level)) * 100}%` }} /></div>
           <p className="small">❤️ Vida {ch.hp}/{p.maxHp}{injured ? <b className="bad-text"> · Herido hasta el día {ch.injuredUntilDay}</b> : null}</p>
