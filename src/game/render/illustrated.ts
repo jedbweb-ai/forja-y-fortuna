@@ -98,4 +98,12 @@ export const CITY_PLACES: Record<string, Record<string, Pt>> = {
     curtidor: { x: 145, y: 266 }, maderero: { x: 145, y: 588 }, joyero: { x: 815, y: 171 }, libreria: { x: 1020, y: 224 },
     gremio: { x: 1125, y: 405 }, tablon: { x: 640, y: 511 }, subastas: { x: 640, y: 127 }, esclavos: { x: 1100, y: 573 },
   },
+  puertoseco: {
+    ps_posada: { x: 203, y: 211 }, ps_gremio: { x: 1056, y: 193 }, ps_mercado: { x: 379, y: 316 }, ps_taberna: { x: 888, y: 320 },
+    ps_muelle: { x: 643, y: 534 },
+  },
+  fuerte_ceniza: {
+    fc_posada: { x: 639, y: 127 }, fc_intendencia: { x: 1014, y: 255 }, fc_mercado: { x: 260, y: 293 }, fc_plaza: { x: 639, y: 385 },
+    fc_cantina: { x: 965, y: 496 },
+  },
 };
